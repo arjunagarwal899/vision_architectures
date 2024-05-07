@@ -3,13 +3,17 @@
 # %% auto 0
 __all__ = ['get_coords_grid', 'Swin3DMHSA', 'Swin3DLayerMLP', 'Swin3DLayer', 'Swin3DBlock', 'Swin3DPatchMerging', 'Swin3DStage',
            'Swin3DEncoder', 'Swin3DPatchEmbeddings', 'get_3d_position_embeddings',
-           'embed_spacings_in_position_embeddings', 'Swin3DEmbeddings', 'Swin3DModel', 'Swin3DMIMDecoder', 'Swin3DMIM']
+           'embed_spacings_in_position_embeddings', 'Swin3DEmbeddings', 'Swin3DModel', 'Swin3DMIMDecoder', 'Swin3DMIM',
+           'migrate_checkpoint_to_new']
 
 # %% ../nbs/01_swin3d_old.ipynb 2
 import torch
 import numpy as np
 from torch import nn
 from einops import rearrange, repeat
+
+from .swin3d import Swin3DMIM as Swin3DNewMIM
+from .swin3d import populate_and_validate_config
 
 # %% ../nbs/01_swin3d_old.ipynb 5
 def get_coords_grid(grid_size):
@@ -614,3 +618,55 @@ class Swin3DMIM(nn.Module):
         loss = (loss * mask).sum() / ((mask.sum() + 1e-5) * self.config["in_channels"])
 
         return decoded, loss, mask
+
+# %% ../nbs/01_swin3d_old.ipynb 50
+def migrate_checkpoint_to_new(checkpoint, prefix="model"):
+    model_config = checkpoint["hyper_parameters"]["model_config"]
+
+    model_config["dim"] = model_config["stages"][0]["dim"]
+    for stage in model_config["stages"]:
+        del stage["dim"]
+
+    for i in range(len(model_config["stages"]) - 1, 0, -1):
+        model_config["stages"][i]["patch_merging"] = model_config["stages"][i - 1]["patch_merging"]
+    model_config["stages"][0]["patch_merging"] = None
+
+    checkpoint["hyper_parameters"]["model_config"] = populate_and_validate_config(
+        checkpoint["hyper_parameters"]["model_config"]
+    )
+
+    state_dict = checkpoint["state_dict"]
+
+    for stage_i in range(len(model_config["stages"])):
+        for block_i in range(model_config["stages"][stage_i]["depth"]):
+            for layer_name in {"w_layer", "sw_layer"}:
+                for state_type in {"weight", "bias"}:
+                    q = state_dict.pop(
+                        f"{prefix}.swin.encoder.stages.{stage_i}.blocks.{block_i}.{layer_name}.mhsa.W_q.{state_type}"
+                    )
+                    k = state_dict.pop(
+                        f"{prefix}.swin.encoder.stages.{stage_i}.blocks.{block_i}.{layer_name}.mhsa.W_k.{state_type}"
+                    )
+                    v = state_dict.pop(
+                        f"{prefix}.swin.encoder.stages.{stage_i}.blocks.{block_i}.{layer_name}.mhsa.W_v.{state_type}"
+                    )
+                    qkv = torch.concat([q, k, v], dim=0)
+                    state_dict[
+                        f"{prefix}.swin.encoder.stages.{stage_i}.blocks.{block_i}.{layer_name}.mhsa.W_qkv.{state_type}"
+                    ] = qkv
+
+    for i in range(len(model_config["stages"]) - 1, 0, -1):
+        state_dict[f"{prefix}.swin.encoder.stages.{i}.patch_merging.layer_norm.weight"] = state_dict.pop(
+            f"{prefix}.swin.encoder.stages.{i-1}.patch_merging.layer_norm.weight"
+        )
+        state_dict[f"{prefix}.swin.encoder.stages.{i}.patch_merging.layer_norm.bias"] = state_dict.pop(
+            f"{prefix}.swin.encoder.stages.{i-1}.patch_merging.layer_norm.bias"
+        )
+        state_dict[f"{prefix}.swin.encoder.stages.{i}.patch_merging.proj.weight"] = state_dict.pop(
+            f"{prefix}.swin.encoder.stages.{i-1}.patch_merging.proj.weight"
+        )
+        state_dict[f"{prefix}.swin.encoder.stages.{i}.patch_merging.proj.bias"] = state_dict.pop(
+            f"{prefix}.swin.encoder.stages.{i-1}.patch_merging.proj.bias"
+        )
+
+    return checkpoint
