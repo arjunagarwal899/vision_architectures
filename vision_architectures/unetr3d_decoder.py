@@ -7,6 +7,7 @@ __all__ = ['UNetR3DConvBlock', 'UNetR3DDeConvBlock', 'UNetR3DBlock', 'UNetR3DDec
 import torch
 
 from torch import nn
+from einops import rearrange
 
 # %% ../nbs/02_unetr3d_decoder.ipynb 5
 class UNetR3DConvBlock(nn.Module):
@@ -129,3 +130,35 @@ class UNetR3DDecoder(nn.Module):
         decoded = self.final_conv(final_embeddings)
 
         return decoded
+
+    @staticmethod
+    def loss_fn(prediction: torch.Tensor, target: torch.Tensor, reduction="mean", smooth: float = 1e-8):
+        """
+        Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
+
+        prediction: probability scores for each class
+        target: should be binary masks.
+        """
+
+        num_classes = prediction.shape[1]
+        num_voxels = torch.prod(torch.tensor(prediction.shape[2:]))
+
+        prediction = rearrange(prediction, "b n d h w -> b n (d h w)")
+        target = rearrange(target, "b n d h w -> b n (d h w)")
+
+        l1 = (2 / num_classes) * (
+            ((prediction * target).sum(dim=2) + smooth) / ((prediction**2).sum(dim=2) + (target**2).sum(dim=2) + smooth)
+        ).sum(dim=1)
+
+        l2 = (1 / num_voxels) * (target * torch.log(prediction + smooth)).sum(dim=(1, 2))
+
+        loss = 1 - l1 - l2
+
+        if reduction == "mean":
+            loss = loss.mean()
+        elif reduction == "sum":
+            loss = loss.sum()
+        else:
+            raise NotImplementedError("Please implement the reduction type")
+
+        return loss

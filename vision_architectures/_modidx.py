@@ -186,4 +186,6 @@ d = { 'settings': { 'branch': 'main',
                                                       'vision_architectures.unetr3d_decoder.UNetR3DDecoder.__init__': ( 'unetr3d_decoder.html#unetr3ddecoder.__init__',
                                                                                                                         'vision_architectures/unetr3d_decoder.py'),
                                                       'vision_architectures.unetr3d_decoder.UNetR3DDecoder.forward': ( 'unetr3d_decoder.html#unetr3ddecoder.forward',
+                                                                                                                       'vision_architectures/unetr3d_decoder.py'),
+                                                      'vision_architectures.unetr3d_decoder.UNetR3DDecoder.loss_fn': ( 'unetr3d_decoder.html#unetr3ddecoder.loss_fn',
                                                                                                                        'vision_architectures/unetr3d_decoder.py')}}}
