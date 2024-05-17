@@ -12,8 +12,8 @@ import numpy as np
 from torch import nn
 from einops import rearrange, repeat
 
-from .swin3d import Swin3DMIM as Swin3DNewMIM
-from .swin3d import populate_and_validate_config
+from .swin_3d import Swin3DMIM as Swin3DNewMIM
+from .swin_3d import populate_and_validate_config
 
 # %% ../nbs/01_swin_3d_old.ipynb 5
 def get_coords_grid(grid_size):
