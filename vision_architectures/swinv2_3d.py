@@ -221,10 +221,10 @@ class SwinV23DLayerMLP(nn.Module):
         batched_hidden_states = torch.split(hidden_states, self.max_batch_size or len(hidden_states), dim=0)
         hidden_states = []
         for batched_hidden_state in batched_hidden_states:
-            hidden_state = self.dense1(batched_hidden_state)
-            hidden_state = self.act(hidden_state)
-            hidden_state = self.dense2(hidden_state)
-            hidden_states.append(hidden_state)
+            batched_hidden_state = self.dense1(batched_hidden_state)
+            batched_hidden_state = self.act(batched_hidden_state)
+            batched_hidden_state = self.dense2(batched_hidden_state)
+            hidden_states.append(batched_hidden_state)
         hidden_states = torch.cat(hidden_states, dim=0)
         hidden_states = self.dropout(hidden_states)
         return hidden_states
@@ -288,8 +288,8 @@ class SwinV23DLayer(nn.Module):
         res_connection2 = hidden_states + res_connection1
         # (windowed_b, window_size_z window_size_y window_size_x, dim)
 
-        hidden_states = self.mlp(hidden_states)
-        hidden_states = self.layernorm2(res_connection2)
+        hidden_states = self.mlp(res_connection2)
+        hidden_states = self.layernorm2(hidden_states)
         # (windowed_b, window_size_z window_size_y window_size_x, dim)
 
         hidden_states = hidden_states + res_connection2
