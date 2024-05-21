@@ -35,8 +35,6 @@ def populate_and_validate_config(config: dict) -> dict:
         stage["_out_patch_size"] = patch_size
         # stage["_out_grid_size"] = tuple([image // patch for image, patch in zip(image_size, patch_size)])
 
-        stage.setdefault("max_batch_size", None)
-
     for stage in config["stages"]:
         assert stage["_out_dim"] % stage["num_heads"] == 0, stage
 
@@ -64,7 +62,6 @@ class SwinV23DMHSA(nn.Module):
         num_heads,
         window_size,
         use_relative_position_bias,
-        max_batch_size,
         attn_drop_prob=0.0,
         proj_drop_prob=0.0,
     ):
@@ -75,7 +72,6 @@ class SwinV23DMHSA(nn.Module):
         self.dim = dim
         self.num_heads = num_heads
         self.window_size = window_size
-        self.max_batch_size = max_batch_size
 
         self.per_head_dim = int(dim // num_heads)
 
@@ -87,7 +83,6 @@ class SwinV23DMHSA(nn.Module):
         self.logit_scale = nn.Parameter(torch.log(10 * torch.ones((num_heads, 1, 1))))
 
         # TODO: Add embed_spacing_info functionality
-        # TODO: Add dropout everywhere
         self.use_relative_position_bias = use_relative_position_bias
         if use_relative_position_bias:
             self.cpb_mlp = nn.Sequential(
@@ -155,13 +150,8 @@ class SwinV23DMHSA(nn.Module):
         # hidden_states: (windowed_b, window_size_z window_size_y window_size_x, dim)
         _, num_patches_z, num_patches_y, num_patches_x, _ = hidden_states.shape
 
-        batched_hidden_states = torch.split(hidden_states, self.max_batch_size or len(hidden_states), dim=0)
-        batched_qkv = []
-        for batched_hidden_state in batched_hidden_states:
-            batched_qkv.append(self.W_qkv(batched_hidden_state))
-        qkv = torch.cat(batched_qkv, dim=0)
         query, key, value = rearrange(
-            qkv,
+            self.W_qkv(hidden_states),
             "b nz ny nx (n num_heads d) -> n b num_heads (nz ny nx) d",
             n=3,
             num_heads=self.num_heads,
@@ -197,9 +187,7 @@ class SwinV23DMHSA(nn.Module):
         )
         # (windowed_b, window_size_z window_size_y window_size_x, dim)
 
-        batched_context = torch.split(context, self.max_batch_size or len(context), dim=0)
-        batched_context = [self.proj(batched_context) for batched_context in batched_context]
-        context = torch.cat(batched_context, dim=0)
+        context = self.proj(context)
         context = self.proj_drop(context)
         # (windowed_b, window_size_z window_size_y window_size_x, dim)
 
@@ -207,10 +195,8 @@ class SwinV23DMHSA(nn.Module):
 
 # %% ../nbs/03_swinv2_3d.ipynb 11
 class SwinV23DLayerMLP(nn.Module):
-    def __init__(self, dim, intermediate_ratio, max_batch_size, dropout_prob=0.0):
+    def __init__(self, dim, intermediate_ratio, dropout_prob=0.0):
         super().__init__()
-        self.max_batch_size = max_batch_size
-
         self.dense1 = nn.Linear(dim, dim * intermediate_ratio)
         self.act = nn.GELU()
         self.dense2 = nn.Linear(dim * intermediate_ratio, dim)
@@ -218,14 +204,9 @@ class SwinV23DLayerMLP(nn.Module):
 
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (windowed_b, window_size_z window_size_y window_size_x, dim)
-        batched_hidden_states = torch.split(hidden_states, self.max_batch_size or len(hidden_states), dim=0)
-        hidden_states = []
-        for batched_hidden_state in batched_hidden_states:
-            batched_hidden_state = self.dense1(batched_hidden_state)
-            batched_hidden_state = self.act(batched_hidden_state)
-            batched_hidden_state = self.dense2(batched_hidden_state)
-            hidden_states.append(batched_hidden_state)
-        hidden_states = torch.cat(hidden_states, dim=0)
+        hidden_states = self.dense1(hidden_states)
+        hidden_states = self.act(hidden_states)
+        hidden_states = self.dense2(hidden_states)
         hidden_states = self.dropout(hidden_states)
         return hidden_states
 
@@ -239,7 +220,6 @@ class SwinV23DLayer(nn.Module):
         layer_norm_eps,
         window_size,
         use_relative_position_bias,
-        max_batch_size,
         attn_drop_prob=0.0,
         proj_drop_prob=0.0,
         mlp_drop_prob=0.0,
@@ -249,10 +229,10 @@ class SwinV23DLayer(nn.Module):
         self.window_size = window_size
 
         self.mhsa = SwinV23DMHSA(
-            dim, num_heads, window_size, use_relative_position_bias, max_batch_size, attn_drop_prob, proj_drop_prob
+            dim, num_heads, window_size, use_relative_position_bias, attn_drop_prob, proj_drop_prob
         )
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = SwinV23DLayerMLP(dim, intermediate_ratio, max_batch_size, mlp_drop_prob)
+        self.mlp = SwinV23DLayerMLP(dim, intermediate_ratio, mlp_drop_prob)
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
     def forward(self, hidden_states: torch.Tensor):
@@ -323,7 +303,6 @@ class SwinV23DBlock(nn.Module):
             stage_config["layer_norm_eps"],
             stage_config["window_size"],
             stage_config["use_relative_position_bias"],
-            stage_config["max_batch_size"],
             stage_config.get("attn_drop_prob", 0.0),
             stage_config.get("proj_drop_prob", 0.0),
             stage_config.get("mlp_drop_prob", 0.0),
@@ -335,7 +314,6 @@ class SwinV23DBlock(nn.Module):
             stage_config["layer_norm_eps"],
             stage_config["window_size"],
             stage_config["use_relative_position_bias"],
-            stage_config["max_batch_size"],
             stage_config.get("attn_drop_prob", 0.0),
             stage_config.get("proj_drop_prob", 0.0),
             stage_config.get("mlp_drop_prob", 0.0),
