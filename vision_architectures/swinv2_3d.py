@@ -414,7 +414,7 @@ class SwinV23DStage(nn.Module):
 
 # %% ../nbs/03_swinv2_3d.ipynb 23
 class SwinV23DEncoder(nn.Module):
-    def __init__(self, config, default_layer_norm_eps=1e-6):
+    def __init__(self, config):
         super().__init__()
 
         self.stages = nn.ModuleList([SwinV23DStage(stage_config) for stage_config in config["stages"]])
