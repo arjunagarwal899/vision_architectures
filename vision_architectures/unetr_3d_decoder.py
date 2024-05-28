@@ -157,17 +157,18 @@ class UNetR3DDecoder(nn.Module):
 
         loss = l1 + l2
 
-        if reduction == "mean":
-            l1 = l1.mean()
-            l2 = l2.mean()
-            loss = loss.mean()
-        elif reduction == "sum":
-            l1 = l1.sum()
-            l2 = l2.sum()
-            loss = loss.sum()
-        else:
-            raise NotImplementedError("Please implement the reduction type")
+        def reduce(loss):
+            if reduction == "mean":
+                return loss.mean()
+            elif reduction == "sum":
+                return loss.sum()
+            else:
+                raise NotImplementedError("Please implement the reduction type")
+
+        loss = reduce(loss)
 
         if return_components:
+            l1 = reduce(l1)
+            l2 = reduce(l2)
             return loss, [l1, l2]
         return loss
