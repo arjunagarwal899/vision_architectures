@@ -148,8 +148,9 @@ class UNetR3DDecoder(nn.Module):
         prediction = rearrange(prediction, "b n d h w -> b n (d h w)")
         target = rearrange(target, "b n d h w -> b n (d h w)")
 
-        l1 = 1 - (2 / num_classes) * (
-            ((prediction * target).sum(dim=2) + smooth) / ((prediction**2).sum(dim=2) + (target**2).sum(dim=2) + smooth)
+        l1 = 1 - (1 / num_classes) * (
+            (2 * (prediction * target).sum(dim=2) + smooth)
+            / ((prediction**2).sum(dim=2) + (target**2).sum(dim=2) + smooth)
         ).sum(dim=1)
 
         l2 = -(1 / num_voxels) * (target * torch.log(prediction + smooth)).sum(dim=(1, 2))
