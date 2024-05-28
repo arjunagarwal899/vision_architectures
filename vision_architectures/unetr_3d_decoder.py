@@ -132,7 +132,9 @@ class UNetR3DDecoder(nn.Module):
         return decoded
 
     @staticmethod
-    def loss_fn(prediction: torch.Tensor, target: torch.Tensor, reduction="mean", smooth: float = 1e-8):
+    def loss_fn(
+        prediction: torch.Tensor, target: torch.Tensor, reduction="mean", smooth: float = 1e-8, return_components=False
+    ):
         """
         Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
 
@@ -146,19 +148,25 @@ class UNetR3DDecoder(nn.Module):
         prediction = rearrange(prediction, "b n d h w -> b n (d h w)")
         target = rearrange(target, "b n d h w -> b n (d h w)")
 
-        l1 = (2 / num_classes) * (
+        l1 = 1 - (2 / num_classes) * (
             ((prediction * target).sum(dim=2) + smooth) / ((prediction**2).sum(dim=2) + (target**2).sum(dim=2) + smooth)
         ).sum(dim=1)
 
-        l2 = (1 / num_voxels) * (target * torch.log(prediction + smooth)).sum(dim=(1, 2))
+        l2 = -(1 / num_voxels) * (target * torch.log(prediction + smooth)).sum(dim=(1, 2))
 
-        loss = 1 - l1 - l2
+        loss = l1 + l2
 
         if reduction == "mean":
+            l1 = l1.mean()
+            l2 = l2.mean()
             loss = loss.mean()
         elif reduction == "sum":
+            l1 = l1.sum()
+            l2 = l2.sum()
             loss = loss.sum()
         else:
             raise NotImplementedError("Please implement the reduction type")
 
+        if return_components:
+            return loss, [l1, l2]
         return loss

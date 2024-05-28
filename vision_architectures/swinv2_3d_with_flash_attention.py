@@ -75,7 +75,7 @@ class SwinV23DMHSA(SwinV23DMHSAWithoutFlashAttention):
             attn_mask=relative_position_bias,  # Use this as a way to introduce relative position bias
             dropout_p=self.attn_drop_prob,
             is_causal=False,
-            # scale=logit_scale, # TODO: Allow logit scaling, otherwise it won't work
+            # scale=logit_scale, # TODO: Allow learnable scaling per head, otherwise it won't work
         )
         # (windowed_b, num_heads, num_patches, per_head_dim)
         context = rearrange(
