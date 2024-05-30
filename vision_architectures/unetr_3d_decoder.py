@@ -132,9 +132,18 @@ class UNetR3DDecoder(nn.Module):
         return decoded
 
     @staticmethod
-    def loss_fn(
-        prediction: torch.Tensor, target: torch.Tensor, reduction="mean", smooth: float = 1e-8, return_components=False
-    ):
+    def _reduce(loss, reduction):
+        if reduction is None:
+            return loss
+        elif reduction == "mean":
+            return loss.mean()
+        elif reduction == "sum":
+            return loss.sum()
+        else:
+            raise NotImplementedError("Please implement the reduction type")
+
+    @staticmethod
+    def soft_dice_loss_fn(prediction: torch.Tensor, target: torch.Tensor, reduction="mean", smooth: float = 1e-8):
         """
         Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
 
@@ -143,32 +152,62 @@ class UNetR3DDecoder(nn.Module):
         """
 
         num_classes = prediction.shape[1]
+
+        prediction = rearrange(prediction, "b n d h w -> b n (d h w)")
+        target = rearrange(target, "b n d h w -> b n (d h w)")
+
+        loss = 1 - (1 / num_classes) * (
+            (2 * (prediction * target).sum(dim=2) + smooth)
+            / ((prediction**2).sum(dim=2) + (target**2).sum(dim=2) + smooth)
+        ).sum(dim=1)
+        loss = UNetR3DDecoder._reduce(loss, reduction)
+
+        return loss
+
+    @staticmethod
+    def cross_entropy_loss_fn(prediction: torch.Tensor, target: torch.Tensor, reduction="mean", smooth: float = 1e-8):
+        """
+        Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
+
+        prediction: probability scores for each class
+        target: should be binary masks.
+        """
+
         num_voxels = torch.prod(torch.tensor(prediction.shape[2:]))
 
         prediction = rearrange(prediction, "b n d h w -> b n (d h w)")
         target = rearrange(target, "b n d h w -> b n (d h w)")
 
-        l1 = 1 - (1 / num_classes) * (
-            (2 * (prediction * target).sum(dim=2) + smooth)
-            / ((prediction**2).sum(dim=2) + (target**2).sum(dim=2) + smooth)
-        ).sum(dim=1)
+        loss = -(1 / num_voxels) * (target * torch.log(prediction + smooth)).sum(dim=(1, 2))
+        loss = UNetR3DDecoder._reduce(loss, reduction)
 
-        l2 = -(1 / num_voxels) * (target * torch.log(prediction + smooth)).sum(dim=(1, 2))
+        return loss
 
-        loss = l1 + l2
+    @staticmethod
+    def loss_fn(
+        prediction: torch.Tensor,
+        target: torch.Tensor,
+        reduction="mean",
+        weight_dsc=1.0,
+        weight_ce=1.0,
+        smooth: float = 1e-8,
+        return_components=False,
+    ):
+        """
+        Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
 
-        def reduce(loss):
-            if reduction == "mean":
-                return loss.mean()
-            elif reduction == "sum":
-                return loss.sum()
-            else:
-                raise NotImplementedError("Please implement the reduction type")
+        prediction: probability scores for each class
+        target: should be binary masks.
+        """
 
-        loss = reduce(loss)
+        loss1 = UNetR3DDecoder.soft_dice_loss_fn(prediction, target, reduction=None, smooth=smooth)
+        loss2 = UNetR3DDecoder.cross_entropy_loss_fn(prediction, target, reduction=None, smooth=smooth)
+        loss = weight_dsc * loss1 + weight_ce * loss2
+
+        loss = UNetR3DDecoder._reduce(loss, reduction)
 
         if return_components:
-            l1 = reduce(l1)
-            l2 = reduce(l2)
-            return loss, [l1, l2]
+            loss1 = UNetR3DDecoder._reduce(loss1, reduction)
+            loss2 = UNetR3DDecoder._reduce(loss2, reduction)
+            return loss, [loss1, loss2]
         return loss
