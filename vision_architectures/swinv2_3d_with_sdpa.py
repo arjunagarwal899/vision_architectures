@@ -8,9 +8,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from einops import rearrange, repeat
+from einops import rearrange
 from torch import nn
-from torch.nn.attention import SDPBackend, sdpa_kernel
 from vision_architectures.swinv2_3d import (
     populate_and_validate_config,
     get_coords_grid,
@@ -127,6 +126,7 @@ class SwinV23DLayer(SwinV23DLayerWithoutSDPA):
         self.mhsa = SwinV23DMHSA(
             dim, num_heads, window_size, use_relative_position_bias, attn_drop_prob, proj_drop_prob
         )
+        
 
 # %% ../nbs/04_swinv2_3d_with_sdpa.ipynb 9
 class SwinV23DBlock(SwinV23DBlockWithoutSDPA):

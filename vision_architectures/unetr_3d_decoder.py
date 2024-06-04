@@ -24,6 +24,13 @@ class UNetR3DConvBlock(nn.Module):
         self.batch_norm = nn.BatchNorm3d(dim)
         self.relu = nn.ReLU(inplace=True)
 
+        self.init()
+
+    def init(self):
+        nn.init.xavier_normal_(self.conv.weight)
+        nn.init.constant_(self.batch_norm.weight, 0)
+        nn.init.constant_(self.batch_norm.bias, 0)
+
     def forward(self, x):
         x = self.conv(x)
         x = self.batch_norm(x)
@@ -45,6 +52,13 @@ class UNetR3DDeConvBlock(nn.Module):
         )
         self.batch_norm = nn.BatchNorm3d(out_dim)
         self.relu = nn.ReLU(inplace=True)
+
+        self.init()
+
+    def init(self):
+        nn.init.xavier_normal_(self.deconv.weight)
+        nn.init.constant_(self.batch_norm.weight, 0)
+        nn.init.constant_(self.batch_norm.bias, 0)
 
     def forward(self, x):
         x = self.deconv(x)
@@ -112,6 +126,14 @@ class UNetR3DDecoder(nn.Module):
             kernel_size=final_layer_kernel_size,
             padding=tuple([k // 2 for k in final_layer_kernel_size]),
         )
+
+        self.init()
+
+    def init(self):
+        nn.init.xavier_normal_(self.scan_conv.weight)
+        nn.init.constant_(self.scan_conv.bias, 0)
+        nn.init.xavier_normal_(self.final_conv.weight)
+        nn.init.constant_(self.final_conv.bias, 0)
 
     def forward(self, embeddings, scan):
         # embeddings is a list of (B, C_layer, D_layer, W_layer, H_layer)
