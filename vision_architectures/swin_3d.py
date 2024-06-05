@@ -95,8 +95,8 @@ class Swin3DMHSA(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.W_qkv.weight)
-        nn.init.xavier_normal_(self.proj.weight)
+        nn.init.trunc_normal_(self.W_qkv.weight)
+        nn.init.trunc_normal_(self.proj.weight)
 
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (windowed_b, window_size_z window_size_y window_size_x, dim)
@@ -153,8 +153,8 @@ class Swin3DLayerMLP(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.dense1.weight)
-        nn.init.xavier_normal_(self.dense2.weight)
+        nn.init.trunc_normal_(self.dense1.weight)
+        nn.init.trunc_normal_(self.dense2.weight)
 
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (windowed_b, window_size_z window_size_y window_size_x, dim)
@@ -178,10 +178,10 @@ class Swin3DLayer(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.constant_(self.layernorm_before.weight, 1.0)
-        nn.init.constant_(self.layernorm_before.bias, 0.0)
-        nn.init.constant_(self.layernorm_after.weight, 1.0)
-        nn.init.constant_(self.layernorm_after.bias, 0.0)
+        nn.init.trunc_normal_(self.layernorm_before.weight)
+        nn.init.trunc_normal_(self.layernorm_before.bias)
+        nn.init.trunc_normal_(self.layernorm_after.weight)
+        nn.init.trunc_normal_(self.layernorm_after.bias)
 
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
@@ -393,8 +393,8 @@ class Swin3DPatchEmbeddings(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.patch_embeddings.weight)
-        nn.init.constant_(self.patch_embeddings.bias, 0)
+        nn.init.trunc_normal_(self.patch_embeddings.weight)
+        nn.init.trunc_normal_(self.patch_embeddings.bias)
 
     def forward(self, pixel_values: torch.Tensor):
         # pixel_values: (b, c, z, y, x)
@@ -479,10 +479,10 @@ class Swin3DEmbeddings(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.constant_(self.layer_norm.weight, 1.0)
-        nn.init.constant_(self.layer_norm.bias, 0.0)
+        nn.init.trunc_normal_(self.layer_norm.weight)
+        nn.init.trunc_normal_(self.layer_norm.bias)
         if self.absolute_position_embeddings is not None:
-            nn.init.xavier_normal_(self.absolute_position_embeddings)
+            nn.init.trunc_normal_(self.absolute_position_embeddings)
 
     def forward(
         self,
@@ -581,8 +581,8 @@ class Swin3DMIMDecoder(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.decoder.weight)
-        nn.init.constant_(self.decoder.bias, 0)
+        nn.init.trunc_normal_(self.decoder.weight)
+        nn.init.trunc_normal_(self.decoder.bias)
 
     def forward(self, encodings: torch.Tensor):
         # encodings: (b, dim, num_patches_z, num_patches_y, num_patches_x)
@@ -617,7 +617,7 @@ class Swin3DMIM(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.mask_token)
+        nn.init.trunc_normal_(self.mask_token)
 
     def forward(self, pixel_values: torch.Tensor, spacings: torch.Tensor):
         b = pixel_values.shape[0]

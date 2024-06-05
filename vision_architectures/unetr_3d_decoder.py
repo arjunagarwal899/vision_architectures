@@ -27,9 +27,9 @@ class UNetR3DConvBlock(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.conv.weight)
-        nn.init.constant_(self.batch_norm.weight, 0)
-        nn.init.constant_(self.batch_norm.bias, 0)
+        nn.init.trunc_normal_(self.conv.weight)
+        nn.init.trunc_normal_(self.batch_norm.weight)
+        nn.init.trunc_normal_(self.batch_norm.bias)
 
     def forward(self, x):
         x = self.conv(x)
@@ -56,9 +56,9 @@ class UNetR3DDeConvBlock(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.deconv.weight)
-        nn.init.constant_(self.batch_norm.weight, 0)
-        nn.init.constant_(self.batch_norm.bias, 0)
+        nn.init.trunc_normal_(self.deconv.weight)
+        nn.init.trunc_normal_(self.batch_norm.weight)
+        nn.init.trunc_normal_(self.batch_norm.bias)
 
     def forward(self, x):
         x = self.deconv(x)
@@ -130,10 +130,10 @@ class UNetR3DDecoder(nn.Module):
         self.init()
 
     def init(self):
-        nn.init.xavier_normal_(self.scan_conv.weight)
-        nn.init.constant_(self.scan_conv.bias, 0)
-        nn.init.xavier_normal_(self.final_conv.weight)
-        nn.init.constant_(self.final_conv.bias, 0)
+        nn.init.trunc_normal_(self.scan_conv.weight)
+        nn.init.trunc_normal_(self.scan_conv.bias)
+        nn.init.trunc_normal_(self.final_conv.weight)
+        nn.init.trunc_normal_(self.final_conv.bias)
 
     def forward(self, embeddings, scan):
         # embeddings is a list of (B, C_layer, D_layer, W_layer, H_layer)
