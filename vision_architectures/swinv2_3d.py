@@ -4,7 +4,7 @@
 __all__ = ['populate_and_validate_config', 'get_coords_grid', 'SwinV23DMHSA', 'SwinV23DLayerMLP', 'SwinV23DLayer',
            'SwinV23DBlock', 'SwinV23DPatchMerging', 'SwinV23DStage', 'SwinV23DEncoder', 'SwinV23DPatchEmbeddings',
            'get_3d_position_embeddings', 'embed_spacings_in_position_embeddings', 'SwinV23DEmbeddings', 'SwinV23DModel',
-           'SwinV23DMIMDecoder', 'SwinV23DMIM']
+           'SwinV23DMIMDecoder', 'SwinV23DMIM', 'SwinV23DSimMIM', 'SwinV23DVAEMIM']
 
 # %% ../nbs/03_swinv2_3d.ipynb 2
 import torch
@@ -654,7 +654,7 @@ class SwinV23DMIM(nn.Module):
 
         self.mask_token = nn.Parameter(torch.randn(1, config["dim"], 1, 1, 1))
 
-    def forward(self, pixel_values: torch.Tensor, spacings: torch.Tensor):
+    def mask_image(self, pixel_values: torch.Tensor):
         b = pixel_values.shape[0]
 
         mask_ratio = self.config["mim"]["mask_ratio"]
@@ -683,11 +683,25 @@ class SwinV23DMIM(nn.Module):
             gx=grid_size[2] // mask_grid_size[2],
         )
 
+        return mask_patches
+
+# %% ../nbs/03_swinv2_3d.ipynb 42
+class SwinV23DSimMIM(SwinV23DMIM):
+    def __init__(self, config):
+        super().__init__(config)
+
+    @staticmethod
+    def loss_fn(pred: torch.Tensor, target: torch.Tensor, reduction="mean"):
+        return nn.functional.l1_loss(pred, target, reduction=reduction)
+
+    def forward(self, pixel_values: torch.Tensor, spacings: torch.Tensor):
+        mask_patches = self.mask_image(pixel_values)
+
         encodings, _, _ = self.swin(pixel_values, spacings, mask_patches, self.mask_token)
 
         decoded = self.decoder(encodings)
 
-        loss = nn.functional.l1_loss(decoded, pixel_values, reduction="none")
+        loss = self.loss_fn(decoded, pixel_values, reduction="none")
         mask = repeat(
             mask_patches,
             "b z y x -> b (z pz) (y py) (x px)",
@@ -698,3 +712,56 @@ class SwinV23DMIM(nn.Module):
         loss = (loss * mask).sum() / ((mask.sum() + 1e-5) * self.config["in_channels"])
 
         return decoded, loss, mask
+
+# %% ../nbs/03_swinv2_3d.ipynb 45
+class SwinV23DVAEMIM(SwinV23DMIM):  # Variational autoencoders
+    def __init__(self, config):
+        super().__init__(config)
+        
+        self.mu_layer = nn.Conv3d(config["stages"][-1]["_out_dim"], config["stages"][-1]["_out_dim"], kernel_size=1)
+        self.logvar_layer = nn.Conv3d(config["stages"][-1]["_out_dim"], config["stages"][-1]["_out_dim"], kernel_size=1)
+
+    def reparameterize(self, mu, logvar):
+        return mu + torch.randn_like(logvar) * torch.exp(0.5 * logvar)
+
+    @staticmethod
+    def l2_loss_fn(pred: torch.Tensor, target: torch.Tensor, reduction="mean"):
+        return nn.functional.mse_loss(pred, target, reduction=reduction)
+
+    @staticmethod
+    def kl_divergence_loss_fn(mu: torch.Tensor, logvar: torch.Tensor):
+        return torch.mean(-0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
+
+    def forward(
+        self,
+        pixel_values: torch.Tensor,
+        spacings: torch.Tensor,
+        lambda_l2_loss: float = 1.0,
+        lambda_kl_loss: float = 1.0,
+    ):
+        mask_patches = self.mask_image(pixel_values)
+
+        encodings, _, _ = self.swin(pixel_values, spacings, mask_patches, self.mask_token)
+
+        print(encodings.min(), encodings.max())
+        mu = self.mu_layer(encodings)
+        logvar = self.logvar_layer(encodings)
+        print((mu.min(), mu.max()), (logvar.min(), logvar.max()))
+        kl_loss = self.kl_divergence_loss_fn(mu, logvar)
+
+        sampled = self.reparameterize(mu, logvar)
+        decoded = self.decoder(sampled)
+
+        l2_loss = self.l2_loss_fn(decoded, pixel_values, reduction="none")
+        mask = repeat(
+            mask_patches,
+            "b z y x -> b (z pz) (y py) (x px)",
+            pz=self.config["patch_size"][0],
+            py=self.config["patch_size"][1],
+            px=self.config["patch_size"][2],
+        )
+        l2_loss = (l2_loss * mask).sum() / ((mask.sum() + 1e-5) * self.config["in_channels"])
+
+        loss = lambda_l2_loss * l2_loss + lambda_kl_loss * kl_loss
+
+        return decoded, loss, mask, [l2_loss, kl_loss]
