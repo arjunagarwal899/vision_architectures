@@ -11,9 +11,8 @@ import torch
 import numpy as np
 from einops import rearrange, repeat
 from torch import nn
-import torch.nn.functional as F
 
-# %% ../nbs/05_vit_3d.ipynb 6
+# %% ../nbs/05_vit_3d.ipynb 5
 def get_coords_grid(grid_size):
     d, h, w = grid_size
 
@@ -27,7 +26,7 @@ def get_coords_grid(grid_size):
 
     return grid
 
-# %% ../nbs/05_vit_3d.ipynb 7
+# %% ../nbs/05_vit_3d.ipynb 6
 class ViT3DMHA(nn.Module):  # Multi-head-attention
     def __init__(
         self,
@@ -85,7 +84,7 @@ class ViT3DMHA(nn.Module):  # Multi-head-attention
 
         return context
 
-# %% ../nbs/05_vit_3d.ipynb 8
+# %% ../nbs/05_vit_3d.ipynb 7
 class ViT3DMHSA(ViT3DMHA):  # Multi head self attention
     def __init__(
         self,
@@ -104,7 +103,7 @@ class ViT3DMHSA(ViT3DMHA):  # Multi head self attention
     def forward(self, qkv: torch.Tensor):
         return super().forward(qkv, qkv, qkv)
 
-# %% ../nbs/05_vit_3d.ipynb 10
+# %% ../nbs/05_vit_3d.ipynb 9
 class ViT3DMHCA(ViT3DMHA):  # Multi head cross attention
     def __init__(
         self,
@@ -123,7 +122,7 @@ class ViT3DMHCA(ViT3DMHA):  # Multi head cross attention
     def forward(self, q: torch.Tensor, kv: torch.Tensor):
         return super().forward(q, kv, kv)
 
-# %% ../nbs/05_vit_3d.ipynb 13
+# %% ../nbs/05_vit_3d.ipynb 12
 class ViT3DLayerMLP(nn.Module):
     def __init__(self, dim, intermediate_ratio, dropout_prob=0.0):
         super().__init__()
@@ -140,7 +139,7 @@ class ViT3DLayerMLP(nn.Module):
         hidden_states = self.dropout(hidden_states)
         return hidden_states
 
-# %% ../nbs/05_vit_3d.ipynb 15
+# %% ../nbs/05_vit_3d.ipynb 14
 class ViT3DEncoderLayer(nn.Module):
     def __init__(
         self,
@@ -182,7 +181,7 @@ class ViT3DEncoderLayer(nn.Module):
 
         return hidden_states
 
-# %% ../nbs/05_vit_3d.ipynb 17
+# %% ../nbs/05_vit_3d.ipynb 16
 class ViT3DDecoderLayer(nn.Module):
     def __init__(
         self,
@@ -233,7 +232,7 @@ class ViT3DDecoderLayer(nn.Module):
 
         return hidden_states
 
-# %% ../nbs/05_vit_3d.ipynb 21
+# %% ../nbs/05_vit_3d.ipynb 20
 class ViT3DEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -265,7 +264,7 @@ class ViT3DEncoder(nn.Module):
 
         return embeddings, layer_outputs
 
-# %% ../nbs/05_vit_3d.ipynb 25
+# %% ../nbs/05_vit_3d.ipynb 24
 class ViT3DPatchEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -289,7 +288,7 @@ class ViT3DPatchEmbeddings(nn.Module):
 
         return embeddings
 
-# %% ../nbs/05_vit_3d.ipynb 28
+# %% ../nbs/05_vit_3d.ipynb 27
 def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
     if embedding_size % 6 != 0:
         raise ValueError("embed_dim must be divisible by 6")
@@ -326,7 +325,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
 
     return position_embeddings
 
-# %% ../nbs/05_vit_3d.ipynb 29
+# %% ../nbs/05_vit_3d.ipynb 28
 def embed_spacings_in_position_embeddings(embeddings: torch.Tensor, spacings: torch.Tensor):
     assert spacings.ndim == 2, "Please provide spacing information for each batch element"
     _, embedding_size, _, _, _ = embeddings.shape
@@ -335,7 +334,7 @@ def embed_spacings_in_position_embeddings(embeddings: torch.Tensor, spacings: to
 
     return embeddings
 
-# %% ../nbs/05_vit_3d.ipynb 30
+# %% ../nbs/05_vit_3d.ipynb 29
 class ViT3DEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -399,7 +398,7 @@ class ViT3DEmbeddings(nn.Module):
 
         return embeddings
 
-# %% ../nbs/05_vit_3d.ipynb 34
+# %% ../nbs/05_vit_3d.ipynb 33
 class ViT3DModel(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -442,7 +441,7 @@ class ViT3DModel(nn.Module):
 
         return class_tokens, encoded, layer_outputs
 
-# %% ../nbs/05_vit_3d.ipynb 37
+# %% ../nbs/05_vit_3d.ipynb 36
 class ViT3DMIMDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -477,7 +476,7 @@ class ViT3DMIMDecoder(nn.Module):
 
         return decoded
 
-# %% ../nbs/05_vit_3d.ipynb 39
+# %% ../nbs/05_vit_3d.ipynb 38
 class ViT3DMIM(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -511,7 +510,7 @@ class ViT3DMIM(nn.Module):
 
         return mask_patches
 
-# %% ../nbs/05_vit_3d.ipynb 40
+# %% ../nbs/05_vit_3d.ipynb 39
 class ViT3DSimMIM(ViT3DMIM):
     def __init__(self, config):
         super().__init__(config)
