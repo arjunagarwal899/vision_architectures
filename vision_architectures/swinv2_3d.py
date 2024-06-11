@@ -743,10 +743,8 @@ class SwinV23DVAEMIM(SwinV23DMIM):  # Variational autoencoders
 
         encodings, _, _ = self.swin(pixel_values, spacings, mask_patches, self.mask_token)
 
-        print(encodings.min(), encodings.max())
         mu = self.mu_layer(encodings)
         logvar = self.logvar_layer(encodings)
-        print((mu.min(), mu.max()), (logvar.min(), logvar.max()))
         kl_loss = self.kl_divergence_loss_fn(mu, logvar)
 
         sampled = self.reparameterize(mu, logvar)
