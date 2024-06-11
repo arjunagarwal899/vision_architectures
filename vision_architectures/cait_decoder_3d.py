@@ -13,7 +13,7 @@ from .vit_3d import ViT3DMHCA, ViT3DLayerMLP
 # %% ../nbs/06_cait_decoder_3d.ipynb 5
 class CaiT3DMHCA(ViT3DMHCA):
     def forward(self, class_tokens: torch.Tensor, embeddings: torch.Tensor):
-        return super().forward(class_tokens, embeddings)
+        return super().forward(class_tokens, torch.cat([class_tokens, embeddings], dim=1))
 
 # %% ../nbs/06_cait_decoder_3d.ipynb 7
 CaiT3DLayerMLP = ViT3DLayerMLP
