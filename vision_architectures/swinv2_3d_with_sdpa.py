@@ -180,7 +180,6 @@ class SwinV23DEncoder(SwinV23DEncoderWithoutSDPA):
 class SwinV23DModel(SwinV23DModelWithoutSDPA):
     def __init__(self, config):
         super().__init__(config)
-        print('this is the new one')
 
         self.encoder = SwinV23DEncoder(config)
 
@@ -188,7 +187,6 @@ class SwinV23DModel(SwinV23DModelWithoutSDPA):
 class SwinV23DMIM(SwinV23DMIMWithoutSDPA):
     def __init__(self, config):
         super().__init__(config)
-        print('hello')
 
         self.swin = SwinV23DModel(config)
 
