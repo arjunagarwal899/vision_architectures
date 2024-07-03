@@ -712,7 +712,6 @@ class SwinV23DSimMIM(SwinV23DMIM):
             py=self.swin_config["patch_size"][1],
             px=self.swin_config["patch_size"][2],
         )
-        print(loss.shape, mask.shape)
         loss = (loss * mask).sum() / ((mask.sum() + 1e-5) * self.swin_config["in_channels"])
 
         return decoded, loss, mask
@@ -722,8 +721,35 @@ class SwinV23DVAEMIM(SwinV23DMIM):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__(swin_config, decoder_config, mim_config)
 
+        assert (decoder_config["beta"] is None) is not (
+            decoder_config["beta_schedule"] is None
+        ), "Only one of beta or beta_schedule should be provided"
+
+        if decoder_config["beta_schedule"] is not None:
+            self.beta_schedule = decoder_config["beta_schedule"]
+            self.beta_increment = (self.beta_schedule[2] - self.beta_schedule[1]) / self.beta_schedule[0]
+            self.beta = None
+        else:
+            self.beta = decoder_config["beta"]
+            self.beta_schedule = None
+            self.beta_increment = None
+
         self.mu_layer = nn.Conv3d(swin_config["stages"][-1]["_out_dim"], decoder_config["dim"], kernel_size=1)
         self.logvar_layer = nn.Conv3d(swin_config["stages"][-1]["_out_dim"], decoder_config["dim"], kernel_size=1)
+
+    def get_beta(self):
+        # If fixed beta
+        if self.beta_schedule is None:
+            return self.beta
+
+        # Else there is a beta schedule
+        if self.beta is None:
+            # If first iteration
+            self.beta = self.beta_schedule[1]
+        else:
+            # Calculate new beta and return
+            self.beta = min(self.beta + self.beta_increment, self.beta_schedule[2])
+        return self.beta
 
     def reparameterize(self, mu, logvar):
         return mu + torch.randn_like(logvar) * torch.exp(0.5 * logvar)
@@ -735,6 +761,8 @@ class SwinV23DVAEMIM(SwinV23DMIM):
             loss = nn.functional.mse_loss(pred, target, reduction=reduction)
         elif loss_type == "l1":
             loss = nn.functional.l1_loss(pred, target, reduction=reduction)
+        else:
+            raise NotImplementedError(f"Loss type {loss_type} not implemented")
         return loss
 
     @staticmethod
@@ -746,8 +774,6 @@ class SwinV23DVAEMIM(SwinV23DMIM):
         pixel_values: torch.Tensor,
         spacings: torch.Tensor,
         reconstruction_loss_type: str = "l2",
-        lambda_reconstruction_loss: float = 1.0,
-        lambda_kl_loss: float = 1.0,
     ):
         mask_patches = self.mask_image(pixel_values)
 
@@ -770,6 +796,7 @@ class SwinV23DVAEMIM(SwinV23DMIM):
             px=self.swin_config["patch_size"][2],
         )
 
-        loss = lambda_reconstruction_loss * reconstruction_loss + lambda_kl_loss * kl_loss
+        beta = self.get_beta()
+        loss = reconstruction_loss + beta * kl_loss
 
-        return decoded, loss, mask, [reconstruction_loss, kl_loss]
+        return decoded, loss, mask, [reconstruction_loss, kl_loss, beta]
