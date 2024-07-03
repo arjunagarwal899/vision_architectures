@@ -4,7 +4,7 @@
 __all__ = ['populate_and_validate_config', 'get_coords_grid', 'SwinV23DMHSA', 'SwinV23DLayerMLP', 'SwinV23DLayer',
            'SwinV23DBlock', 'SwinV23DPatchMerging', 'SwinV23DStage', 'SwinV23DEncoder', 'SwinV23DPatchEmbeddings',
            'get_3d_position_embeddings', 'embed_spacings_in_position_embeddings', 'SwinV23DEmbeddings', 'SwinV23DModel',
-           'SwinV23DMIMDecoder', 'SwinV23DMIM', 'SwinV23DSimMIM', 'SwinV23DVAEMIM']
+           'SwinV23DReconstructionDecoder', 'SwinV23DMIM', 'SwinV23DSimMIM', 'SwinV23DVAEMIM']
 
 # %% ../nbs/03_swinv2_3d.ipynb 2
 import torch
@@ -609,15 +609,14 @@ class SwinV23DModel(nn.Module):
         return encoded, stage_outputs, layer_outputs
 
 # %% ../nbs/03_swinv2_3d.ipynb 39
-class SwinV23DMIMDecoder(nn.Module):
+class SwinV23DReconstructionDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
 
-        self.image_size = config["image_size"]
         self.in_channels = config["in_channels"]
 
-        dim = config["stages"][-1]["_out_dim"]
-        patch_size = config["stages"][-1]["_out_patch_size"]
+        dim = config["dim"]
+        patch_size = config["patch_size"]
 
         out_dim = np.prod(patch_size) * self.in_channels
         self.final_patch_size = patch_size
@@ -644,21 +643,23 @@ class SwinV23DMIMDecoder(nn.Module):
 
 # %% ../nbs/03_swinv2_3d.ipynb 41
 class SwinV23DMIM(nn.Module):
-    def __init__(self, config):
+    def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__()
 
-        self.config = config
+        self.swin_config = swin_config
+        self.decoder_config = decoder_config
+        self.mim_config = mim_config
 
-        self.swin = SwinV23DModel(config)
-        self.decoder = SwinV23DMIMDecoder(config)
+        self.swin = SwinV23DModel(swin_config)
+        self.decoder = SwinV23DReconstructionDecoder(decoder_config)
 
-        self.mask_token = nn.Parameter(torch.randn(1, config["dim"], 1, 1, 1))
+        self.mask_token = nn.Parameter(torch.randn(1, swin_config["dim"], 1, 1, 1))
 
     def mask_image(self, pixel_values: torch.Tensor):
         b = pixel_values.shape[0]
 
-        mask_ratio = self.config["mim"]["mask_ratio"]
-        mask_grid_size = self.config["mim"]["mask_grid_size"]
+        mask_ratio = self.mim_config["mask_ratio"]
+        mask_grid_size = self.mim_config["mask_grid_size"]
         num_patches = np.prod(mask_grid_size)
         mask_patches = []
         for _ in range(b):
@@ -671,7 +672,9 @@ class SwinV23DMIM(nn.Module):
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
 
-        grid_size = tuple([size // patch for size, patch in zip(self.config["image_size"], self.config["patch_size"])])
+        grid_size = tuple(
+            [size // patch for size, patch in zip(self.swin_config["image_size"], self.swin_config["patch_size"])]
+        )
         assert all(
             [x % y == 0 for x, y in zip(grid_size, mask_grid_size)]
         ), "Mask grid size must divide image grid size"
@@ -687,8 +690,8 @@ class SwinV23DMIM(nn.Module):
 
 # %% ../nbs/03_swinv2_3d.ipynb 42
 class SwinV23DSimMIM(SwinV23DMIM):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, swin_config, decoder_config, mim_config):
+        super().__init__(swin_config, decoder_config, mim_config)
 
     @staticmethod
     def loss_fn(pred: torch.Tensor, target: torch.Tensor, reduction="mean"):
@@ -705,28 +708,34 @@ class SwinV23DSimMIM(SwinV23DMIM):
         mask = repeat(
             mask_patches,
             "b z y x -> b (z pz) (y py) (x px)",
-            pz=self.config["patch_size"][0],
-            py=self.config["patch_size"][1],
-            px=self.config["patch_size"][2],
+            pz=self.swin_config["patch_size"][0],
+            py=self.swin_config["patch_size"][1],
+            px=self.swin_config["patch_size"][2],
         )
-        loss = (loss * mask).sum() / ((mask.sum() + 1e-5) * self.config["in_channels"])
+        print(loss.shape, mask.shape)
+        loss = (loss * mask).sum() / ((mask.sum() + 1e-5) * self.swin_config["in_channels"])
 
         return decoded, loss, mask
 
 # %% ../nbs/03_swinv2_3d.ipynb 45
-class SwinV23DVAEMIM(SwinV23DMIM):  # Variational autoencoders
-    def __init__(self, config):
-        super().__init__(config)
-        
-        self.mu_layer = nn.Conv3d(config["stages"][-1]["_out_dim"], config["stages"][-1]["_out_dim"], kernel_size=1)
-        self.logvar_layer = nn.Conv3d(config["stages"][-1]["_out_dim"], config["stages"][-1]["_out_dim"], kernel_size=1)
+class SwinV23DVAEMIM(SwinV23DMIM):
+    def __init__(self, swin_config, decoder_config, mim_config):
+        super().__init__(swin_config, decoder_config, mim_config)
+
+        self.mu_layer = nn.Conv3d(swin_config["stages"][-1]["_out_dim"], decoder_config["dim"], kernel_size=1)
+        self.logvar_layer = nn.Conv3d(swin_config["stages"][-1]["_out_dim"], decoder_config["dim"], kernel_size=1)
 
     def reparameterize(self, mu, logvar):
         return mu + torch.randn_like(logvar) * torch.exp(0.5 * logvar)
 
     @staticmethod
-    def l2_loss_fn(pred: torch.Tensor, target: torch.Tensor, reduction="mean"):
-        return nn.functional.mse_loss(pred, target, reduction=reduction)
+    def reconstruction_loss_fn(pred: torch.Tensor, target: torch.Tensor, loss_type: str = "l2", reduction="mean"):
+        loss = ...
+        if loss_type == "l2":
+            loss = nn.functional.mse_loss(pred, target, reduction=reduction)
+        elif loss_type == "l1":
+            loss = nn.functional.l1_loss(pred, target, reduction=reduction)
+        return loss
 
     @staticmethod
     def kl_divergence_loss_fn(mu: torch.Tensor, logvar: torch.Tensor):
@@ -736,7 +745,8 @@ class SwinV23DVAEMIM(SwinV23DMIM):  # Variational autoencoders
         self,
         pixel_values: torch.Tensor,
         spacings: torch.Tensor,
-        lambda_l2_loss: float = 1.0,
+        reconstruction_loss_type: str = "l2",
+        lambda_reconstruction_loss: float = 1.0,
         lambda_kl_loss: float = 1.0,
     ):
         mask_patches = self.mask_image(pixel_values)
@@ -750,16 +760,16 @@ class SwinV23DVAEMIM(SwinV23DMIM):  # Variational autoencoders
         sampled = self.reparameterize(mu, logvar)
         decoded = self.decoder(sampled)
 
-        l2_loss = self.l2_loss_fn(decoded, pixel_values, reduction="none")
+        reconstruction_loss = self.reconstruction_loss_fn(decoded, pixel_values, reconstruction_loss_type)
+
         mask = repeat(
             mask_patches,
             "b z y x -> b (z pz) (y py) (x px)",
-            pz=self.config["patch_size"][0],
-            py=self.config["patch_size"][1],
-            px=self.config["patch_size"][2],
+            pz=self.swin_config["patch_size"][0],
+            py=self.swin_config["patch_size"][1],
+            px=self.swin_config["patch_size"][2],
         )
-        l2_loss = (l2_loss * mask).sum() / ((mask.sum() + 1e-5) * self.config["in_channels"])
 
-        loss = lambda_l2_loss * l2_loss + lambda_kl_loss * kl_loss
+        loss = lambda_reconstruction_loss * reconstruction_loss + lambda_kl_loss * kl_loss
 
-        return decoded, loss, mask, [l2_loss, kl_loss]
+        return decoded, loss, mask, [reconstruction_loss, kl_loss]
