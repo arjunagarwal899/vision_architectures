@@ -26,7 +26,7 @@ from vision_architectures.swinv2_3d import (
     embed_spacings_in_position_embeddings,
     SwinV23DEmbeddings,
     SwinV23DModel as SwinV23DModelWithoutSDPA,
-    SwinV23DMIMDecoder,
+    SwinV23DReconstructionDecoder,
     SwinV23DMIM as SwinV23DMIMWithoutSDPA,
     SwinV23DSimMIM as SwinV23DSimMIMWithoutSDPA,
     SwinV23DVAEMIM as SwinV23DVAEMIMWithoutSDPA,
@@ -83,7 +83,7 @@ class SwinV23DMHSA(SwinV23DMHSAWithoutSDPA):
             scale=1.0,  # Already scaled the vectors
         )
         # (windowed_b, num_heads, num_patches, per_head_dim)
-        
+
         context = rearrange(
             context,
             "b num_heads (num_patches_z num_patches_y num_patches_x) d -> "
@@ -129,7 +129,6 @@ class SwinV23DLayer(SwinV23DLayerWithoutSDPA):
         self.mhsa = SwinV23DMHSA(
             dim, num_heads, window_size, use_relative_position_bias, attn_drop_prob, proj_drop_prob
         )
-        
 
 # %% ../nbs/04_swinv2_3d_with_sdpa.ipynb 9
 class SwinV23DBlock(SwinV23DBlockWithoutSDPA):
@@ -185,17 +184,17 @@ class SwinV23DModel(SwinV23DModelWithoutSDPA):
 
 # %% ../nbs/04_swinv2_3d_with_sdpa.ipynb 13
 class SwinV23DMIM(SwinV23DMIMWithoutSDPA):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, swin_config, decoder_config, mim_config):
+        super().__init__(swin_config, decoder_config, mim_config)
 
-        self.swin = SwinV23DModel(config)
+        self.swin = SwinV23DModel(swin_config)
 
 # %% ../nbs/04_swinv2_3d_with_sdpa.ipynb 14
 class SwinV23DSimMIM(SwinV23DSimMIMWithoutSDPA, SwinV23DMIM):
-    def __init__(self, config):
-        super().__init__(config)  # This calls all inits in order written above
+    def __init__(self, swin_config, decoder_config, mim_config):
+        super().__init__(swin_config, decoder_config, mim_config)  # This calls all inits in order written above
 
 # %% ../nbs/04_swinv2_3d_with_sdpa.ipynb 15
 class SwinV23DVAEMIM(SwinV23DVAEMIMWithoutSDPA, SwinV23DMIM):
-    def __init__(self, config):
-        super().__init__(config)  # This calls all inits in order written above
+    def __init__(self, swin_config, decoder_config, mim_config):
+        super().__init__(swin_config, decoder_config, mim_config)  # This calls all inits in order written above
