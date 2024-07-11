@@ -76,7 +76,7 @@ class SwinV23DMHSA(nn.Module):
         self.per_head_dim = int(dim // num_heads)
 
         self.W_qkv = nn.Linear(dim, 3 * dim)
-        self.attn_drop = nn.Dropout(attn_drop_prob)
+        self.attn_drop_prob = attn_drop_prob
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop_prob)
 
@@ -159,24 +159,28 @@ class SwinV23DMHSA(nn.Module):
         # num_patches = window_size_z * window_size_y * window_size_x
         # Each is (windowed_b, num_heads, num_patches, per_head_dim)
 
-        query = query
-        key_transpose = rearrange(key, "b num_heads n d -> b num_heads d n")
-
-        attention_scores = F.normalize(query, dim=-1) @ F.normalize(key_transpose, dim=-2)
         logit_scale = torch.clamp(self.logit_scale, max=np.log(1.0 / 0.01)).exp()
-        attention_scores = attention_scores * logit_scale
-        # (windowed_b, num_heads, num_patches, num_patches)
 
+        query_normalized = F.normalize(query, dim=-1)
+        key_normalized = F.normalize(key, dim=-1)
+
+        query_normalized_and_scaled = query_normalized * logit_scale  # Scale the query beforehand
+
+        relative_position_bias = None
         if self.use_relative_position_bias:
             relative_position_bias = self.calculate_relative_position_bias()
-            attention_scores = attention_scores + relative_position_bias
 
-        attention_probs = nn.functional.softmax(attention_scores, dim=-1)
-        attention_probs = self.attn_drop(attention_probs)
-        # (windowed_b, num_heads, num_patches, num_patches)
-
-        context = attention_probs @ value
+        context = F.scaled_dot_product_attention(
+            query_normalized_and_scaled,
+            key_normalized,
+            value,
+            attn_mask=relative_position_bias,  # Use this as a way to introduce relative position bias
+            dropout_p=self.attn_drop_prob,
+            is_causal=False,
+            scale=1.0,  # Already scaled the vectors
+        )
         # (windowed_b, num_heads, num_patches, per_head_dim)
+
         context = rearrange(
             context,
             "b num_heads (num_patches_z num_patches_y num_patches_x) d -> "
