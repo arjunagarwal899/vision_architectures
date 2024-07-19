@@ -23,7 +23,7 @@ class FPN3DBlock(nn.Module):
 
         if not is_deepest:
             self.out_conv = nn.Sequential(
-                nn.Conv3d(fpn_dim, fpn_dim, kernel_size=1, bias=False),
+                nn.Conv3d(fpn_dim, fpn_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.BatchNorm3d(fpn_dim),
                 nn.ReLU(inplace=True),
             )
@@ -76,7 +76,7 @@ class FPN3D(nn.Module):
 
         features_None = features + [None]
         for i in range(len(features), 0, -1):
-            features_None[i-1] = (self.blocks[i - 1](features_None[i - 1], features_None[i]))
+            features_None[i - 1] = self.blocks[i - 1](features_None[i - 1], features_None[i])
         features = features_None[:-1]
 
         return features
