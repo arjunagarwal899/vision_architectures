@@ -48,19 +48,41 @@ class UPerNet3D(nn.Module):
 
         dim = config["fpn_dim"]
         num_layers = len(config["in_dims"])
-        num_classes = config["num_classes"]
+        num_objects = config["num_objects"]
+        enabled_outputs = config["enabled_outputs"]
         output_shape = config["output_shape"]
         # (d, h, w)
 
-        self.fusion = UPerNet3DFusion(dim, num_layers, output_shape)
-        self.object_head = nn.Sequential(
-            nn.Conv3d(dim, dim, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm3d(dim),
-            nn.ReLU(inplace=True),
-            nn.Conv3d(dim, num_classes, kernel_size=1, stride=1),
-        )
+        self.fusion = None
+        self.object_head = None
+        self.scene_head = None
+        self.part_head = None
+        self.material_head = None
+        self.texture_head = None
 
         # TODO: Implement scene, part, material, texture
+        if {"object", "part"} & set(enabled_outputs):
+            self.fusion = UPerNet3DFusion(dim, num_layers, output_shape)
+
+            if "object" in enabled_outputs:
+                self.object_head = nn.Sequential(
+                    nn.Conv3d(dim, dim, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.BatchNorm3d(dim),
+                    nn.ReLU(inplace=True),
+                    nn.Conv3d(dim, num_objects, kernel_size=1, stride=1),
+                )
+
+            if "part" in enabled_outputs:
+                raise NotImplementedError("Part output not implemented yet")
+
+        if "scene" in enabled_outputs:
+            raise NotImplementedError("Scene output not implemented yet")
+
+        if "material" in enabled_outputs:
+            raise NotImplementedError("Material output not implemented yet")
+
+        if "texture" in enabled_outputs:
+            raise NotImplementedError("Texture output not implemented yet")
 
     def forward(self, features: list[torch.Tensor]):
         # features: [
@@ -76,14 +98,15 @@ class UPerNet3D(nn.Module):
         #   ...
         # ]
 
-        fused_features = self.fusion(features)
-        # (b, fpn_dim, d, h, w)
+        output = {}
 
-        object_logits = self.object_head(fused_features)
-        # (b, num_classes, d, h, w)
+        if self.fusion is not None:
+            fused_features = self.fusion(features)
+            # (b, fpn_dim, d, h, w)
 
-        output = {
-            "object": object_logits,
-        }
+            object_logits = self.object_head(fused_features)
+            # (b, num_objects, d, h, w)
+
+            output["object"] = object_logits
 
         return output
