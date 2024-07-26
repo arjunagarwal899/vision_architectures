@@ -13,11 +13,11 @@ from .activation_checkpointing import ActivationCheckpointing
 
 # %% ../nbs/09_upernet_3d.ipynb 5
 class UPerNet3DFusion(nn.Module):
-    def __init__(self, dim, num_layers, output_shape, checkpointing_level=0):
+    def __init__(self, dim, num_layers, fusion_shape=None, checkpointing_level=0):
         super().__init__()
 
-        self.output_shape = output_shape
-        # (d, h, w)
+        self.fusion_shape = fusion_shape
+        # (d, h, w) | None
 
         self.conv = nn.Sequential(
             nn.Conv3d(dim * num_layers, dim, kernel_size=3, stride=1, padding=1, bias=False),
@@ -26,25 +26,36 @@ class UPerNet3DFusion(nn.Module):
         )
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+        self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def fuse_features(self, features: list[torch.Tensor]):
+    def concat_features(self, features: list[torch.Tensor]):
         # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, ...]
 
+        if self.fusion_shape is None:
+            self.fusion_shape = features[0].shape[-3:]
+            # (d, h, w)
+
         for i in range(len(features)):
-            features[i] = F.interpolate(features[i], size=self.output_shape, mode="trilinear", align_corners=False)
+            features[i] = F.interpolate(features[i], size=self.fusion_shape, mode="trilinear", align_corners=False)
             # Each is (b, dim, d, h, w)
 
-        fused_features = torch.cat(features, dim=1)
+        concatenated_features = torch.cat(features, dim=1)
         # (b, dim * num_layers, d, h, w)
 
-        fused_features = self.conv(fused_features)
+        return concatenated_features
+    
+    def fuse_features(self, concatenated_features: torch.Tensor):
+        # (b, dim * num_layers, d, h, w)
+        fused_features = self.conv(concatenated_features)
         # (b, dim, d, h, w)
 
         return fused_features
 
     def forward(self, features: list[torch.Tensor]):
         # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...]
-        fused_features = self.checkpointing_level1(self.fuse_features, features)
+        concatenated_features = self.checkpointing_level1(self.concat_features, features)
+        # (b, dim * num_layers, d, h, w)
+        fused_features = self.checkpointing_level2(self.fuse_features, concatenated_features)
         # (b, dim, d, h, w)
 
         return fused_features
@@ -61,7 +72,9 @@ class UPerNet3D(nn.Module):
         num_objects = config["num_objects"]
         checkpointing_level = config["checkpointing_level"]
         enabled_outputs = config["enabled_outputs"]
-        output_shape = config["output_shape"]
+        fusion_shape = config.get("fusion_shape", None)
+
+        self.output_shape = config["output_shape"]
         # (d, h, w)
 
         self.fusion = None
@@ -73,7 +86,7 @@ class UPerNet3D(nn.Module):
 
         # TODO: Implement scene, part, material, texture
         if {"object", "part"} & set(enabled_outputs):
-            self.fusion = UPerNet3DFusion(dim, num_layers, output_shape, checkpointing_level)
+            self.fusion = UPerNet3DFusion(dim, num_layers, fusion_shape, checkpointing_level=checkpointing_level)
 
             if "object" in enabled_outputs:
                 self.object_head = nn.Sequential(
@@ -113,9 +126,12 @@ class UPerNet3D(nn.Module):
 
         if self.fusion is not None:
             fused_features = self.fusion(features)
-            # (b, fpn_dim, d, h, w)
+            # (b, fpn_dim, d1, h1, w1)
 
             object_logits = self.object_head(fused_features)
+            # (b, num_objects, d1, h1, w1)
+
+            object_logits = F.interpolate(object_logits, size=self.output_shape, mode="trilinear", align_corners=False)
             # (b, num_objects, d, h, w)
 
             output["object"] = object_logits

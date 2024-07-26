@@ -33,7 +33,7 @@ class FPN3DBlock(nn.Module):
                 nn.ReLU(inplace=True),
             )
 
-    def _merge_features(self, shallow_features, deep_features):
+    def merge_features(self, shallow_features, deep_features):
         deep_features = F.interpolate(
             deep_features, size=shallow_features.shape[2:], mode="trilinear", align_corners=False
         )
@@ -57,7 +57,7 @@ class FPN3DBlock(nn.Module):
         if self.is_deepest:
             merged_features = shallow_features
         else:
-            merged_features = self.checkpointing_level1(self._merge_features, shallow_features, deep_features)
+            merged_features = self.checkpointing_level1(self.merge_features, shallow_features, deep_features)
             # (b, fpn_dim, d1, h1, w1)
 
         return merged_features

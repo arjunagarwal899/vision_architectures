@@ -17,5 +17,5 @@ class ActivationCheckpointing(nn.Module):
 
     def forward(self, fn: Callable, *args):
         if self.perform_checkpointing:
-            return checkpoint(lambda: fn(*args))
+            return checkpoint(lambda: fn(*args), use_reentrant=False)
         return fn(*args)
