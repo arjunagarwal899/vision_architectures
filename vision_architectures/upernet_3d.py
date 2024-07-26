@@ -9,10 +9,11 @@ from torch import nn
 from torch.nn import functional as F
 
 from .fpn_3d import FPN3D
+from .activation_checkpointing import ActivationCheckpointing
 
 # %% ../nbs/09_upernet_3d.ipynb 5
 class UPerNet3DFusion(nn.Module):
-    def __init__(self, dim, num_layers, output_shape):
+    def __init__(self, dim, num_layers, output_shape, checkpointing_level=0):
         super().__init__()
 
         self.output_shape = output_shape
@@ -24,8 +25,10 @@ class UPerNet3DFusion(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, features: list[torch.Tensor]):
-        # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...]
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+
+    def fuse_features(self, features: list[torch.Tensor]):
+        # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, ...]
 
         for i in range(len(features)):
             features[i] = F.interpolate(features[i], size=self.output_shape, mode="trilinear", align_corners=False)
@@ -35,6 +38,13 @@ class UPerNet3DFusion(nn.Module):
         # (b, dim * num_layers, d, h, w)
 
         fused_features = self.conv(fused_features)
+        # (b, dim, d, h, w)
+
+        return fused_features
+
+    def forward(self, features: list[torch.Tensor]):
+        # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...]
+        fused_features = self.checkpointing_level1(self.fuse_features, features)
         # (b, dim, d, h, w)
 
         return fused_features
@@ -49,6 +59,7 @@ class UPerNet3D(nn.Module):
         dim = config["fpn_dim"]
         num_layers = len(config["in_dims"])
         num_objects = config["num_objects"]
+        checkpointing_level = config["checkpointing_level"]
         enabled_outputs = config["enabled_outputs"]
         output_shape = config["output_shape"]
         # (d, h, w)
@@ -62,7 +73,7 @@ class UPerNet3D(nn.Module):
 
         # TODO: Implement scene, part, material, texture
         if {"object", "part"} & set(enabled_outputs):
-            self.fusion = UPerNet3DFusion(dim, num_layers, output_shape)
+            self.fusion = UPerNet3DFusion(dim, num_layers, output_shape, checkpointing_level)
 
             if "object" in enabled_outputs:
                 self.object_head = nn.Sequential(

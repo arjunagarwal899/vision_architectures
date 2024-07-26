@@ -8,12 +8,17 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from .activation_checkpointing import ActivationCheckpointing
+
 # %% ../nbs/08_fpn_3d.ipynb 5
 class FPN3DBlock(nn.Module):
-    def __init__(self, shallow_dim, fpn_dim, is_deepest=False):
+    def __init__(self, shallow_dim, fpn_dim, is_deepest=False, checkpointing_level=0):
         super().__init__()
 
         self.is_deepest = is_deepest
+        self.checkpointing_level = checkpointing_level
+
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
         self.in_conv = nn.Sequential(
             nn.Conv3d(shallow_dim, fpn_dim, kernel_size=1, bias=False),
@@ -28,6 +33,20 @@ class FPN3DBlock(nn.Module):
                 nn.ReLU(inplace=True),
             )
 
+    def _merge_features(self, shallow_features, deep_features):
+        deep_features = F.interpolate(
+            deep_features, size=shallow_features.shape[2:], mode="trilinear", align_corners=False
+        )
+        # (b, fpn_dim, d1, h1, w1)
+
+        merged_features = shallow_features + deep_features
+        # (b, fpn_dim, d1, h1, w1)
+
+        merged_features = self.out_conv(merged_features)
+        # (b, fpn_dim, d1, h1, w1)
+
+        return merged_features
+
     def forward(self, shallow_features: torch.Tensor, deep_features: torch.Tensor):
         # shallow_features: (b, in_dim, d1, h1, w1)
         # deep_features: (b, fpn_dim, d2, h2, w2)
@@ -38,15 +57,7 @@ class FPN3DBlock(nn.Module):
         if self.is_deepest:
             merged_features = shallow_features
         else:
-            deep_features = F.interpolate(
-                deep_features, size=shallow_features.shape[2:], mode="trilinear", align_corners=False
-            )
-            # (b, fpn_dim, d1, h1, w1)
-
-            merged_features = shallow_features + deep_features
-            # (b, fpn_dim, d1, h1, w1)
-
-            merged_features = self.out_conv(merged_features)
+            merged_features = self.checkpointing_level1(self._merge_features, shallow_features, deep_features)
             # (b, fpn_dim, d1, h1, w1)
 
         return merged_features
@@ -65,7 +76,14 @@ class FPN3D(nn.Module):
             if i == len(in_dims) - 1:
                 is_deepest = True
 
-            self.blocks.append(FPN3DBlock(in_dims[i], fpn_dim, is_deepest=is_deepest))
+            self.blocks.append(
+                FPN3DBlock(
+                    in_dims[i],
+                    fpn_dim,
+                    is_deepest=is_deepest,
+                    checkpointing_level=config["checkpointing_level"],
+                )
+            )
 
     def forward(self, features: list[torch.Tensor]):
         # features: [
