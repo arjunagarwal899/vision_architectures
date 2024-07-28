@@ -9,6 +9,8 @@ import torch
 
 from einops import repeat
 from torch import nn
+from huggingface_hub import PyTorchModelHubMixin
+
 from .vit_3d import ViT3DMHSA, ViT3DMHCA, ViT3DLayerMLP
 
 # %% ../nbs/05_cait_3d.ipynb 5
@@ -122,7 +124,7 @@ class CaiT3DStage2Layer(nn.Module):  # Attention with class tokens
         return hidden_states
 
 # %% ../nbs/05_cait_3d.ipynb 15
-class CaiT3DStage1(nn.Module):
+class CaiT3DStage1(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -154,7 +156,7 @@ class CaiT3DStage1(nn.Module):
         return embeddings, layer_outputs
 
 # %% ../nbs/05_cait_3d.ipynb 17
-class CaiT3DStage2(nn.Module):
+class CaiT3DStage2(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -189,7 +191,7 @@ class CaiT3DStage2(nn.Module):
         return class_embeddings, layer_outputs
 
 # %% ../nbs/05_cait_3d.ipynb 20
-class CaiT3DStage2OnlyModel(nn.Module):
+class CaiT3DStage2OnlyModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -217,7 +219,7 @@ class CaiT3DStage2OnlyModel(nn.Module):
         return class_logits, class_embeddings, layer_outputs
 
 # %% ../nbs/05_cait_3d.ipynb 22
-class CaiT3DModel(nn.Module):
+class CaiT3DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 

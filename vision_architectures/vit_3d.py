@@ -11,6 +11,7 @@ import torch
 import numpy as np
 from einops import rearrange, repeat
 from torch import nn
+from huggingface_hub import PyTorchModelHubMixin
 
 # %% ../nbs/04_vit_3d.ipynb 5
 def get_coords_grid(grid_size):
@@ -233,7 +234,7 @@ class ViT3DDecoderLayer(nn.Module):
         return hidden_states
 
 # %% ../nbs/04_vit_3d.ipynb 20
-class ViT3DEncoder(nn.Module):
+class ViT3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -399,7 +400,7 @@ class ViT3DEmbeddings(nn.Module):
         return embeddings
 
 # %% ../nbs/04_vit_3d.ipynb 33
-class ViT3DModel(nn.Module):
+class ViT3DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -511,7 +512,7 @@ class ViT3DMIM(nn.Module):
         return mask_patches
 
 # %% ../nbs/04_vit_3d.ipynb 39
-class ViT3DSimMIM(ViT3DMIM):
+class ViT3DSimMIM(ViT3DMIM, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__(config)
 

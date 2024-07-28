@@ -8,6 +8,7 @@ import torch
 
 from torch import nn
 from einops import rearrange
+from huggingface_hub import PyTorchModelHubMixin
 
 # %% ../nbs/02_unetr_3d_decoder.ipynb 5
 class UNetR3DConvBlock(nn.Module):
@@ -70,7 +71,7 @@ class UNetR3DBlock(nn.Module):
         return x
 
 # %% ../nbs/02_unetr_3d_decoder.ipynb 12
-class UNetR3DDecoder(nn.Module):
+class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 

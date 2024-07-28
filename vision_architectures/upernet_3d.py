@@ -7,6 +7,7 @@ __all__ = ['UPerNet3DFusion', 'UPerNet3D']
 import torch
 from torch import nn
 from torch.nn import functional as F
+from huggingface_hub import PyTorchModelHubMixin
 
 from .fpn_3d import FPN3D
 from .activation_checkpointing import ActivationCheckpointing
@@ -43,7 +44,7 @@ class UPerNet3DFusion(nn.Module):
         # (b, dim * num_layers, d, h, w)
 
         return concatenated_features
-    
+
     def fuse_features(self, concatenated_features: torch.Tensor):
         # (b, dim * num_layers, d, h, w)
         fused_features = self.conv(concatenated_features)
@@ -61,7 +62,7 @@ class UPerNet3DFusion(nn.Module):
         return fused_features
 
 # %% ../nbs/09_upernet_3d.ipynb 8
-class UPerNet3D(nn.Module):
+class UPerNet3D(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 

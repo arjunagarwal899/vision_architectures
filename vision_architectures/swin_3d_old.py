@@ -11,6 +11,7 @@ import torch
 import numpy as np
 from torch import nn
 from einops import rearrange, repeat
+from huggingface_hub import PyTorchModelHubMixin
 
 from .swin_3d import Swin3DMIM as Swin3DNewMIM
 from .swin_3d import populate_and_validate_config
@@ -326,7 +327,7 @@ class Swin3DStage(nn.Module):
         return hidden_states, layer_outputs
 
 # %% ../nbs/01_swin_3d_old.ipynb 20
-class Swin3DEncoder(nn.Module):
+class Swin3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -478,7 +479,7 @@ class Swin3DEmbeddings(nn.Module):
         return embeddings
 
 # %% ../nbs/01_swin_3d_old.ipynb 33
-class Swin3DModel(nn.Module):
+class Swin3DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -563,7 +564,7 @@ class Swin3DMIMDecoder(nn.Module):
         return decoded
 
 # %% ../nbs/01_swin_3d_old.ipynb 38
-class Swin3DMIM(nn.Module):
+class Swin3DMIM(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 

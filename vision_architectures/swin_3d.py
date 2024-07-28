@@ -10,6 +10,7 @@ import torch
 import numpy as np
 from torch import nn
 from einops import rearrange, repeat
+from huggingface_hub import PyTorchModelHubMixin
 
 # %% ../nbs/01_swin_3d.ipynb 4
 def populate_and_validate_config(config: dict) -> dict:
@@ -336,7 +337,7 @@ class Swin3DStage(nn.Module):
         return hidden_states, layer_outputs
 
 # %% ../nbs/01_swin_3d.ipynb 23
-class Swin3DEncoder(nn.Module):
+class Swin3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config, default_layer_norm_eps=1e-6):
         super().__init__()
 
@@ -488,7 +489,7 @@ class Swin3DEmbeddings(nn.Module):
         return embeddings
 
 # %% ../nbs/01_swin_3d.ipynb 36
-class Swin3DModel(nn.Module):
+class Swin3DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -564,7 +565,7 @@ class Swin3DMIMDecoder(nn.Module):
         return decoded
 
 # %% ../nbs/01_swin_3d.ipynb 41
-class Swin3DMIM(nn.Module):
+class Swin3DMIM(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 

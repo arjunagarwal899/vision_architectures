@@ -7,6 +7,7 @@ __all__ = ['FPN3DBlock', 'FPN3D']
 import torch
 from torch import nn
 from torch.nn import functional as F
+from huggingface_hub import PyTorchModelHubMixin
 
 from .activation_checkpointing import ActivationCheckpointing
 
@@ -63,7 +64,7 @@ class FPN3DBlock(nn.Module):
         return merged_features
 
 # %% ../nbs/08_fpn_3d.ipynb 9
-class FPN3D(nn.Module):
+class FPN3D(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 

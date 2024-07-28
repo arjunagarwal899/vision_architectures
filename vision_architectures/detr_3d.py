@@ -10,6 +10,7 @@ import torch
 import numpy as np
 from einops import rearrange, repeat
 from torch import nn
+from huggingface_hub import PyTorchModelHubMixin
 
 from .vit_3d import ViT3DMHSA, ViT3DMHCA, ViT3DLayerMLP
 
@@ -107,7 +108,7 @@ class DETR3DDecoderLayer(nn.Module):
         return hidden_states
 
 # %% ../nbs/06_detr_3d.ipynb 14
-class DETR3DDecoder(nn.Module):
+class DETR3DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -262,7 +263,7 @@ class DETR3DPositionEmbeddings(nn.Module):
         return embeddings
 
 # %% ../nbs/06_detr_3d.ipynb 26
-class DETR3DModel(nn.Module):
+class DETR3DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 

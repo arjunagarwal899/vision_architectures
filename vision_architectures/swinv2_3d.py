@@ -12,6 +12,7 @@ import numpy as np
 from einops import rearrange, repeat
 from torch import nn
 import torch.nn.functional as F
+from huggingface_hub import PyTorchModelHubMixin
 
 # %% ../nbs/03_swinv2_3d.ipynb 4
 def populate_and_validate_config(config: dict) -> dict:
@@ -417,7 +418,7 @@ class SwinV23DStage(nn.Module):
         return hidden_states, layer_outputs
 
 # %% ../nbs/03_swinv2_3d.ipynb 23
-class SwinV23DEncoder(nn.Module):
+class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -569,7 +570,7 @@ class SwinV23DEmbeddings(nn.Module):
         return embeddings
 
 # %% ../nbs/03_swinv2_3d.ipynb 36
-class SwinV23DModel(nn.Module):
+class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -693,7 +694,7 @@ class SwinV23DMIM(nn.Module):
         return mask_patches
 
 # %% ../nbs/03_swinv2_3d.ipynb 42
-class SwinV23DSimMIM(SwinV23DMIM):
+class SwinV23DSimMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__(swin_config, decoder_config, mim_config)
 
@@ -721,7 +722,7 @@ class SwinV23DSimMIM(SwinV23DMIM):
         return decoded, loss, mask
 
 # %% ../nbs/03_swinv2_3d.ipynb 45
-class SwinV23DVAEMIM(SwinV23DMIM):
+class SwinV23DVAEMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__(swin_config, decoder_config, mim_config)
 
