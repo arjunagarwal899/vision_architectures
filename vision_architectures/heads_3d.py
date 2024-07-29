@@ -8,7 +8,7 @@ from torch import nn
 from segmentation_models_pytorch.base.modules import Activation
 
 # %% ../nbs/11_heads_3d.ipynb 5
-# Inspiration: https://github.com/qureai/qureai/blob/main/packages/python/segmentation_models_pytorch/segmentation_models_pytorch/base/heads.py
+# Inspiration: https://github.com/qubvel-org/segmentation_models.pytorch/blob/main/segmentation_models_pytorch/base/heads.py
 class ClassificationHead3D(nn.Sequential):
     def __init__(self, in_channels, classes, pooling="avg", dropout=0.2, activation=None):
         if pooling not in ("max", "avg"):
