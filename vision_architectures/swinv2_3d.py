@@ -500,6 +500,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
 
 # %% ../nbs/03_swinv2_3d.ipynb 31
 def embed_spacings_in_position_embeddings(embeddings: torch.Tensor, spacings: torch.Tensor):
+    assert spacings is not None, "spacing information cannot be None"
     assert spacings.ndim == 2, "Please provide spacing information for each batch element"
     _, embedding_size, _, _, _ = embeddings.shape
     assert embedding_size % 3 == 0, "To embed spacing info, the embedding size must be divisible by 3"
@@ -536,7 +537,7 @@ class SwinV23DEmbeddings(nn.Module):
     def forward(
         self,
         pixel_values: torch.Tensor,
-        spacings: torch.Tensor,
+        spacings: torch.Tensor = None,
         mask_patches: torch.Tensor = None,
         mask_token: torch.Tensor = None,
     ):
@@ -581,7 +582,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
     def forward(
         self,
         pixel_values: torch.Tensor,
-        spacings: torch.Tensor,
+        spacings: torch.Tensor = None,
         mask_patches: torch.Tensor = None,
         mask_token: torch.Tensor = None,
     ):
@@ -702,7 +703,7 @@ class SwinV23DSimMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def loss_fn(pred: torch.Tensor, target: torch.Tensor, reduction="mean"):
         return nn.functional.l1_loss(pred, target, reduction=reduction)
 
-    def forward(self, pixel_values: torch.Tensor, spacings: torch.Tensor):
+    def forward(self, pixel_values: torch.Tensor, spacings: torch.Tensor = None):
         mask_patches = self.mask_image(pixel_values)
 
         encodings, _, _ = self.swin(pixel_values, spacings, mask_patches, self.mask_token)
@@ -777,7 +778,7 @@ class SwinV23DVAEMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def forward(
         self,
         pixel_values: torch.Tensor,
-        spacings: torch.Tensor,
+        spacings: torch.Tensor = None,
         reconstruction_loss_type: str = "l2",
     ):
         mask_patches = self.mask_image(pixel_values)
