@@ -297,7 +297,7 @@ class SymSwin3DLayer(nn.Module):
 
         return output
 
-# %% ../nbs/12_symswin3d.ipynb 16
+# %% ../nbs/12_symswin3d.ipynb 18
 def symmetry_attention_rearrange_forward(hidden_states: torch.Tensor):
     # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
@@ -349,7 +349,7 @@ def symmetry_attention_rearrange_backward(hidden_states: torch.Tensor):
 
     return hidden_states
 
-# %% ../nbs/12_symswin3d.ipynb 18
+# %% ../nbs/12_symswin3d.ipynb 20
 class SymSwin3DBlock(nn.Module):
     def __init__(self, stage_config):
         super().__init__()
@@ -427,7 +427,7 @@ class SymSwin3DBlock(nn.Module):
 
         return hidden_states, layer_outputs
 
-# %% ../nbs/12_symswin3d.ipynb 20
+# %% ../nbs/12_symswin3d.ipynb 22
 class SymSwin3DPatchMerging(nn.Module):
     def __init__(self, merge_window_size, in_dim, out_dim):
         super().__init__()
@@ -456,7 +456,7 @@ class SymSwin3DPatchMerging(nn.Module):
         hidden_states = self.proj(hidden_states)
         return hidden_states
 
-# %% ../nbs/12_symswin3d.ipynb 22
+# %% ../nbs/12_symswin3d.ipynb 24
 class SymSwin3DStage(nn.Module):
     def __init__(self, stage_config):
         super().__init__()
@@ -490,7 +490,7 @@ class SymSwin3DStage(nn.Module):
 
         return hidden_states, layer_outputs
 
-# %% ../nbs/12_symswin3d.ipynb 25
+# %% ../nbs/12_symswin3d.ipynb 27
 class SymSwin3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
@@ -510,7 +510,7 @@ class SymSwin3DEncoder(nn.Module, PyTorchModelHubMixin):
 
         return hidden_states, stage_outputs, layer_outputs
 
-# %% ../nbs/12_symswin3d.ipynb 29
+# %% ../nbs/12_symswin3d.ipynb 31
 class SymSwin3DPatchEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -534,7 +534,7 @@ class SymSwin3DPatchEmbeddings(nn.Module):
 
         return embeddings
 
-# %% ../nbs/12_symswin3d.ipynb 32
+# %% ../nbs/12_symswin3d.ipynb 34
 def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
     if embedding_size % 6 != 0:
         raise ValueError("embed_dim must be divisible by 6")
@@ -571,7 +571,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
 
     return position_embeddings
 
-# %% ../nbs/12_symswin3d.ipynb 33
+# %% ../nbs/12_symswin3d.ipynb 35
 def embed_spacings_in_position_embeddings(embeddings: torch.Tensor, spacings: torch.Tensor):
     assert spacings is not None, "spacing information cannot be None"
     assert spacings.ndim == 2, "Please provide spacing information for each batch element"
@@ -581,7 +581,7 @@ def embed_spacings_in_position_embeddings(embeddings: torch.Tensor, spacings: to
 
     return embeddings
 
-# %% ../nbs/12_symswin3d.ipynb 34
+# %% ../nbs/12_symswin3d.ipynb 36
 class SymSwin3DEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -643,7 +643,7 @@ class SymSwin3DEmbeddings(nn.Module):
 
         return embeddings
 
-# %% ../nbs/12_symswin3d.ipynb 38
+# %% ../nbs/12_symswin3d.ipynb 40
 class SymSwin3DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
@@ -687,7 +687,7 @@ class SymSwin3DModel(nn.Module, PyTorchModelHubMixin):
 
         return encoded, stage_outputs, layer_outputs
 
-# %% ../nbs/12_symswin3d.ipynb 41
+# %% ../nbs/12_symswin3d.ipynb 43
 class SymSwin3DReconstructionDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -720,7 +720,7 @@ class SymSwin3DReconstructionDecoder(nn.Module):
 
         return decoded
 
-# %% ../nbs/12_symswin3d.ipynb 43
+# %% ../nbs/12_symswin3d.ipynb 45
 class SymSwin3DMIM(nn.Module):
     def __init__(self, symswin_config, decoder_config, mim_config):
         super().__init__()
@@ -767,7 +767,7 @@ class SymSwin3DMIM(nn.Module):
 
         return mask_patches
 
-# %% ../nbs/12_symswin3d.ipynb 44
+# %% ../nbs/12_symswin3d.ipynb 46
 class SymSwin3DSimMIM(SymSwin3DMIM, PyTorchModelHubMixin):
     def __init__(self, symswin_config, decoder_config, mim_config):
         super().__init__(symswin_config, decoder_config, mim_config)
@@ -795,7 +795,7 @@ class SymSwin3DSimMIM(SymSwin3DMIM, PyTorchModelHubMixin):
 
         return decoded, loss, mask
 
-# %% ../nbs/12_symswin3d.ipynb 47
+# %% ../nbs/12_symswin3d.ipynb 49
 class SymSwin3DVAEMIM(SymSwin3DMIM, PyTorchModelHubMixin):
     def __init__(self, symswin_config, decoder_config, mim_config):
         super().__init__(symswin_config, decoder_config, mim_config)
