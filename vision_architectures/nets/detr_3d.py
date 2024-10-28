@@ -12,7 +12,7 @@ from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from ..vit_3d import ViT3DLayerMLP, ViT3DMHCA, ViT3DMHSA
+from .vit_3d import ViT3DLayerMLP, ViT3DMHCA, ViT3DMHSA
 
 # %% ../../nbs/nets/06_detr_3d.ipynb 5
 class DETR3DMHSA(ViT3DMHSA):  # Multi head self attention

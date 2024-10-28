@@ -9,7 +9,7 @@ from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 from torch.nn import functional as F
 
-from ..activation_checkpointing import ActivationCheckpointing
+from ..utils.activation_checkpointing import ActivationCheckpointing
 
 # %% ../../nbs/nets/11_fpn_2d.ipynb 5
 class FPN2DBlock(nn.Module):

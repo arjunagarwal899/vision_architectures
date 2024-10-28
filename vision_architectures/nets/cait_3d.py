@@ -10,7 +10,7 @@ from einops import repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from ..vit_3d import ViT3DLayerMLP, ViT3DMHCA, ViT3DMHSA
+from .vit_3d import ViT3DLayerMLP, ViT3DMHCA, ViT3DMHSA
 
 # %% ../../nbs/nets/05_cait_3d.ipynb 5
 class CaiT3DMHSA(ViT3DMHSA):  # Multi-head self attention

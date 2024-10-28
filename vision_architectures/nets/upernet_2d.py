@@ -9,8 +9,8 @@ from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 from torch.nn import functional as F
 
-from ..activation_checkpointing import ActivationCheckpointing
-from ..fpn_2d import FPN2D
+from .fpn_2d import FPN2D
+from ..utils.activation_checkpointing import ActivationCheckpointing
 
 # %% ../../nbs/nets/12_upernet_2d.ipynb 5
 class UPerNet2DFusion(nn.Module):
