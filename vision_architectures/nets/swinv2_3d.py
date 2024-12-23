@@ -2,8 +2,9 @@
 
 # %% auto 0
 __all__ = ['populate_and_validate_config', 'get_coords_grid', 'SwinV23DMHSA', 'SwinV23DLayerMLP', 'SwinV23DLayer',
-           'SwinV23DBlock', 'SwinV23DPatchMerging', 'SwinV23DStage', 'SwinV23DEncoder', 'SwinV23DPatchEmbeddings',
-           'get_3d_position_embeddings', 'embed_spacings_in_position_embeddings', 'SwinV23DEmbeddings', 'SwinV23DModel',
+           'SwinV23DBlock', 'SwinV23DPatchMerging', 'SwinV23DPatchSplitting', 'SwinV23DStage', 'SwinV23DEncoder',
+           'SwinV23DDecoder', 'SwinV23DPatchEmbeddings', 'get_3d_position_embeddings',
+           'embed_spacings_in_position_embeddings', 'SwinV23DEmbeddings', 'SwinV23DModel',
            'SwinV23DReconstructionDecoder', 'SwinV23DMIM', 'SwinV23DSimMIM', 'SwinV23DVAEMIM']
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 2
@@ -16,8 +17,6 @@ from torch import nn
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 4
 def populate_and_validate_config(config: dict) -> dict:
-    assert config["stages"][0]["patch_merging"] is None
-
     # Prepare config based on provided values
     dim = config["dim"]
     patch_size = config["patch_size"]
@@ -27,11 +26,19 @@ def populate_and_validate_config(config: dict) -> dict:
         stage["_in_dim"] = dim
         stage["_in_patch_size"] = patch_size
         # stage['_in"grid_size'] = tuple([image // patch for image, patch in zip(image_size, patch_size)])
-        if stage["patch_merging"] is not None:
+        if stage.setdefault("patch_merging", None) is not None:
             dim *= stage["patch_merging"]["out_dim_ratio"]
+            stage["_attention_dim"] = dim  ## attention will happen after merging
             patch_size = tuple(
                 [patch * window for patch, window in zip(patch_size, stage["patch_merging"]["merge_window_size"])]
             )
+        if stage.setdefault("patch_splitting", None) is not None:
+            stage["_attention_dim"] = dim  # attention will happen before splitting
+            dim //= stage["patch_splitting"]["out_dim_ratio"]
+            patch_size = tuple(
+                [patch * window for patch, window in zip(patch_size, stage["patch_splitting"]["final_window_size"])]
+            )
+        stage.setdefault("_attention_dim", dim)  # In case it is not yet set
         stage["_out_dim"] = dim
         stage["_out_patch_size"] = patch_size
         # stage["_out_grid_size"] = tuple([image // patch for image, patch in zip(image_size, patch_size)])
@@ -302,7 +309,7 @@ class SwinV23DBlock(nn.Module):
 
         self.stage_config = stage_config
         self.w_layer = SwinV23DLayer(
-            stage_config["_out_dim"],
+            stage_config["_attention_dim"],
             stage_config["num_heads"],
             stage_config["intermediate_ratio"],
             stage_config["layer_norm_eps"],
@@ -313,7 +320,7 @@ class SwinV23DBlock(nn.Module):
             stage_config.get("mlp_drop_prob", 0.0),
         )
         self.sw_layer = SwinV23DLayer(
-            stage_config["_out_dim"],
+            stage_config["_attention_dim"],
             stage_config["num_heads"],
             stage_config["intermediate_ratio"],
             stage_config["layer_norm_eps"],
@@ -384,6 +391,36 @@ class SwinV23DPatchMerging(nn.Module):
         return hidden_states
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 20
+class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and is not part of the paper.
+    def __init__(self, final_window_size, in_dim, out_dim):
+        super().__init__()
+
+        self.final_window_size = final_window_size
+
+        out_dim = out_dim * np.prod(final_window_size)
+        self.layer_norm = nn.LayerNorm(in_dim)
+        self.proj = nn.Linear(in_dim, out_dim)
+
+    def forward(self, hidden_states: torch.Tensor):
+        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+
+        hidden_states = self.layer_norm(hidden_states)
+        hidden_states = self.proj(hidden_states)
+        
+        window_size_z, window_size_y, window_size_x = self.final_window_size
+
+        hidden_states = rearrange(
+            hidden_states,
+            "b num_patches_z num_patches_y num_patches_x (window_size_z window_size_y window_size_x dim) -> "
+            "b (num_patches_z window_size_z) (num_patches_y window_size_y) (num_patches_x window_size_x) dim",
+            window_size_z=window_size_z,
+            window_size_y=window_size_y,
+            window_size_x=window_size_x,
+        )
+
+        return hidden_states
+
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 22
 class SwinV23DStage(nn.Module):
     def __init__(self, stage_config):
         super().__init__()
@@ -395,12 +432,20 @@ class SwinV23DStage(nn.Module):
             self.patch_merging = SwinV23DPatchMerging(
                 stage_config["patch_merging"]["merge_window_size"],
                 stage_config["_in_dim"],
-                stage_config["_out_dim"],
+                stage_config["_attention_dim"],
             )
-
+        
         self.blocks = nn.ModuleList(
             [SwinV23DBlock(stage_config) for _ in range(stage_config["depth"])],
         )
+
+        self.patch_splitting = None
+        if stage_config["patch_splitting"] is not None:  # This has been implemented to create a Swin-based decoder
+            self.patch_splitting = SwinV23DPatchSplitting(
+                stage_config["patch_splitting"]["final_window_size"],
+                stage_config["_attention_dim"],
+                stage_config["_out_dim"],
+            )
 
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
@@ -415,12 +460,20 @@ class SwinV23DStage(nn.Module):
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, new_dim)
             layer_outputs.extend(_layer_outputs)
 
+        if self.patch_splitting:
+            hidden_states = self.patch_splitting(hidden_states)
+            # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, new_dim)
+
         return hidden_states, layer_outputs
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 23
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 26
 class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
+
+        for stage_config in config["stages"]:
+            if stage_config['patch_splitting'] is not None:
+                assert stage_config['patch_merging'] is not None, "SwinV23DEncoder is not for decoding (mid blocks are ok)."
 
         self.stages = nn.ModuleList([SwinV23DStage(stage_config) for stage_config in config["stages"]])
 
@@ -437,7 +490,31 @@ class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
 
         return hidden_states, stage_outputs, layer_outputs
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 27
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 29
+class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
+    def __init__(self, config):
+        super().__init__()
+
+        for stage_config in config["stages"]:
+            if stage_config['patch_merging'] is not None:
+                assert stage_config['patch_splitting'] is not None, "SwinV23DDecoder is not for encoding (mid blocks are ok)."
+
+        self.stages = nn.ModuleList([SwinV23DStage(stage_config) for stage_config in config["stages"]])
+
+    def forward(self, hidden_states: torch.Tensor):
+        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+
+        stage_outputs, layer_outputs = [], []
+        for stage_module in self.stages:
+            hidden_states, _layer_outputs = stage_module(hidden_states)
+            # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
+
+            stage_outputs.append(hidden_states)
+            layer_outputs.extend(_layer_outputs)
+
+        return hidden_states, stage_outputs, layer_outputs
+
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 33
 class SwinV23DPatchEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -461,7 +538,7 @@ class SwinV23DPatchEmbeddings(nn.Module):
 
         return embeddings
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 30
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 36
 def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
     if embedding_size % 6 != 0:
         raise ValueError("embed_dim must be divisible by 6")
@@ -498,7 +575,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
 
     return position_embeddings
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 31
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 37
 def embed_spacings_in_position_embeddings(embeddings: torch.Tensor, spacings: torch.Tensor):
     assert spacings is not None, "spacing information cannot be None"
     assert spacings.ndim == 2, "Please provide spacing information for each batch element"
@@ -508,7 +585,7 @@ def embed_spacings_in_position_embeddings(embeddings: torch.Tensor, spacings: to
 
     return embeddings
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 32
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 38
 class SwinV23DEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -570,7 +647,7 @@ class SwinV23DEmbeddings(nn.Module):
 
         return embeddings
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 36
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 42
 class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
@@ -614,7 +691,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
 
         return encoded, stage_outputs, layer_outputs
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 39
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 45
 class SwinV23DReconstructionDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -647,7 +724,7 @@ class SwinV23DReconstructionDecoder(nn.Module):
 
         return decoded
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 41
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 47
 class SwinV23DMIM(nn.Module):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__()
@@ -694,7 +771,7 @@ class SwinV23DMIM(nn.Module):
 
         return mask_patches
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 42
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 48
 class SwinV23DSimMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__(swin_config, decoder_config, mim_config)
@@ -722,7 +799,7 @@ class SwinV23DSimMIM(SwinV23DMIM, PyTorchModelHubMixin):
 
         return decoded, loss, mask
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 45
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 51
 class SwinV23DVAEMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__(swin_config, decoder_config, mim_config)
