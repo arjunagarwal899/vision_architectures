@@ -1,4 +1,6 @@
-torch
-numpy
 einops
 huggingface_hub
+munch
+numpy
+pydantic
+torch
