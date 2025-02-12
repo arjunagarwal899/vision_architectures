@@ -103,7 +103,7 @@ def get_coords_grid(grid_size):
     grid_h = torch.arange(h, dtype=torch.int32)
     grid_w = torch.arange(w, dtype=torch.int32)
 
-    grid = torch.meshgrid(grid_w, grid_h, grid_d, indexing="ij")
+    grid = torch.meshgrid(grid_d, grid_h, grid_w, indexing="ij")
     grid = torch.stack(grid, axis=0)
     # (3, d, h, w)
 
@@ -148,13 +148,12 @@ class SwinV23DMHSA(nn.Module):
 
             # Relative coordinates table
             relative_coords_table = get_coords_grid(relative_limits).float()
-            relative_coords_table[0] -= window_size[0] - 1
-            relative_coords_table[1] -= window_size[1] - 1
-            relative_coords_table[2] -= window_size[2] - 1
-            relative_coords_table = relative_coords_table.permute(1, 2, 3, 0).contiguous()
-            relative_coords_table[:, :, :, 0] /= self.window_size[0] - 1
-            relative_coords_table[:, :, :, 1] /= self.window_size[1] - 1
-            relative_coords_table[:, :, :, 2] /= self.window_size[2] - 1
+            for i in range(3):
+                relative_coords_table[i] = (relative_coords_table[i] - (window_size[0] - 1)) / (window_size[0] - 1)
+            relative_coords_table = rearrange(
+                relative_coords_table,
+                "three window_size_z window_size_y window_size_x -> window_size_z window_size_y window_size_x three",
+            ).contiguous()
             relative_coords_table *= 8  # Normalize to -8, 8
             relative_coords_table = (
                 torch.sign(relative_coords_table) * torch.log2(torch.abs(relative_coords_table) + 1.0) / np.log2(8)
