@@ -49,12 +49,12 @@ class SwinV23DStageConfig(BaseModel):
 
 
 class SwinV23DConfig(BaseModel):
-    image_size: tuple[int, int, int]
     in_channels: int
     dim: int
     patch_size: tuple[int, int, int]
     stages: list[SwinV23DStageConfig]
 
+    image_size: tuple[int, int, int] | None = None  # required for learnable absolute position embeddings
     drop_prob: float = 0.0
     embed_spacing_info: bool = False
     use_absolute_position_embeddings: bool = True
@@ -69,7 +69,6 @@ class SwinV23DConfig(BaseModel):
             stage = self.stages[i]
             stage._in_dim = dim
             stage._in_patch_size = patch_size
-            # stage['_in_grid_size'] = tuple([image // patch for image, patch in zip(image_size, patch_size)])
             if stage.patch_merging is not None:
                 dim *= stage.patch_merging["out_dim_ratio"]
                 stage._attention_dim = dim  ## attention will happen after merging
@@ -86,13 +85,21 @@ class SwinV23DConfig(BaseModel):
                 stage._attention_dim = dim  # In case it is not yet set
             stage._out_dim = dim
             stage._out_patch_size = patch_size
-            # stage["_out_grid_size"] = tuple([image // patch for image, patch in zip(image_size, patch_size)])
 
     @model_validator(mode="after")
     def validate_after(self):
         self.populate()
+
+        # test divisibility of dim with number of attention heads
         for stage in self.stages:
             assert stage._out_dim % stage.num_heads == 0, stage
+
+        # test population of image_size field iff the absolute position embeddings are relative
+        if self.learnable_absolute_position_embeddings:
+            assert (
+                self.image_size is not None
+            ), "Please provide image_size if absolute position embeddings are learnable"
+
         return self
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 8
@@ -649,17 +656,20 @@ class SwinV23DEmbeddings(nn.Module):
 
         self.absolute_position_embeddings = None
         if config.use_absolute_position_embeddings:
-            grid_size = (
-                config.image_size[0] // config.patch_size[0],
-                config.image_size[1] // config.patch_size[1],
-                config.image_size[2] // config.patch_size[2],
-            )
+            self.absolute_position_embeddings = {}  # embeddings will be cached in this for every input image size
             if config.learnable_absolute_position_embeddings:
-                self.absolute_position_embeddings = nn.Parameter(
+                grid_size = self._get_grid_size(config.image_size)
+                self.absolute_position_embeddings[config.image_size] = nn.Parameter(
                     torch.randn(1, dim, grid_size[0], grid_size[1], grid_size[2])
                 )
-            else:
-                self.absolute_position_embeddings = get_3d_position_embeddings(dim, grid_size, config.patch_size)
+
+    def _get_grid_size(self, image_size):
+        grid_size = (
+            image_size[0] // self.config.patch_size[0],
+            image_size[1] // self.config.patch_size[1],
+            image_size[2] // self.config.patch_size[2],
+        )
+        return grid_size
 
     def forward(
         self,
@@ -684,7 +694,15 @@ class SwinV23DEmbeddings(nn.Module):
             embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
 
         if self.absolute_position_embeddings is not None:
-            absolute_position_embeddings = self.absolute_position_embeddings.to(embeddings.device)
+            image_size = tuple(pixel_values.shape[-3:])
+
+            if image_size not in self.absolute_position_embeddings:
+                grid_size = self._get_grid_size(image_size)
+                self.absolute_position_embeddings[image_size] = get_3d_position_embeddings(
+                    self.config.dim, grid_size, self.config.patch_size
+                )
+
+            absolute_position_embeddings = self.absolute_position_embeddings[image_size].to(embeddings.device)
             # (1, dim, num_patches_z, num_patches_y, num_patches_x)
             if self.config.embed_spacing_info:
                 absolute_position_embeddings = embed_spacings_in_position_embeddings(
@@ -788,6 +806,14 @@ class SwinV23DMIM(nn.Module):
 
         self.mask_token = nn.Parameter(torch.randn(1, swin_config.dim, 1, 1, 1))
 
+    def _get_grid_size(self, image_size):
+        grid_size = (
+            image_size[0] // self.swin_config.patch_size[0],
+            image_size[1] // self.swin_config.patch_size[1],
+            image_size[2] // self.swin_config.patch_size[2],
+        )
+        return grid_size
+
     def mask_image(self, pixel_values: torch.Tensor):
         b = pixel_values.shape[0]
 
@@ -805,9 +831,7 @@ class SwinV23DMIM(nn.Module):
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
 
-        grid_size = tuple(
-            [size // patch for size, patch in zip(self.swin_config.image_size, self.swin_config.patch_size)]
-        )
+        grid_size = self._get_grid_size(self.swin_config.image_size)
         assert all(
             [x % y == 0 for x, y in zip(grid_size, mask_grid_size)]
         ), "Mask grid size must divide image grid size"
