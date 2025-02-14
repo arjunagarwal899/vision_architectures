@@ -158,7 +158,9 @@ class SwinV23DMHSA(nn.Module):
             # Relative coordinates table
             relative_coords_table = get_coords_grid(relative_limits).float()
             for i in range(3):
-                relative_coords_table[i] = (relative_coords_table[i] - (window_size[0] - 1)) / (window_size[0] - 1)
+                relative_coords_table[i] = (relative_coords_table[i] - (window_size[0] - 1)) / (
+                    window_size[0] - 1 + 1e-8  # small value added to ensure there is no NaN when window size is 1
+                )
             relative_coords_table = rearrange(
                 relative_coords_table,
                 "three window_size_z window_size_y window_size_x -> window_size_z window_size_y window_size_x three",
