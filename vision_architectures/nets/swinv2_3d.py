@@ -92,7 +92,9 @@ class SwinV23DConfig(BaseModel):
 
         # test divisibility of dim with number of attention heads
         for stage in self.stages:
-            assert stage._out_dim % stage.num_heads == 0, f'{stage._out_dim} is not divisible by {stage.num_heads}'
+            assert (
+                stage._out_dim % stage.num_heads == 0
+            ), f"stage._out_dim {stage._out_dim} is not divisible by stage.num_heads {stage.num_heads}"
 
         # test population of image_size field iff the absolute position embeddings are relative
         if self.learnable_absolute_position_embeddings:
