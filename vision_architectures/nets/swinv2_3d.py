@@ -71,7 +71,7 @@ class SwinV23DConfig(BaseModel):
             stage._in_patch_size = patch_size
             if stage.patch_merging is not None:
                 dim *= stage.patch_merging["out_dim_ratio"]
-                stage._attention_dim = dim  ## attention will happen after merging
+                stage._attention_dim = dim  # attention will happen after merging
                 patch_size = tuple(
                     [patch * window for patch, window in zip(patch_size, stage.patch_merging["merge_window_size"])]
                 )
@@ -92,7 +92,7 @@ class SwinV23DConfig(BaseModel):
 
         # test divisibility of dim with number of attention heads
         for stage in self.stages:
-            assert stage._out_dim % stage.num_heads == 0, stage
+            assert stage._out_dim % stage.num_heads == 0, f'{stage._out_dim} is not divisible by {stage.num_heads}'
 
         # test population of image_size field iff the absolute position embeddings are relative
         if self.learnable_absolute_position_embeddings:
