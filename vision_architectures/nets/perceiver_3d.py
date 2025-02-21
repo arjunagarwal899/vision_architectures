@@ -7,13 +7,10 @@ __all__ = ['Perceiver3DEncoderConfig', 'Perceiver3DDecoderConfig', 'Perceiver3DC
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 2
 from typing import Literal
 
-import numpy as np
 import torch
-import torch.nn.functional as F
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
-from munch import munchify
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 from torch import nn
 
 from ..layers.attention import Attention3DLayer
@@ -129,7 +126,7 @@ class Perceiver3DEncoderProcess(nn.Module):
         return return_value
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 12
-class Perceiver3DEncoder(nn.Module):
+class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: Perceiver3DEncoderConfig | Perceiver3DConfig):
         super().__init__()
 
@@ -170,7 +167,7 @@ class Perceiver3DEncoder(nn.Module):
         return return_value
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 15
-class Perceiver3DDecoder(nn.Module):
+class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: Perceiver3DDecoderConfig | Perceiver3DConfig):
         super().__init__()
 

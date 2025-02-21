@@ -795,7 +795,7 @@ class SymSwin3DSimMIM(SymSwin3DMIM, PyTorchModelHubMixin):
 
         return decoded, loss, mask
 
-# %% ../../nbs/nets/10_symswin3d.ipynb 49
+# %% ../../nbs/nets/10_symswin3d.ipynb 48
 class SymSwin3DVAEMIM(SymSwin3DMIM, PyTorchModelHubMixin):
     def __init__(self, symswin_config, decoder_config, mim_config):
         super().__init__(symswin_config, decoder_config, mim_config)

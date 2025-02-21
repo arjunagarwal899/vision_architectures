@@ -2,7 +2,8 @@
 
 # %% auto 0
 __all__ = ['RelativePositionEmbeddings', 'get_coords_grid', 'RelativePositionEmbeddings3D',
-           'RelativePositionEmbeddings3DMetaNetwork', 'AbsolutePositionEmbeddings3D', 'PatchEmbeddings3D']
+           'RelativePositionEmbeddings3DMetaNetwork', 'get_absolute_position_embeddings_3d',
+           'AbsolutePositionEmbeddings3D', 'PatchEmbeddings3D']
 
 # %% ../../nbs/layers/02_embeddings.ipynb 2
 from typing import Union
@@ -154,61 +155,80 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
 RelativePositionEmbeddings = Union[RelativePositionEmbeddings3D, RelativePositionEmbeddings3DMetaNetwork]
 
 # %% ../../nbs/layers/02_embeddings.ipynb 11
+def get_absolute_position_embeddings_3d(dim, grid_size, spacing=(1, 1, 1)):
+    if dim % 6 != 0:
+        raise ValueError("embed_dim must be divisible by 6")
+
+    grid = get_coords_grid(grid_size)
+    # (3, d, h, w)
+
+    grid = rearrange(grid, "x d h w -> x 1 d h w")
+    # (3, 1, d, h, w)
+
+    omega = torch.arange(dim // 6, dtype=torch.float32)
+    omega /= dim / 6.0
+    omega = 1.0 / 10000**omega
+    # (dim // 6)
+
+    patch_multiplier = torch.Tensor(spacing) / min(spacing)
+
+    position_embeddings = []
+    for i, grid_subset in enumerate(grid):
+        grid_subset = grid_subset.reshape(-1)
+        out = torch.einsum("m,d->md", grid_subset, omega)
+
+        emb_sin = torch.sin(out)
+        emb_cos = torch.cos(out)
+
+        emb = torch.cat([emb_sin, emb_cos], axis=1) * patch_multiplier[i]
+        position_embeddings.append(emb)
+
+    position_embeddings = torch.cat(position_embeddings, axis=1)
+    # (dim, d * h * w)
+    position_embeddings = rearrange(
+        position_embeddings, "(d h w) e -> 1 e d h w", d=grid_size[0], h=grid_size[1], w=grid_size[2]
+    )
+    # (1, dim, d, h, w)
+
+    return position_embeddings
+
+# %% ../../nbs/layers/02_embeddings.ipynb 12
 class AbsolutePositionEmbeddings3D(nn.Module):
-    def __init__(self, dim, grid_size, learnable=False, spacing=(1, 1, 1)):
+    def __init__(self, dim, grid_size: tuple[int, int, int] | None = None, learnable=False, spacing=(1, 1, 1)):
         super().__init__()
 
-        if dim % 6 != 0:
-            raise ValueError("embed_dim must be divisible by 6")
-
         self.dim = dim
-        self.grid_size = grid_size
-        self.spacing = spacing
-        grid = get_coords_grid(self.grid_size)
-        # (3, d, h, w)
 
-        grid = rearrange(grid, "x d h w -> x 1 d h w")
-        # (3, 1, d, h, w)
+        if learnable and grid_size is None:
+            raise ValueError("grid_size must be provided when learnable=True")
 
-        omega = torch.arange(self.dim // 6, dtype=torch.float32)
-        omega /= self.dim / 6.0
-        omega = 1.0 / 10000**omega
-        # (dim // 6)
+        self.position_embeddings_cache = {}
+        self.position_embeddings = None
+        if grid_size is not None:
+            self.position_embeddings_cache[grid_size] = get_absolute_position_embeddings_3d(
+                dim, grid_size, spacing=spacing
+            )
+            self.position_embeddings = nn.Parameter(self.position_embeddings_cache[grid_size], requires_grad=learnable)
 
-        patch_multiplier = torch.Tensor(self.spacing) / min(self.spacing)
-
-        position_embeddings = []
-        for i, grid_subset in enumerate(grid):
-            grid_subset = grid_subset.reshape(-1)
-            out = torch.einsum("m,d->md", grid_subset, omega)
-
-            emb_sin = torch.sin(out)
-            emb_cos = torch.cos(out)
-
-            emb = torch.cat([emb_sin, emb_cos], axis=1) * patch_multiplier[i]
-            position_embeddings.append(emb)
-
-        position_embeddings = torch.cat(position_embeddings, axis=1)
-        # (dim, d * h * w)
-        d, h, w = self.grid_size
-        position_embeddings = rearrange(position_embeddings, "(d h w) e -> 1 e d h w", d=d, h=h, w=w)
-        # (1, dim, d, h, w)
-
-        self.position_embeddings = nn.Parameter(position_embeddings, requires_grad=learnable)
-
-    def forward(self, batch_size=None, spacings=None):
+    def forward(self, batch_size=None, grid_size=None, spacings=None):
+        assert (
+            self.position_embeddings is not None or grid_size is not None
+        ), "grid_size must be provided"
         assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
 
-        position_embeddings = self.position_embeddings
+        if self.position_embeddings is not None:
+            position_embeddings = self.position_embeddings
+        else:
+            if grid_size not in self.position_embeddings_cache:
+                self.position_embeddings_cache[grid_size] = get_absolute_position_embeddings_3d(self.dim, grid_size)
+            position_embeddings = self.position_embeddings_cache[grid_size]
         # (1, dim, d, h, w)
 
         if batch_size is not None:
             b = batch_size
         else:
             assert spacings.ndim == 2 and spacings.shape[1] == 3, "spacings must be of shape (batch_size, 3)"
-
-            dim = position_embeddings.shape[1]
-            assert dim % 3 == 0, "embed_dim must be divisible by 3"
+            assert self.dim % 3 == 0, "embed_dim must be divisible by 3"
 
             b = spacings.shape[0]
 
@@ -216,7 +236,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         if spacings is not None:
             # (b, 3)
-            spacings = repeat(spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=dim // 3)
+            spacings = repeat(spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=self.dim // 3)
             # (b, dim, 1, 1, 1)
 
             position_embeddings = position_embeddings * spacings
@@ -224,7 +244,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         return position_embeddings
 
-# %% ../../nbs/layers/02_embeddings.ipynb 14
+# %% ../../nbs/layers/02_embeddings.ipynb 15
 class PatchEmbeddings3D(nn.Module):
     def __init__(self, patch_size: tuple[int, int, int], in_channels: int, dim: int, norm_layer="layernorm"):
         super().__init__()
@@ -252,5 +272,7 @@ class PatchEmbeddings3D(nn.Module):
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
         embeddings = self.normalization(embeddings)
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        embeddings = rearrange(embeddings, "b z y x d -> b d z y x")
+        # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         return embeddings
