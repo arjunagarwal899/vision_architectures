@@ -13,7 +13,7 @@ from einops import rearrange
 from torch import nn
 
 from .embeddings import RelativePositionEmbeddings
-from ..utils.activations import Activation
+from ..utils.activations import get_act_layer
 
 # %% ../../nbs/layers/01_attention.ipynb 4
 class MultiHeadAttention3D(nn.Module):
@@ -21,7 +21,7 @@ class MultiHeadAttention3D(nn.Module):
         self,
         dim: int,
         num_heads: int,
-        relative_position_bias=None,  #: RelativePositionEmbeddings = None,
+        relative_position_bias: RelativePositionEmbeddings | None = None,
         logit_scale=None,
         attn_drop_prob=0.0,
         proj_drop_prob=0.0,
@@ -49,22 +49,37 @@ class MultiHeadAttention3D(nn.Module):
 
         self.relative_position_bias = relative_position_bias
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
-        # Each is (b, num_patches_z, num_patches_y, num_patches_x, dim)
-        _, num_patches_z, num_patches_y, num_patches_x, _ = query.shape
+    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, tokens_as_3d: bool = True):
+        # Each is (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         query = self.W_q(query)
         key = self.W_k(key)
         value = self.W_v(value)
 
-        rearrange_partial = partial(
-            rearrange, pattern="b nz ny nx (num_heads d) -> b num_heads (nz ny nx) d", num_heads=self.num_heads
-        )
+        if tokens_as_3d:
+            _, num_patches_z, num_patches_y, num_patches_x, _ = query.shape
+            rearrange_partial = partial(
+                rearrange, pattern="b nz ny nx (num_heads d) -> b num_heads (nz ny nx) d", num_heads=self.num_heads
+            )
+            reverse_rearrange_partial = partial(
+                rearrange,
+                pattern="b num_heads (num_patches_z num_patches_y num_patches_x) d -> "
+                "b num_patches_z num_patches_y num_patches_x (num_heads d)",
+                num_patches_z=num_patches_z,
+                num_patches_y=num_patches_y,
+                num_patches_x=num_patches_x,
+            )
+        else:
+            rearrange_partial = partial(
+                rearrange, pattern="b T (num_heads d) -> b num_heads T d", num_heads=self.num_heads
+            )
+            reverse_rearrange_partial = partial(rearrange, pattern="b num_heads T d -> b T (num_heads d)")
+
         query = rearrange_partial(query)
         key = rearrange_partial(key)
         value = rearrange_partial(value)
-        # num_patches = num_patches_z * num_patches_y * num_patches_x
-        # Each is (b, num_heads, num_patches, per_head_dim)
+        # T = num_patches_z * num_patches_y * num_patches_x
+        # Each is (b, num_heads, T, per_head_dim)
 
         if isinstance(self.logit_scale, nn.Module):
             logit_scale = self.logit_scale()
@@ -89,21 +104,14 @@ class MultiHeadAttention3D(nn.Module):
             is_causal=False,
             scale=1.0,  # Already scaled the vectors
         )
-        # (b, num_heads, num_patches, per_head_dim)
+        # (b, num_heads, T, per_head_dim)
 
-        context = rearrange(
-            context,
-            "b num_heads (num_patches_z num_patches_y num_patches_x) d -> "
-            "b num_patches_z num_patches_y num_patches_x (num_heads d)",
-            num_patches_z=num_patches_z,
-            num_patches_y=num_patches_y,
-            num_patches_x=num_patches_x,
-        )
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        context = reverse_rearrange_partial(context)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         context = self.proj(context)
         context = self.proj_drop(context)
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         return context
 
@@ -126,7 +134,7 @@ class Attention3DMLP(nn.Module):
         if isinstance(activation, nn.Module):
             self.act = activation
         else:
-            self.act = Activation(activation)
+            self.act = get_act_layer(activation)
 
         self.dense2 = nn.Linear(dim * intermediate_ratio, dim)
         self.dropout = nn.Dropout(mlp_drop_prob)
@@ -171,40 +179,40 @@ class Attention3DLayer(nn.Module):
         self.mlp = Attention3DMLP(dim, intermediate_ratio=mlp_ratio, activation=activation, mlp_drop_prob=mlp_drop_prob)
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
-        # Each is (b, num_patches_z, num_patches_y, num_patches_x, dim)
-        res_connection1 = value
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, tokens_as_3d: bool = True):
+        # Each is (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
+        res_connection1 = query
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         if self.norm_location == "pre":
             query = self.layernorm1(query)
             key = self.layernorm1(key)
             value = self.layernorm1(value)
-            # (b, num_patches_z, num_patches_y, num_patches_x, dim
+            # (b, num_patches_z, num_patches_y, num_patches_x, dim or (b, T, dim)
 
-        hidden_states = self.attn(query, key, value)
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        hidden_states = self.attn(query, key, value, tokens_as_3d)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         if self.norm_location == "post":
             hidden_states = self.layernorm1(hidden_states)
-            # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+            # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         hidden_states = hidden_states + res_connection1
         res_connection2 = hidden_states
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         if self.norm_location == "pre":
             hidden_states = self.layernorm2(hidden_states)
-            # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+            # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         hidden_states = self.mlp(hidden_states)
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         if self.norm_location == "post":
             hidden_states = self.layernorm2(hidden_states)
-            # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+            # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         hidden_states = hidden_states + res_connection2
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim) or (b, T, dim)
 
         return hidden_states

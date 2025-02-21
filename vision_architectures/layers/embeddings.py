@@ -23,7 +23,7 @@ def get_coords_grid(grid_size):
     grid_h = torch.arange(h, dtype=torch.int32)
     grid_w = torch.arange(w, dtype=torch.int32)
 
-    grid = torch.meshgrid(grid_w, grid_h, grid_d, indexing="ij")
+    grid = torch.meshgrid(grid_d, grid_h, grid_w, indexing="ij")
     grid = torch.stack(grid, axis=0)
     # (3, d, h, w)
 
@@ -34,28 +34,28 @@ class RelativePositionEmbeddings3D(nn.Module):
     def __init__(
         self,
         num_heads,
-        num_patches: tuple[int, int, int],
+        grid_size: tuple[int, int, int],
     ):
         super().__init__()
 
         self.num_heads = num_heads
-        self.num_patches = num_patches
+        self.num_patches = grid_size
 
         # TODO: Add embed_spacing_info functionality
 
-        relative_limits = (2 * num_patches[0] - 1, 2 * num_patches[1] - 1, 2 * num_patches[2] - 1)
+        relative_limits = (2 * grid_size[0] - 1, 2 * grid_size[1] - 1, 2 * grid_size[2] - 1)
 
         self.relative_position_bias_table = nn.Parameter(torch.randn(num_heads, np.prod(relative_limits)))
         # (num_heads, num_patches_z * num_patches_y * num_patches_x)
 
         # Pair-wise relative position index for each token inside the window
-        coords = get_coords_grid(num_patches)
+        coords = get_coords_grid(grid_size)
         coords_flatten = rearrange(coords, "three d h w -> three (d h w)", three=3)
         relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]
         relative_coords = relative_coords.permute(1, 2, 0).contiguous()
-        relative_coords[:, :, 0] += num_patches[0] - 1
-        relative_coords[:, :, 1] += num_patches[1] - 1
-        relative_coords[:, :, 2] += num_patches[2] - 1
+        relative_coords[:, :, 0] += grid_size[0] - 1
+        relative_coords[:, :, 1] += grid_size[1] - 1
+        relative_coords[:, :, 2] += grid_size[2] - 1
         relative_position_index: torch.Tensor = (
             relative_coords[:, :, 0] * relative_limits[1] * relative_limits[2]
             + relative_coords[:, :, 1] * relative_limits[2]
@@ -80,12 +80,12 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
     def __init__(
         self,
         num_heads,
-        num_patches: tuple[int, int, int],
+        grid_size: tuple[int, int, int],
     ):
         super().__init__()
 
         self.num_heads = num_heads
-        self.num_patches = num_patches
+        self.num_patches = grid_size
 
         # TODO: Add embed_spacing_info functionality
         self.cpb_mlp = nn.Sequential(
@@ -94,17 +94,18 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
             nn.Linear(512, num_heads, bias=False),
         )
 
-        relative_limits = (2 * num_patches[0] - 1, 2 * num_patches[1] - 1, 2 * num_patches[2] - 1)
+        relative_limits = (2 * grid_size[0] - 1, 2 * grid_size[1] - 1, 2 * grid_size[2] - 1)
 
         # Relative coordinates table
         relative_coords_table = get_coords_grid(relative_limits).float()
-        relative_coords_table[0] -= num_patches[0] - 1
-        relative_coords_table[1] -= num_patches[1] - 1
-        relative_coords_table[2] -= num_patches[2] - 1
-        relative_coords_table = relative_coords_table.permute(1, 2, 3, 0).contiguous()
-        relative_coords_table[:, :, :, 0] /= self.num_patches[0] - 1
-        relative_coords_table[:, :, :, 1] /= self.num_patches[1] - 1
-        relative_coords_table[:, :, :, 2] /= self.num_patches[2] - 1
+        for i in range(3):
+            relative_coords_table[i] = (relative_coords_table[i] - (grid_size[0] - 1)) / (
+                grid_size[0] - 1 + 1e-8  # small value added to ensure there is no NaN when window size is 1
+            )
+        relative_coords_table = rearrange(
+            relative_coords_table,
+            "three num_patches_z num_patches_y num_patches_x -> num_patches_z num_patches_y num_patches_x three",
+        ).contiguous()
         relative_coords_table *= 8  # Normalize to -8, 8
         relative_coords_table = (
             torch.sign(relative_coords_table) * torch.log2(torch.abs(relative_coords_table) + 1.0) / np.log2(8)
@@ -114,13 +115,13 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
         self.register_buffer("relative_coords_table", relative_coords_table, persistent=False)
 
         # Pair-wise relative position index for each token inside the window
-        coords = get_coords_grid(num_patches)
+        coords = get_coords_grid(grid_size)
         coords_flatten = rearrange(coords, "three d h w -> three (d h w)", three=3)
         relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]
         relative_coords = relative_coords.permute(1, 2, 0).contiguous()
-        relative_coords[:, :, 0] += num_patches[0] - 1
-        relative_coords[:, :, 1] += num_patches[1] - 1
-        relative_coords[:, :, 2] += num_patches[2] - 1
+        relative_coords[:, :, 0] += grid_size[0] - 1
+        relative_coords[:, :, 1] += grid_size[1] - 1
+        relative_coords[:, :, 2] += grid_size[2] - 1
         relative_position_index: torch.Tensor = (
             relative_coords[:, :, 0] * relative_limits[1] * relative_limits[2]
             + relative_coords[:, :, 1] * relative_limits[2]
@@ -225,7 +226,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
 # %% ../../nbs/layers/02_embeddings.ipynb 14
 class PatchEmbeddings3D(nn.Module):
-    def __init__(self, patch_size: tuple[int, int, int], in_channels: int, dim: int, norm_layer= 'layernorm'):
+    def __init__(self, patch_size: tuple[int, int, int], in_channels: int, dim: int, norm_layer="layernorm"):
         super().__init__()
 
         self.patch_embeddings = nn.Conv3d(
