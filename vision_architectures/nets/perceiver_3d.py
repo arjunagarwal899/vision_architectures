@@ -173,8 +173,8 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.config = config
 
-        self.output_tokens = nn.Parameter(torch.empty(config.dim, *config.out_shape), requires_grad=True)
-        nn.init.xavier_uniform_(self.output_tokens)
+        self.empty_token = nn.Parameter(torch.empty(config.dim, 1), requires_grad=True)
+        nn.init.xavier_uniform_(self.empty_token)
 
         self.position_embeddings = None
         if config.position_embeddings == "absolute":
@@ -202,7 +202,14 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         b = kv.shape[0]
 
-        q = repeat(self.output_tokens, "d z y x -> b d z y x", b=b)
+        q = repeat(
+            self.empty_token,
+            "d 1 -> b d z y x",
+            b=b,
+            z=self.config.out_shape[0],
+            y=self.config.out_shape[1],
+            x=self.config.out_shape[2],
+        )
         # (b, dim, z, y, x)
 
         if self.position_embeddings is not None:
