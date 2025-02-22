@@ -210,7 +210,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             )
             self.position_embeddings = nn.Parameter(self.position_embeddings_cache[grid_size], requires_grad=learnable)
 
-    def forward(self, batch_size=None, grid_size=None, spacings=None):
+    def forward(self, batch_size=None, grid_size=None, spacings=None, device=torch.device('cpu')):
         assert (
             self.position_embeddings is not None or grid_size is not None
         ), "grid_size must be provided"
@@ -221,7 +221,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         else:
             if grid_size not in self.position_embeddings_cache:
                 self.position_embeddings_cache[grid_size] = get_absolute_position_embeddings_3d(self.dim, grid_size)
-            position_embeddings = self.position_embeddings_cache[grid_size]
+            position_embeddings = self.position_embeddings_cache[grid_size].to(device)
         # (1, dim, d, h, w)
 
         if batch_size is not None:
