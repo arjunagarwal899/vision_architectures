@@ -11,7 +11,7 @@ from huggingface_hub import PyTorchModelHubMixin
 from pydantic import BaseModel
 from torch import nn
 
-from ..layers.attention import Attention3DMLP, MultiHeadAttention3D
+from ..layers.attention import Attention1D, Attention1DMLP
 
 # %% ../../nbs/nets/05_cait_3d.ipynb 4
 class CaiT3DStage1Config(BaseModel):
@@ -57,10 +57,10 @@ class CaiT3DAttentionLayer(nn.Module):
     ):
         super().__init__()
 
-        self.mhsa = MultiHeadAttention3D(dim, num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob)
+        self.mhsa = Attention1D(dim, num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob)
         self.gamma1 = nn.Parameter(torch.empty(1, 1, dim))
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = Attention3DMLP(dim, mlp_ratio, "gelu", mlp_drop_prob)
+        self.mlp = Attention1DMLP(dim, mlp_ratio, "gelu", mlp_drop_prob)
         self.gamma2 = nn.Parameter(torch.empty(1, 1, dim))
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
@@ -75,7 +75,7 @@ class CaiT3DAttentionLayer(nn.Module):
         # (b, num_tokens, dim)
 
         hidden_states = self.layernorm1(q)
-        hidden_states = self.mhsa(hidden_states, kv, kv, tokens_as_3d=False)
+        hidden_states = self.mhsa(hidden_states, kv, kv)
         hidden_states = self.gamma1 * hidden_states
         # (b, num_tokens, dim)
 

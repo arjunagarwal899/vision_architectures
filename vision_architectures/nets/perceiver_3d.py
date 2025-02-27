@@ -13,7 +13,7 @@ from huggingface_hub import PyTorchModelHubMixin
 from pydantic import BaseModel
 from torch import nn
 
-from ..layers.attention import Attention3DLayer
+from ..layers.attention import Attention1DWithMLP
 from ..layers.embeddings import AbsolutePositionEmbeddings3D
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 4
@@ -68,7 +68,7 @@ class Perceiver3DEncoderEncode(nn.Module):
         nn.init.xavier_uniform_(self.latent_tokens)
 
         self.cross_attention = nn.ModuleList(
-            [Attention3DLayer(dim, num_attention_heads, **cross_attention_kwargs) for _ in range(num_layers)]
+            [Attention1DWithMLP(dim, num_attention_heads, **cross_attention_kwargs) for _ in range(num_layers)]
         )
 
     def forward(self, x, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
@@ -86,7 +86,7 @@ class Perceiver3DEncoderEncode(nn.Module):
         embeddings = [q]
         for cross_attention_layer in self.cross_attention:
             q = embeddings[-1]
-            embeddings.append(cross_attention_layer(q, kv, kv, tokens_as_3d=False))
+            embeddings.append(cross_attention_layer(q, kv, kv))
         # (b, num_tokens, dim)
 
         return_value = embeddings[-1]
@@ -104,7 +104,7 @@ class Perceiver3DEncoderProcess(nn.Module):
         super().__init__()
 
         self.self_attention = nn.ModuleList(
-            [Attention3DLayer(dim, num_attention_heads, **self_attention_kwargs) for _ in range(num_layers)]
+            [Attention1DWithMLP(dim, num_attention_heads, **self_attention_kwargs) for _ in range(num_layers)]
         )
 
     def forward(self, q, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
@@ -113,7 +113,7 @@ class Perceiver3DEncoderProcess(nn.Module):
         embeddings = [q]
         for self_attention_layer in self.self_attention:
             qkv = embeddings[-1]
-            embeddings.append(self_attention_layer(qkv, qkv, qkv, tokens_as_3d=False))
+            embeddings.append(self_attention_layer(qkv, qkv, qkv))
         # (b, num_tokens, dim)
 
         return_value = embeddings[-1]
@@ -188,7 +188,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.cross_attention = nn.ModuleList(
             [
-                Attention3DLayer(
+                Attention1DWithMLP(
                     config.dim, config.num_decode_cross_attention_heads, **config.decode_cross_attention_kwargs
                 )
                 for _ in range(config.num_decode_layers)
@@ -220,7 +220,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         outputs = [q]
         for cross_attention_layer in self.cross_attention:
             q = outputs[-1]
-            outputs.append(cross_attention_layer(q, kv, kv, tokens_as_3d=False))
+            outputs.append(cross_attention_layer(q, kv, kv))
         # (b, num_output_tokens, dim)
 
         output = outputs[-1]

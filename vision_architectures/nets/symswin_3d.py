@@ -202,11 +202,11 @@ class SymSwin3DMHSA(nn.Module):
 
 # %% ../../nbs/nets/10_symswin3d.ipynb 11
 class SymSwin3DLayerMLP(nn.Module):
-    def __init__(self, dim, intermediate_ratio, dropout_prob=0.0):
+    def __init__(self, dim, mlp_ratio, dropout_prob=0.0):
         super().__init__()
-        self.dense1 = nn.Linear(dim, dim * intermediate_ratio)
+        self.dense1 = nn.Linear(dim, dim * mlp_ratio)
         self.act = nn.GELU()
-        self.dense2 = nn.Linear(dim * intermediate_ratio, dim)
+        self.dense2 = nn.Linear(dim * mlp_ratio, dim)
         self.dropout = nn.Dropout(dropout_prob)
 
     def forward(self, hidden_states: torch.Tensor):
@@ -223,7 +223,7 @@ class SymSwin3DLayer(nn.Module):
         self,
         dim,
         num_heads,
-        intermediate_ratio,
+        mlp_ratio,
         layer_norm_eps,
         window_size,
         use_relative_position_bias,
@@ -239,7 +239,7 @@ class SymSwin3DLayer(nn.Module):
             dim, num_heads, window_size, use_relative_position_bias, attn_drop_prob, proj_drop_prob
         )
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = SymSwin3DLayerMLP(dim, intermediate_ratio, mlp_drop_prob)
+        self.mlp = SymSwin3DLayerMLP(dim, mlp_ratio, mlp_drop_prob)
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
     def forward(self, hidden_states: torch.Tensor):
@@ -358,7 +358,7 @@ class SymSwin3DBlock(nn.Module):
         self.w_layer = SymSwin3DLayer(
             stage_config["_out_dim"],
             stage_config["num_heads"],
-            stage_config["intermediate_ratio"],
+            stage_config["mlp_ratio"],
             stage_config["layer_norm_eps"],
             stage_config["window_size"],
             stage_config["use_relative_position_bias"],
@@ -369,7 +369,7 @@ class SymSwin3DBlock(nn.Module):
         self.sw_layer = SymSwin3DLayer(
             stage_config["_out_dim"],
             stage_config["num_heads"],
-            stage_config["intermediate_ratio"],
+            stage_config["mlp_ratio"],
             stage_config["layer_norm_eps"],
             stage_config["window_size"],
             stage_config["use_relative_position_bias"],

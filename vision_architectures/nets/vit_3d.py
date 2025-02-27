@@ -5,6 +5,8 @@ __all__ = ['ViT3DEncoderConfig', 'ViT3DConfig', 'ViT3DDecoderConfig', 'ViT3DEnco
            'ViT3DDecoder', 'ViT3DModel', 'ViT3DMIMDecoder', 'ViT3DMIM', 'ViT3DSimMIM']
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 2
+from typing import Literal
+
 import numpy as np
 import torch
 from einops import rearrange, repeat
@@ -12,20 +14,20 @@ from huggingface_hub import PyTorchModelHubMixin
 from pydantic import BaseModel
 from torch import nn
 
-from ..layers.attention import Attention3DLayer, Attention3DMLP, MultiHeadAttention3D
+from ..layers.attention import Attention1D, Attention1DMLP, Attention1DWithMLP
 from ..layers.embeddings import AbsolutePositionEmbeddings3D, PatchEmbeddings3D
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 4
 class ViT3DEncoderConfig(BaseModel):
     dim: int
     num_heads: int
-    intermediate_ratio: int
+    mlp_ratio: int
     layer_norm_eps: float
     attn_drop_prob: float = 0.0
     proj_drop_prob: float = 0.0
     mlp_drop_prob: float = 0.0
     proj_drop_prob: float = 0.0
-    use_post_norm: bool = False
+    norm_location: Literal["pre", "post"] = "pre"
 
     encoder_depth: int
 
@@ -45,48 +47,35 @@ class ViT3DConfig(ViT3DEncoderConfig):
 class ViT3DDecoderConfig(BaseModel):
     dim: int
     num_heads: int
-    intermediate_ratio: int
+    mlp_ratio: int
     layer_norm_eps: float
     attn_drop_prob: float = 0.0
     proj_drop_prob: float = 0.0
     mlp_drop_prob: float = 0.0
     proj_drop_prob: float = 0.0
-    use_post_norm: bool = False
+    norm_location: Literal["pre", "post"] = "pre"
 
     decoder_depth: int
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 8
-class ViT3DEncoderLayer(Attention3DLayer):
+class ViT3DEncoderLayer(Attention1DWithMLP):
     def __init__(
         self,
         dim,
         num_heads,
-        intermediate_ratio,
-        layer_norm_eps,
-        attn_drop_prob=0.0,
-        proj_drop_prob=0.0,
-        mlp_drop_prob=0.0,
-        use_post_norm=False,
         *args,
         **kwargs,
     ):
         super().__init__(
             dim=dim,
-            num_heads=num_heads,
-            mlp_ratio=intermediate_ratio,
-            activation="gelu",
-            norm_location="post" if use_post_norm else "pre",
-            layer_norm_eps=layer_norm_eps,
-            attn_drop_prob=attn_drop_prob,
-            proj_drop_prob=proj_drop_prob,
-            mlp_drop_prob=mlp_drop_prob,
+            num_q_heads=num_heads,
             *args,
             **kwargs,
         )
 
     def forward(self, qkv: torch.Tensor):
         # qkv: (b, num_tokens, dim)
-        return super().forward(qkv, qkv, qkv, tokens_as_3d=False)
+        return super().forward(qkv, qkv, qkv)
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 10
 class ViT3DEncoder(nn.Module, PyTorchModelHubMixin):
@@ -98,12 +87,12 @@ class ViT3DEncoder(nn.Module, PyTorchModelHubMixin):
                 ViT3DEncoderLayer(
                     config.dim,
                     config.num_heads,
-                    config.intermediate_ratio,
+                    mlp_ratio=config.mlp_ratio,
                     layer_norm_eps=config.layer_norm_eps,
                     attn_drop_prob=config.attn_drop_prob,
                     proj_drop_prob=config.proj_drop_prob,
                     mlp_drop_prob=config.mlp_drop_prob,
-                    use_post_norm=config.use_post_norm,
+                    norm_location=config.norm_location,
                 )
                 for _ in range(config.encoder_depth)
             ]
@@ -122,8 +111,8 @@ class ViT3DEncoder(nn.Module, PyTorchModelHubMixin):
         return_value = embeddings
         if return_all:
             return_value = {
-                'embeddings': embeddings,
-                'layer_outputs': layer_outputs,
+                "embeddings": embeddings,
+                "layer_outputs": layer_outputs,
             }
 
         return return_value
@@ -134,7 +123,7 @@ class ViT3DDecoderLayer(nn.Module):
         self,
         dim,
         num_heads,
-        intermediate_ratio,
+        mlp_ratio,
         layer_norm_eps,
         attn_drop_prob=0.0,
         proj_drop_prob=0.0,
@@ -145,23 +134,21 @@ class ViT3DDecoderLayer(nn.Module):
 
         self.use_post_norm = use_post_norm
 
-        self.mhsa = MultiHeadAttention3D(
+        self.mhsa = Attention1D(
             dim=dim,
-            num_heads=num_heads,
+            num_q_heads=num_heads,
             attn_drop_prob=attn_drop_prob,
             proj_drop_prob=proj_drop_prob,
         )
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mhca = MultiHeadAttention3D(
+        self.mhca = Attention1D(
             dim=dim,
-            num_heads=num_heads,
+            num_q_heads=num_heads,
             attn_drop_prob=attn_drop_prob,
             proj_drop_prob=proj_drop_prob,
         )
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = Attention3DMLP(
-            dim, intermediate_ratio=intermediate_ratio, activation="gelu", mlp_drop_prob=mlp_drop_prob
-        )
+        self.mlp = Attention1DMLP(dim, mlp_ratio=mlp_ratio, activation="gelu", mlp_drop_prob=mlp_drop_prob)
         self.layernorm3 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
     def forward(self, q: torch.Tensor, kv: torch.Tensor):
@@ -177,7 +164,7 @@ class ViT3DDecoderLayer(nn.Module):
             kv = self.layernorm1(kv)
             # (b, num_tokens_in_kv, dim)
 
-        hidden_states = self.mhsa(q, q, q, tokens_as_3d=False)
+        hidden_states = self.mhsa(q, q, q)
         # (b, num_tokens_in_q, dim)
 
         if self.use_post_norm:
@@ -192,7 +179,7 @@ class ViT3DDecoderLayer(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, num_tokens_in_q, dim)
 
-        hidden_states = self.mhca(hidden_states, kv, kv, tokens_as_3d=False)
+        hidden_states = self.mhca(hidden_states, kv, kv)
         # (b, num_tokens_in_q, dim)
 
         if self.use_post_norm:
@@ -229,7 +216,7 @@ class ViT3DDecoder(nn.Module, PyTorchModelHubMixin):
                 ViT3DDecoderLayer(
                     config.dim,
                     config.num_heads,
-                    config.intermediate_ratio,
+                    config.mlp_ratio,
                     config.layer_norm_eps,
                     config.attn_drop_prob,
                     config.proj_drop_prob,
@@ -255,8 +242,8 @@ class ViT3DDecoder(nn.Module, PyTorchModelHubMixin):
         return_value = embeddings
         if return_all:
             return_value = {
-                'embeddings': embeddings,
-                'layer_outputs': layer_outputs,
+                "embeddings": embeddings,
+                "layer_outputs": layer_outputs,
             }
 
         return return_value
@@ -319,7 +306,7 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
             # (b, num_tokens + num_class_tokens, dim)
 
         encoder_output = self.encoder(embeddings, return_all=True)
-        encoded, layer_outputs = encoder_output['embeddings'], encoder_output['layer_outputs']
+        encoded, layer_outputs = encoder_output["embeddings"], encoder_output["layer_outputs"]
         # encoded: (b, num_tokens (+ num_class_tokens), dim)
         # layer_outputs: list of (b, num_tokens (+ 1), dim)
 
@@ -330,9 +317,9 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
         return_value = class_tokens, encoded
         if return_all:
             return_value = {
-                'class_tokens': class_tokens,
-                'encoded': encoded,
-                'layer_outputs': layer_outputs,
+                "class_tokens": class_tokens,
+                "encoded": encoded,
+                "layer_outputs": layer_outputs,
             }
 
         return return_value

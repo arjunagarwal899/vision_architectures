@@ -12,7 +12,7 @@ from huggingface_hub import PyTorchModelHubMixin
 from pydantic import BaseModel, model_validator
 from torch import nn
 
-from ..layers.attention import Attention3DLayer
+from ..layers.attention import Attention3DWithMLP
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
     PatchEmbeddings3D,
@@ -25,7 +25,7 @@ class Swin3DStageConfig(BaseModel):
     window_size: tuple[int, int, int]
 
     num_heads: int = 4
-    intermediate_ratio: int = 4
+    mlp_ratio: int = 4
     layer_norm_eps: float = 1e-6
     use_relative_position_bias: bool = False
     patch_merging: dict | None = None
@@ -112,17 +112,17 @@ class Swin3DMIMConfig(Swin3DConfig):
 
 # %% ../../nbs/nets/01_swin_3d.ipynb 8
 class Swin3DLayer(nn.Module):
-    def __init__(self, dim, num_heads, intermediate_ratio, layer_norm_eps, window_size, use_relative_position_bias):
+    def __init__(self, dim, num_heads, mlp_ratio, layer_norm_eps, window_size, use_relative_position_bias):
         super().__init__()
 
         qkv_relative_position_bias = None
         if use_relative_position_bias:
             qkv_relative_position_bias = RelativePositionEmbeddings3D(num_heads, window_size)
 
-        self.attn = Attention3DLayer(
+        self.attn = Attention3DWithMLP(
             dim=dim,
-            num_heads=num_heads,
-            mlp_ratio=intermediate_ratio,
+            num_q_heads=num_heads,
+            mlp_ratio=mlp_ratio,
             qkv_relative_position_bias=qkv_relative_position_bias,
             activation="gelu",
             norm_location="pre",
@@ -154,7 +154,7 @@ class Swin3DLayer(nn.Module):
             window_size_x=window_size_x,
         )
 
-        hidden_states = self.attn(hidden_states, hidden_states, hidden_states)
+        hidden_states = self.attn(hidden_states, hidden_states, hidden_states, channels_first=False)
 
         # Undo windowing
         output = rearrange(
@@ -180,7 +180,7 @@ class Swin3DBlock(nn.Module):
         self.w_layer = Swin3DLayer(
             stage_config._out_dim,
             stage_config.num_heads,
-            stage_config.intermediate_ratio,
+            stage_config.mlp_ratio,
             stage_config.layer_norm_eps,
             stage_config.window_size,
             stage_config.use_relative_position_bias,
@@ -188,7 +188,7 @@ class Swin3DBlock(nn.Module):
         self.sw_layer = Swin3DLayer(
             stage_config._out_dim,
             stage_config.num_heads,
-            stage_config.intermediate_ratio,
+            stage_config.mlp_ratio,
             stage_config.layer_norm_eps,
             stage_config.window_size,
             stage_config.use_relative_position_bias,
