@@ -14,8 +14,9 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from munch import munchify
-from ..utils.custom_base_model import CustomBaseModel, model_validator
 from torch import nn
+
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 4
 class SwinV23DStageConfig(CustomBaseModel):
@@ -33,11 +34,11 @@ class SwinV23DStageConfig(CustomBaseModel):
     proj_drop_prob: float = 0.0
     mlp_drop_prob: float = 0.0
 
-    _in_dim: int
-    _in_patch_size: tuple[int, int, int]
-    _attention_dim: int = None
-    _out_dim: int
-    _out_patch_size: tuple[int, int, int]
+    in_dim: int | None = None
+    in_patch_size: tuple[int, int, int] | None = None
+    attention_dim: int | None = None
+    out_dim: int | None = None
+    out_patch_size: tuple[int, int, int] | None = None
 
     @model_validator(mode="after")
     def validate(self):
@@ -54,7 +55,7 @@ class SwinV23DConfig(CustomBaseModel):
     patch_size: tuple[int, int, int]
     stages: list[SwinV23DStageConfig]
 
-    image_size: tuple[int, int, int] | None = None  # required for learnable absolute position embeddings
+    image_size: tuple[int, int, int] | None = Field(None, description="required for learnable absolute position embeddings")
     drop_prob: float = 0.0
     embed_spacing_info: bool = False
     use_absolute_position_embeddings: bool = True
@@ -67,24 +68,24 @@ class SwinV23DConfig(CustomBaseModel):
         # Prepare config based on provided values
         for i in range(len(self.stages)):
             stage = self.stages[i]
-            stage._in_dim = dim
-            stage._in_patch_size = patch_size
+            stage.in_dim = dim
+            stage.in_patch_size = patch_size
             if stage.patch_merging is not None:
                 dim *= stage.patch_merging["out_dim_ratio"]
-                stage._attention_dim = dim  # attention will happen after merging
+                stage.attention_dim = dim  # attention will happen after merging
                 patch_size = tuple(
                     [patch * window for patch, window in zip(patch_size, stage.patch_merging["merge_window_size"])]
                 )
             if stage.patch_splitting is not None:
-                stage._attention_dim = dim  # attention will happen before splitting
+                stage.attention_dim = dim  # attention will happen before splitting
                 dim //= stage.patch_splitting["out_dim_ratio"]
                 patch_size = tuple(
                     [patch * window for patch, window in zip(patch_size, stage.patch_splitting["final_window_size"])]
                 )
-            if stage._attention_dim is None:
-                stage._attention_dim = dim  # In case it is not yet set
-            stage._out_dim = dim
-            stage._out_patch_size = patch_size
+            if stage.attention_dim is None:
+                stage.attention_dim = dim  # In case it is not yet set
+            stage.out_dim = dim
+            stage.out_patch_size = patch_size
 
     @model_validator(mode="after")
     def validate(self):
@@ -93,8 +94,8 @@ class SwinV23DConfig(CustomBaseModel):
         # test divisibility of dim with number of attention heads
         for stage in self.stages:
             assert (
-                stage._attention_dim % stage.num_heads == 0
-            ), f"stage._attention_dim {stage._attention_dim} is not divisible by stage.num_heads {stage.num_heads}"
+                stage.attention_dim % stage.num_heads == 0
+            ), f"stage._attention_dim {stage.attention_dim} is not divisible by stage.num_heads {stage.num_heads}"
 
         # test population of image_size field iff the absolute position embeddings are relative
         if self.learnable_absolute_position_embeddings:

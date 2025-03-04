@@ -16,7 +16,7 @@ from torch import nn
 
 from .embeddings import RelativePositionEmbeddings
 from ..utils.activations import get_act_layer
-from ..utils.custom_base_model import CustomBaseModel, Field, computed_field, model_validator
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
 # %% ../../nbs/layers/01_attention.ipynb 4
 class Attention1DConfig(CustomBaseModel):
@@ -29,31 +29,26 @@ class Attention1DConfig(CustomBaseModel):
     attn_drop_prob: float = 0.0
     proj_drop_prob: float = 0.0
 
-    @computed_field
     @property
     def num_kv_heads(self) -> int:
         return self.num_heads // self.ratio_q_to_kv_heads
 
-    @computed_field
     @property
     def gqa_mqa_enabled(self) -> bool:
         return self.ratio_q_to_kv_heads != 1
 
-    @computed_field
     @property
     def dim_qk(self) -> int:
         if isinstance(self.dim, tuple):
             return self.dim[0]
         return self.dim
 
-    @computed_field
     @property
     def dim_v(self) -> int:
         if isinstance(self.dim, tuple):
             return self.dim[1]
         return self.dim
 
-    @computed_field
     @property
     def per_head_dim_qk(self) -> int:
         return self.dim_qk // self.num_heads

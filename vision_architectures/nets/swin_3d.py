@@ -9,44 +9,45 @@ import numpy as np
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
-from ..utils.custom_base_model import CustomBaseModel, model_validator
 from torch import nn
 
-from ..layers.attention import Attention3DWithMLP
+from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
     PatchEmbeddings3D,
     RelativePositionEmbeddings3D,
 )
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
 # %% ../../nbs/nets/01_swin_3d.ipynb 4
-class Swin3DStageConfig(CustomBaseModel):
+class Swin3DStageConfig(Attention3DWithMLPConfig):
     depth: int
     window_size: tuple[int, int, int]
 
-    num_heads: int = 4
-    mlp_ratio: int = 4
-    layer_norm_eps: float = 1e-6
     use_relative_position_bias: bool = False
     patch_merging: dict | None = None
     patch_splitting: dict | None = None
 
-    attn_drop_prob: float = 0.0
-    proj_drop_prob: float = 0.0
-    mlp_drop_prob: float = 0.0
+    in_dim: int | None = None
+    in_patch_size: tuple[int, int, int] | None = None
+    attention_dim: int | None = None
+    out_dim: int | None = None
+    out_patch_size: tuple[int, int, int] | None = None
 
-    _in_dim: int
-    _in_patch_size: tuple[int, int, int]
-    _attention_dim: int = None
-    _out_dim: int
-    _out_patch_size: tuple[int, int, int]
+    # Discontinue other fields
+    dim: None = Field(None, deprecated=True, exclude=True, repr=False)
+    relative_position_bias: None = Field(None, deprecated=True, exclude=True, repr=False)
+    logit_scale: None = Field(None, deprecated=True, exclude=True, repr=False)
+    logit_scale_learnable: None = Field(None, deprecated=True, exclude=True, repr=False)
 
     @model_validator(mode="after")
     def validate(self):
         if isinstance(self.patch_merging, dict):
-            assert {"merge_window_size", "out_dim_ratio"}.issubset(self.patch_merging), "Missing keys"
+            assert {"merge_window_size", "out_dim_ratio"}.issubset(self.patch_merging), "Missing keys in patch_merging"
         if isinstance(self.patch_splitting, dict):
-            assert {"final_window_size", "out_dim_ratio"}.issubset(self.patch_splitting), "Missing keys"
+            assert {"final_window_size", "out_dim_ratio"}.issubset(
+                self.patch_splitting
+            ), "Missing keys in patch_splitting"
         return self
 
 
@@ -69,24 +70,24 @@ class Swin3DConfig(CustomBaseModel):
         # Prepare config based on provided values
         for i in range(len(self.stages)):
             stage = self.stages[i]
-            stage._in_dim = dim
-            stage._in_patch_size = patch_size
+            stage.in_dim = dim
+            stage.in_patch_size = patch_size
             if stage.patch_merging is not None:
                 dim *= stage.patch_merging["out_dim_ratio"]
-                stage._attention_dim = dim  # attention will happen after merging
+                stage.attention_dim = dim  # attention will happen after merging
                 patch_size = tuple(
                     [patch * window for patch, window in zip(patch_size, stage.patch_merging["merge_window_size"])]
                 )
             if stage.patch_splitting is not None:
-                stage._attention_dim = dim  # attention will happen before splitting
+                stage.attention_dim = dim  # attention will happen before splitting
                 dim //= stage.patch_splitting["out_dim_ratio"]
                 patch_size = tuple(
                     [patch * window for patch, window in zip(patch_size, stage.patch_splitting["final_window_size"])]
                 )
-            if stage._attention_dim is None:
+            if stage.attention_dim is None:
                 stage._attention_dim = dim  # In case it is not yet set
-            stage._out_dim = dim
-            stage._out_patch_size = patch_size
+            stage.out_dim = dim
+            stage.out_patch_size = patch_size
 
     @model_validator(mode="after")
     def validate(self):
@@ -95,8 +96,8 @@ class Swin3DConfig(CustomBaseModel):
         # test divisibility of dim with number of attention heads
         for stage in self.stages:
             assert (
-                stage._out_dim % stage.num_heads == 0
-            ), f"stage._out_dim {stage._out_dim} is not divisible by stage.num_heads {stage.num_heads}"
+                stage.out_dim % stage.num_heads == 0
+            ), f"stage._out_dim {stage.out_dim} is not divisible by stage.num_heads {stage.num_heads}"
 
         # test population of image_size field iff the absolute position embeddings are relative
         if self.learnable_absolute_position_embeddings:
@@ -117,11 +118,11 @@ class Swin3DLayer(nn.Module):
 
         qkv_relative_position_bias = None
         if use_relative_position_bias:
-            qkv_relative_position_bias = RelativePositionEmbeddings3D(num_heads, window_size)
+            qkv_relative_position_bias = RelativePositionEmbeddings3D(num_heads=num_heads, grid_size=window_size)
 
         self.attn = Attention3DWithMLP(
             dim=dim,
-            num_q_heads=num_heads,
+            num_heads=num_heads,
             mlp_ratio=mlp_ratio,
             qkv_relative_position_bias=qkv_relative_position_bias,
             activation="gelu",
@@ -178,7 +179,7 @@ class Swin3DBlock(nn.Module):
 
         self.stage_config = stage_config
         self.w_layer = Swin3DLayer(
-            stage_config._out_dim,
+            stage_config.out_dim,
             stage_config.num_heads,
             stage_config.mlp_ratio,
             stage_config.layer_norm_eps,
@@ -186,7 +187,7 @@ class Swin3DBlock(nn.Module):
             stage_config.use_relative_position_bias,
         )
         self.sw_layer = Swin3DLayer(
-            stage_config._out_dim,
+            stage_config.out_dim,
             stage_config.num_heads,
             stage_config.mlp_ratio,
             stage_config.layer_norm_eps,
@@ -264,8 +265,8 @@ class Swin3DStage(nn.Module):
         if stage_config.patch_merging is not None:
             self.patch_merging = Swin3DPatchMerging(
                 stage_config.patch_merging["merge_window_size"],
-                stage_config._in_dim,
-                stage_config._out_dim,
+                stage_config.in_dim,
+                stage_config.out_dim,
             )
 
         self.blocks = nn.ModuleList(
@@ -314,8 +315,8 @@ class Swin3DModel(nn.Module, PyTorchModelHubMixin):
 
         self.config = config
 
-        self.patchify = PatchEmbeddings3D(config.patch_size, config.in_channels, config.dim)
-        self.absolute_position_embeddings = AbsolutePositionEmbeddings3D(config.dim, learnable=False)
+        self.patchify = PatchEmbeddings3D(patch_size=config.patch_size, in_channels=config.in_channels, dim=config.dim)
+        self.absolute_position_embeddings = AbsolutePositionEmbeddings3D(dim=config.dim, learnable=False)
         self.encoder = Swin3DEncoder(config)
 
     def _get_grid_size(self, image_size):
@@ -381,8 +382,8 @@ class Swin3DMIMDecoder(nn.Module):
         self.image_size = config.image_size
         self.in_channels = config.in_channels
 
-        dim = config.stages[-1]._out_dim
-        patch_size = config.stages[-1]._out_patch_size
+        dim = config.stages[-1].out_dim
+        patch_size = config.stages[-1].out_patch_size
 
         out_dim = np.prod(patch_size) * self.in_channels
         self.final_patch_size = patch_size

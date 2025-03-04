@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
 
-from ..utils.custom_base_model import CustomBaseModel, Field, computed_field, model_validator
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.normalizations import get_norm_layer
 
 # %% ../../nbs/layers/02_embeddings.ipynb 4
@@ -23,7 +23,6 @@ class RelativePositionEmbeddings3DConfig(CustomBaseModel):
     num_heads: int = Field(..., description="Number of query attention heads")
     grid_size: tuple[int, int, int]
 
-    @computed_field
     @property
     def num_patches(self) -> int:
         return np.prod(self.grid_size)
@@ -48,7 +47,6 @@ class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
     grid_size: tuple[int, int, int] | None = None
     learnable: bool = False
 
-    @computed_field
     @property
     def num_patches(self) -> int:
         return np.prod(self.grid_size)
@@ -69,7 +67,7 @@ class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
         if self.learnable and self.grid_size is None:
             raise ValueError("grid_size must be provided if learnable is True")
         return self
-    
+
 
 class PatchEmbeddings3DConfig(CustomBaseModel):
     patch_size: tuple[int, int, int]
@@ -299,7 +297,9 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         if spacings is not None:
             # (b, 3)
-            spacings = repeat(spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=self.config.dim // 3)
+            spacings = repeat(
+                spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=self.config.dim // 3
+            )
             # (b, dim, 1, 1, 1)
 
             position_embeddings = position_embeddings * spacings

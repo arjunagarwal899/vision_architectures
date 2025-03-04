@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validat
 class CustomBaseModel(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        extra="forbid",
+        extra="ignore",
         validate_default=True,
         validate_assignment=True,
         validate_return=True,

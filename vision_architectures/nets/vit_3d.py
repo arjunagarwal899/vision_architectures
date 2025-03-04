@@ -68,7 +68,7 @@ class ViT3DEncoderLayer(Attention1DWithMLP):
     ):
         super().__init__(
             dim=dim,
-            num_q_heads=num_heads,
+            num_heads=num_heads,
             *args,
             **kwargs,
         )
@@ -136,14 +136,14 @@ class ViT3DDecoderLayer(nn.Module):
 
         self.mhsa = Attention1D(
             dim=dim,
-            num_q_heads=num_heads,
+            num_heads=num_heads,
             attn_drop_prob=attn_drop_prob,
             proj_drop_prob=proj_drop_prob,
         )
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
         self.mhca = Attention1D(
             dim=dim,
-            num_q_heads=num_heads,
+            num_heads=num_heads,
             attn_drop_prob=attn_drop_prob,
             proj_drop_prob=proj_drop_prob,
         )

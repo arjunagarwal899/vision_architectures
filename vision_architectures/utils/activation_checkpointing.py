@@ -4,8 +4,9 @@
 __all__ = ['ActivationCheckpointing']
 
 # %% ../../nbs/utils/01_activation_checkpointing.ipynb 2
-from torch.utils.checkpoint import checkpoint
 from typing import Callable
+
+from torch.utils.checkpoint import checkpoint
 
 # %% ../../nbs/utils/01_activation_checkpointing.ipynb 4
 class ActivationCheckpointing():
@@ -14,7 +15,7 @@ class ActivationCheckpointing():
 
         self.perform_checkpointing = (fn_checkpoint_level <= training_checkpoint_level)
 
-    def __call__(self, fn: Callable, *args):
+    def __call__(self, fn: Callable, *args, **kwargs):
         if self.perform_checkpointing:
-            return checkpoint(lambda: fn(*args), use_reentrant=False)
+            return checkpoint(lambda: fn(*args, **kwargs), use_reentrant=False)
         return fn(*args)
