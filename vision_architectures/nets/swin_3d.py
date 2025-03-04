@@ -26,7 +26,7 @@ class Swin3DPatchMergingConfig(CustomBaseModel):
     out_dim_ratio: int
     merge_window_size: tuple[int, int, int]
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
         super().validate_before(data)
@@ -40,7 +40,7 @@ class Swin3DPatchSplittingConfig(CustomBaseModel):
     out_dim_ratio: int
     final_window_size: tuple[int, int, int]
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
         super().validate_before(data)
@@ -139,7 +139,7 @@ class Swin3DConfig(CustomBaseModel):
             ), "Please provide image_size if absolute position embeddings are learnable"
 
         return self
-    
+
 
 class Swin3DMIMConfig(Swin3DConfig):
     mim: dict
@@ -162,7 +162,7 @@ class Swin3DLayer(nn.Module):
         if use_relative_position_bias:
             relative_position_bias = RelativePositionEmbeddings3D(self.embeddings_config)
 
-        self.attn = Attention3DWithMLP(self.transformer_config, relative_position_bias=relative_position_bias)
+        self.transformer = Attention3DWithMLP(self.transformer_config, relative_position_bias=relative_position_bias)
 
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
@@ -187,7 +187,7 @@ class Swin3DLayer(nn.Module):
             window_size_x=window_size_x,
         )
 
-        hidden_states = self.attn(hidden_states, hidden_states, hidden_states, channels_first=False)
+        hidden_states = self.transformer(hidden_states, hidden_states, hidden_states, channels_first=False)
 
         # Undo windowing
         output = rearrange(
@@ -359,7 +359,7 @@ class Swin3DModel(nn.Module, PyTorchModelHubMixin):
             embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
 
         absolute_position_embeddings = self.absolute_position_embeddings(
-            batch_size=embeddings.shape[0], grid_size=embeddings.shape[2:], spacings=spacings
+            batch_size=embeddings.shape[0], grid_size=embeddings.shape[2:], spacings=spacings, device=embeddings.device
         )
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
         embeddings = embeddings + absolute_position_embeddings

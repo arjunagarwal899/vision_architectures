@@ -139,7 +139,7 @@ class SwinV23DConfig(SwinV23DDecoderConfig):
     use_absolute_position_embeddings: bool = True
     learnable_absolute_position_embeddings: bool = False
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate(self):
         super().validate()
         # test population of image_size field iff the absolute position embeddings are relative
@@ -150,7 +150,7 @@ class SwinV23DConfig(SwinV23DDecoderConfig):
         return self
 
 
-class Swin3DMIMConfig(SwinV23DConfig):
+class Swin3DMIMConfig(SwinV23DConfig):  # TODO: Implement and fix
     mim: dict
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 8
@@ -184,7 +184,7 @@ class SwinV23DLayer(nn.Module):
 
         logit_scale = SwinV23DLayerLogitScale(self.transformer_config.num_heads)
 
-        self.attn = Attention3DWithMLP(
+        self.transformer = Attention3DWithMLP(
             self.transformer_config, relative_position_bias=relative_position_bias, logit_scale=logit_scale
         )
 
@@ -211,7 +211,7 @@ class SwinV23DLayer(nn.Module):
             window_size_x=window_size_x,
         )
 
-        hidden_states = self.attn(hidden_states, hidden_states, hidden_states, channels_first=False)
+        hidden_states = self.transformer(hidden_states, hidden_states, hidden_states, channels_first=False)
 
         # Undo windowing
         output = rearrange(
@@ -461,7 +461,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
             embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
 
         absolute_position_embeddings = self.absolute_position_embeddings(
-            batch_size=embeddings.shape[0], grid_size=embeddings.shape[2:], spacings=spacings
+            batch_size=embeddings.shape[0], grid_size=embeddings.shape[2:], spacings=spacings, device=embeddings.device
         )
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
         embeddings = embeddings + absolute_position_embeddings
