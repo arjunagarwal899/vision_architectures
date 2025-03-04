@@ -10,14 +10,14 @@ from typing import Literal
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
-from pydantic import BaseModel
+from ..utils.custom_base_model import CustomBaseModel
 from torch import nn
 
 from ..layers.attention import Attention1DWithMLP
 from ..layers.embeddings import AbsolutePositionEmbeddings3D
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 4
-class Perceiver3DEncoderConfig(BaseModel):
+class Perceiver3DEncoderConfig(CustomBaseModel):
     in_channels: int
 
     dim: int
@@ -33,7 +33,7 @@ class Perceiver3DEncoderConfig(BaseModel):
     process_self_attention_kwargs: dict = {}
 
 
-class Perceiver3DDecoderConfig(BaseModel):
+class Perceiver3DDecoderConfig(CustomBaseModel):
     out_channels: int
     out_shape: tuple[int, int, int]
 

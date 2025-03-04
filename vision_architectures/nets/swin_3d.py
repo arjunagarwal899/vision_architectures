@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
-from pydantic import BaseModel, model_validator
+from ..utils.custom_base_model import CustomBaseModel, model_validator
 from torch import nn
 
 from ..layers.attention import Attention3DWithMLP
@@ -20,7 +20,7 @@ from vision_architectures.layers.embeddings import (
 )
 
 # %% ../../nbs/nets/01_swin_3d.ipynb 4
-class Swin3DStageConfig(BaseModel):
+class Swin3DStageConfig(CustomBaseModel):
     depth: int
     window_size: tuple[int, int, int]
 
@@ -42,7 +42,7 @@ class Swin3DStageConfig(BaseModel):
     _out_patch_size: tuple[int, int, int]
 
     @model_validator(mode="after")
-    def validate_after(self):
+    def validate(self):
         if isinstance(self.patch_merging, dict):
             assert {"merge_window_size", "out_dim_ratio"}.issubset(self.patch_merging), "Missing keys"
         if isinstance(self.patch_splitting, dict):
@@ -50,7 +50,7 @@ class Swin3DStageConfig(BaseModel):
         return self
 
 
-class Swin3DConfig(BaseModel):
+class Swin3DConfig(CustomBaseModel):
     in_channels: int
     dim: int
     patch_size: tuple[int, int, int]
@@ -89,7 +89,7 @@ class Swin3DConfig(BaseModel):
             stage._out_patch_size = patch_size
 
     @model_validator(mode="after")
-    def validate_after(self):
+    def validate(self):
         self.populate()
 
         # test divisibility of dim with number of attention heads

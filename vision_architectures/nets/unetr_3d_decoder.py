@@ -8,27 +8,27 @@ __all__ = ['KernelSizeType', 'UNetR3DDecoderConfig', 'UNetR3DStageConfig', 'UNet
 import torch
 from einops import rearrange
 from huggingface_hub import PyTorchModelHubMixin
-from pydantic import BaseModel, model_validator
+from ..utils.custom_base_model import CustomBaseModel, model_validator
 from torch import nn
 
 # %% ../../nbs/nets/02_unetr_3d_decoder.ipynb 4
 KernelSizeType = int | tuple[int, int, int]
 
 
-class UNetR3DDecoderConfig(BaseModel):
+class UNetR3DDecoderConfig(CustomBaseModel):
     num_outputs: int
     conv_kernel_size: KernelSizeType
     final_layer_kernel_size: KernelSizeType
 
 
-class UNetR3DStageConfig(BaseModel):
+class UNetR3DStageConfig(CustomBaseModel):
     in_dim: int
     out_dim: int
     in_patch_size: tuple[int, int, int]
     out_patch_size: tuple[int, int, int]
 
 
-class UNetR3DConfig(BaseModel):
+class UNetR3DConfig(CustomBaseModel):
     in_channels: int
 
     decoder: UNetR3DDecoderConfig

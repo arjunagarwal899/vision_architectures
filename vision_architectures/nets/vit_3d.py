@@ -11,14 +11,14 @@ import numpy as np
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
-from pydantic import BaseModel
+from ..utils.custom_base_model import CustomBaseModel
 from torch import nn
 
 from ..layers.attention import Attention1D, Attention1DMLP, Attention1DWithMLP
 from ..layers.embeddings import AbsolutePositionEmbeddings3D, PatchEmbeddings3D
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 4
-class ViT3DEncoderConfig(BaseModel):
+class ViT3DEncoderConfig(CustomBaseModel):
     dim: int
     num_heads: int
     mlp_ratio: int
@@ -44,7 +44,7 @@ class ViT3DConfig(ViT3DEncoderConfig):
     mask_ratio: float | None = None
 
 
-class ViT3DDecoderConfig(BaseModel):
+class ViT3DDecoderConfig(CustomBaseModel):
     dim: int
     num_heads: int
     mlp_ratio: int

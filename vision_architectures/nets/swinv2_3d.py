@@ -14,11 +14,11 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from munch import munchify
-from pydantic import BaseModel, model_validator
+from ..utils.custom_base_model import CustomBaseModel, model_validator
 from torch import nn
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 4
-class SwinV23DStageConfig(BaseModel):
+class SwinV23DStageConfig(CustomBaseModel):
     depth: int
     window_size: tuple[int, int, int]
 
@@ -40,7 +40,7 @@ class SwinV23DStageConfig(BaseModel):
     _out_patch_size: tuple[int, int, int]
 
     @model_validator(mode="after")
-    def validate_after(self):
+    def validate(self):
         if isinstance(self.patch_merging, dict):
             assert {"merge_window_size", "out_dim_ratio"}.issubset(self.patch_merging), "Missing keys"
         if isinstance(self.patch_splitting, dict):
@@ -48,7 +48,7 @@ class SwinV23DStageConfig(BaseModel):
         return self
 
 
-class SwinV23DConfig(BaseModel):
+class SwinV23DConfig(CustomBaseModel):
     in_channels: int
     dim: int
     patch_size: tuple[int, int, int]
@@ -87,14 +87,14 @@ class SwinV23DConfig(BaseModel):
             stage._out_patch_size = patch_size
 
     @model_validator(mode="after")
-    def validate_after(self):
+    def validate(self):
         self.populate()
 
         # test divisibility of dim with number of attention heads
         for stage in self.stages:
             assert (
-                stage._out_dim % stage.num_heads == 0
-            ), f"stage._out_dim {stage._out_dim} is not divisible by stage.num_heads {stage.num_heads}"
+                stage._attention_dim % stage.num_heads == 0
+            ), f"stage._attention_dim {stage._attention_dim} is not divisible by stage.num_heads {stage.num_heads}"
 
         # test population of image_size field iff the absolute position embeddings are relative
         if self.learnable_absolute_position_embeddings:

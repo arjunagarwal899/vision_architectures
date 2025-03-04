@@ -8,13 +8,13 @@ __all__ = ['CaiT3DStage1Config', 'CaiT3DStage2Config', 'CaiT3DConfig', 'CaiT3DAt
 import torch
 from einops import repeat
 from huggingface_hub import PyTorchModelHubMixin
-from pydantic import BaseModel
+from ..utils.custom_base_model import CustomBaseModel
 from torch import nn
 
 from ..layers.attention import Attention1D, Attention1DMLP
 
 # %% ../../nbs/nets/05_cait_3d.ipynb 4
-class CaiT3DStage1Config(BaseModel):
+class CaiT3DStage1Config(CustomBaseModel):
     dim: int
     num_heads: int
     mlp_ratio: int
@@ -26,7 +26,7 @@ class CaiT3DStage1Config(BaseModel):
     stage1_depth: int
 
 
-class CaiT3DStage2Config(BaseModel):
+class CaiT3DStage2Config(CustomBaseModel):
     dim: int
     num_heads: int
     mlp_ratio: int
