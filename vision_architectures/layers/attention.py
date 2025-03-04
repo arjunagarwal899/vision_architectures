@@ -21,13 +21,15 @@ from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 # %% ../../nbs/layers/01_attention.ipynb 4
 class Attention1DConfig(CustomBaseModel):
     dim: int | tuple[int, int]
-    num_heads: int  = Field(..., description="Number of query heads")
+    num_heads: int = Field(..., description="Number of query heads")
     ratio_q_to_kv_heads: int = 1
-    relative_position_bias: RelativePositionEmbeddings | None = None
-    logit_scale: float | None = None
     logit_scale_learnable: bool = False
     attn_drop_prob: float = 0.0
     proj_drop_prob: float = 0.0
+
+    @property
+    def num_q_heads(self) -> int:
+        return self.num_heads
 
     @property
     def num_kv_heads(self) -> int:
@@ -95,32 +97,23 @@ class Attention3DWithMLPConfig(Attention3DConfig, Attention3DMLPConfig):
 
 # %% ../../nbs/layers/01_attention.ipynb 6
 class Attention1D(nn.Module):
-    """
-    Performs attention (MHA, GQA, and MQA) on 1D sequences
-    Parameters:
-        - dim: Input dimensions of k, q, and v. Attention happens at dim=dim_qk.
-            int: dimension of q, k, and v
-            tuple[int, int]: first int is dimension of q and k, second int is dimension of v
-        - num_heads: number of query heads
-        - ratio_q_to_kv_heads: number of query heads per key and value head
-        - relative_position_bias: RelativePositionEmbeddings object
-        - logit_scale: scale of the logits. Defaults to 1/sqrt(d)
-        - logit_scale_learnable: whether the logit scale is learnable
-        - attn_drop_prob: dropout probability for attention weights
-        - proj_drop_prob: dropout probability for projection layer
-    """
+    """Performs attention (MHA, GQA, and MQA) on 1D sequences"""
 
-    def __init__(self, config: Attention1DConfig | None = None, **kwargs):
+    def __init__(
+        self,
+        config: Attention1DConfig = {},
+        relative_position_bias: RelativePositionEmbeddings | None = None,
+        logit_scale: float | None = None,
+        **kwargs
+    ):
         super().__init__()
 
-        self.config = Attention1DConfig.model_validate(config or kwargs)
+        self.config = Attention1DConfig.model_validate(config | kwargs)
 
         dim_qk = self.config.dim_qk
         dim_v = self.config.dim_v
         ratio_q_to_kv_heads = self.config.ratio_q_to_kv_heads
         per_head_dim = self.config.per_head_dim_qk
-        relative_position_bias = self.config.relative_position_bias
-        logit_scale = self.config.logit_scale
         logit_scale_learnable = self.config.logit_scale_learnable
         attn_drop_prob = self.config.attn_drop_prob
         proj_drop_prob = self.config.proj_drop_prob
@@ -229,10 +222,10 @@ class Attention3D(Attention1D):
 
 # %% ../../nbs/layers/01_attention.ipynb 10
 class Attention1DMLP(nn.Module):
-    def __init__(self, config: Attention1DMLPConfig | None = None, **kwargs):
+    def __init__(self, config: Attention1DMLPConfig = {}, **kwargs):
         super().__init__()
 
-        self.config = Attention1DMLPConfig.model_validate(config or kwargs)
+        self.config = Attention1DMLPConfig.model_validate(config | kwargs)
 
         dim = self.config.dim
         mlp_ratio = self.config.mlp_ratio
@@ -274,37 +267,23 @@ class Attention3DMLP(Attention1DMLP):
 
 # %% ../../nbs/layers/01_attention.ipynb 14
 class Attention1DWithMLP(nn.Module):
-    def __init__(self, config: Attention1DWithMLPConfig | None = None, **kwargs):
+    def __init__(
+        self,
+        config: Attention1DWithMLPConfig = {},
+        relative_position_bias: RelativePositionEmbeddings | None = None,
+        logit_scale: float | None = None,
+        **kwargs
+    ):
         super().__init__()
 
-        self.config = Attention1DWithMLPConfig.model_validate(config or kwargs)
+        self.config = Attention1DWithMLPConfig.model_validate(config | kwargs)
 
-        dim = self.config.dim
         dim_qk = self.config.dim_qk
-        num_heads = self.config.num_heads
-        ratio_q_to_kv_heads = self.config.ratio_q_to_kv_heads
-        relative_position_bias = self.config.relative_position_bias
-        logit_scale = self.config.logit_scale
-        logit_scale_learnable = self.config.logit_scale_learnable
-        attn_drop_prob = self.config.attn_drop_prob
-        proj_drop_prob = self.config.proj_drop_prob
-        mlp_ratio = self.config.mlp_ratio
-        activation = self.config.activation
-        mlp_drop_prob = self.config.mlp_drop_prob
         layer_norm_eps = self.config.layer_norm_eps
 
-        self.attn = Attention1D(
-            dim=dim,
-            num_heads=num_heads,
-            ratio_q_to_kv_heads=ratio_q_to_kv_heads,
-            relative_position_bias=relative_position_bias,
-            logit_scale=logit_scale,
-            logit_scale_learnable=logit_scale_learnable,
-            attn_drop_prob=attn_drop_prob,
-            proj_drop_prob=proj_drop_prob,
-        )
+        self.attn = Attention1D(self.config, relative_position_bias=relative_position_bias, logit_scale=logit_scale)
         self.layernorm1 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
-        self.mlp = Attention1DMLP(dim=dim_qk, mlp_ratio=mlp_ratio, activation=activation, mlp_drop_prob=mlp_drop_prob)
+        self.mlp = Attention1DMLP(self.config)
         self.layernorm2 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
 
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
@@ -347,37 +326,23 @@ class Attention1DWithMLP(nn.Module):
 
 # %% ../../nbs/layers/01_attention.ipynb 16
 class Attention3DWithMLP(nn.Module):
-    def __init__(self, config: Attention3DWithMLPConfig | None = None, **kwargs):
+    def __init__(
+        self,
+        config: Attention3DWithMLPConfig = {},
+        relative_position_bias: RelativePositionEmbeddings | None = None,
+        logit_scale: float | None = None,
+        **kwargs
+    ):
         super().__init__()
 
-        self.config = Attention3DWithMLPConfig.model_validate(config or kwargs)
+        self.config = Attention3DWithMLPConfig.model_validate(config | kwargs)
 
-        dim = self.config.dim
         dim_qk = self.config.dim_qk
-        num_heads = self.config.num_heads
-        ratio_q_to_kv_heads = self.config.ratio_q_to_kv_heads
-        relative_position_bias = self.config.relative_position_bias
-        logit_scale = self.config.logit_scale
-        logit_scale_learnable = self.config.logit_scale_learnable
-        attn_drop_prob = self.config.attn_drop_prob
-        proj_drop_prob = self.config.proj_drop_prob
-        mlp_ratio = self.config.mlp_ratio
-        activation = self.config.activation
-        mlp_drop_prob = self.config.mlp_drop_prob
         layer_norm_eps = self.config.layer_norm_eps
 
-        self.attn = Attention3D(
-            dim=dim,
-            num_heads=num_heads,
-            ratio_q_to_kv_heads=ratio_q_to_kv_heads,
-            relative_position_bias=relative_position_bias,
-            logit_scale=logit_scale,
-            logit_scale_learnable=logit_scale_learnable,
-            attn_drop_prob=attn_drop_prob,
-            proj_drop_prob=proj_drop_prob,
-        )
+        self.attn = Attention3D(self.config, relative_position_bias=relative_position_bias, logit_scale=logit_scale)
         self.layernorm1 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
-        self.mlp = Attention3DMLP(dim=dim_qk, mlp_ratio=mlp_ratio, activation=activation, mlp_drop_prob=mlp_drop_prob)
+        self.mlp = Attention3DMLP(self.config)
         self.layernorm2 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
 
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):

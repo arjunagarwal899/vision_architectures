@@ -30,8 +30,9 @@ class RelativePositionEmbeddings3DConfig(CustomBaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
+        grid_size = data.get("grid_size")
         if isinstance(data["grid_size"], int):
-            data["grid_size"] = (data["grid_size"], data["grid_size"], data["grid_size"])
+            data["grid_size"] = (grid_size, grid_size, grid_size)
         return data
 
     @model_validator(mode="after")
@@ -91,10 +92,10 @@ def get_coords_grid(grid_size: tuple[int, int, int]) -> torch.Tensor:
 
 # %% ../../nbs/layers/02_embeddings.ipynb 8
 class RelativePositionEmbeddings3D(nn.Module):
-    def __init__(self, config: RelativePositionEmbeddings3DConfig | None = None, **kwargs):
+    def __init__(self, config: RelativePositionEmbeddings3DConfig = {}, **kwargs):
         super().__init__()
 
-        self.config = RelativePositionEmbeddings3DConfig.model_validate(config or kwargs)
+        self.config = RelativePositionEmbeddings3DConfig.model_validate(config | kwargs)
 
         num_heads = self.config.num_heads
         grid_size = self.config.grid_size
@@ -135,10 +136,10 @@ class RelativePositionEmbeddings3D(nn.Module):
 
 # %% ../../nbs/layers/02_embeddings.ipynb 10
 class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
-    def __init__(self, config: RelativePositionEmbeddings3DConfig | None = None, **kwargs):
+    def __init__(self, config: RelativePositionEmbeddings3DConfig = {}, **kwargs):
         super().__init__()
 
-        self.config = RelativePositionEmbeddings3DConfig.model_validate(config or kwargs)
+        self.config = RelativePositionEmbeddings3DConfig.model_validate(config | kwargs)
 
         num_heads = self.config.num_heads
         grid_size = self.config.grid_size
@@ -251,10 +252,10 @@ def get_absolute_position_embeddings_3d(
 
 # %% ../../nbs/layers/02_embeddings.ipynb 14
 class AbsolutePositionEmbeddings3D(nn.Module):
-    def __init__(self, config: AbsolutePositionEmbeddings3DConfig | None = None, **kwargs):
+    def __init__(self, config: AbsolutePositionEmbeddings3DConfig = {}, **kwargs):
         super().__init__()
 
-        self.config = AbsolutePositionEmbeddings3DConfig.model_validate(config or kwargs)
+        self.config = AbsolutePositionEmbeddings3DConfig.model_validate(config | kwargs)
 
         dim = self.config.dim
         grid_size = self.config.grid_size
@@ -268,7 +269,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             self.position_embeddings_cache[grid_size] = get_absolute_position_embeddings_3d(dim, grid_size)
             self.position_embeddings = nn.Parameter(self.position_embeddings_cache[grid_size], requires_grad=learnable)
 
-    def forward(self, batch_size=None, grid_size=None, spacings=None, device=torch.device("cpu")):
+    def forward(self, batch_size=None, grid_size=None, spacings: torch.Tensor = None, device=torch.device("cpu")):
         assert self.position_embeddings is not None or grid_size is not None, "grid_size must be provided"
         assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
 
@@ -302,17 +303,17 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             )
             # (b, dim, 1, 1, 1)
 
-            position_embeddings = position_embeddings * spacings
+            position_embeddings = position_embeddings * spacings.to(position_embeddings.device)
             # (b, dim, d, h, w)
 
         return position_embeddings
 
 # %% ../../nbs/layers/02_embeddings.ipynb 17
 class PatchEmbeddings3D(nn.Module):
-    def __init__(self, config: PatchEmbeddings3DConfig | None = None, **kwargs):
+    def __init__(self, config: PatchEmbeddings3DConfig = {}, **kwargs):
         super().__init__()
 
-        self.config = PatchEmbeddings3DConfig.model_validate(config or kwargs)
+        self.config = PatchEmbeddings3DConfig.model_validate(config | kwargs)
 
         patch_size = self.config.patch_size
         in_channels = self.config.in_channels
