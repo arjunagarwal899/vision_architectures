@@ -1,6 +1,8 @@
 einops
 huggingface_hub
+monai
 munch
+nbdev
 numpy
 pydantic
 torch

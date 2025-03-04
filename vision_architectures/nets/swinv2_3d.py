@@ -57,7 +57,7 @@ class SwinV23DStageConfig(Attention3DWithMLPConfig):
     depth: int
     window_size: tuple[int, int, int]
 
-    use_relative_position_bias: bool = False
+    use_relative_position_bias: bool = True
     patch_merging: SwinV23DPatchMergingConfig | None = None
     patch_splitting: SwinV23DPatchSplittingConfig | None = None
 
