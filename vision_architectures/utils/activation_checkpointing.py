@@ -18,4 +18,4 @@ class ActivationCheckpointing():
     def __call__(self, fn: Callable, *args, **kwargs):
         if self.perform_checkpointing:
             return checkpoint(lambda: fn(*args, **kwargs), use_reentrant=False)
-        return fn(*args)
+        return fn(*args, **kwargs)

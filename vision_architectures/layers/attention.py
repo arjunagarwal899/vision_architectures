@@ -15,6 +15,7 @@ from einops import rearrange
 from torch import nn
 
 from .embeddings import RelativePositionEmbeddings
+from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
@@ -222,7 +223,7 @@ class Attention3D(Attention1D):
 
 # %% ../../nbs/layers/01_attention.ipynb 10
 class Attention1DMLP(nn.Module):
-    def __init__(self, config: Attention1DMLPConfig = {}, **kwargs):
+    def __init__(self, config: Attention1DMLPConfig = {}, checkpointing_level=0, **kwargs):
         super().__init__()
 
         self.config = Attention1DMLPConfig.model_validate(config | kwargs)
@@ -242,12 +243,19 @@ class Attention1DMLP(nn.Module):
         self.dense2 = nn.Linear(dim * mlp_ratio, dim)
         self.dropout = nn.Dropout(mlp_drop_prob)
 
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, T, dim)
-        hidden_states = self.dense1(hidden_states)
-        hidden_states = self.act(hidden_states)
-        hidden_states = self.dense2(hidden_states)
-        hidden_states = self.dropout(hidden_states)
+
+        def checkpoint_entire_mlp(hidden_states: torch.Tensor):
+            hidden_states = self.dense1(hidden_states)
+            hidden_states = self.act(hidden_states)
+            hidden_states = self.dense2(hidden_states)
+            hidden_states = self.dropout(hidden_states)
+            return hidden_states
+        
+        hidden_states = self.checkpointing_level1(checkpoint_entire_mlp, hidden_states)
         return hidden_states
 
 # %% ../../nbs/layers/01_attention.ipynb 12
