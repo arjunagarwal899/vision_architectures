@@ -119,23 +119,53 @@ class Perceiver3DEncoderEncode(nn.Module):
 
         self.cross_attention = nn.ModuleList([Attention1DWithMLP(self.config.model_dump()) for _ in range(num_layers)])
 
-    def forward(self, x, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
-        # x: (b, dim_or_channels, z, y, x)
+    @staticmethod
+    def unfold_with_rollover(x: torch.Tensor, window_size: int | None, stride: int | None):
+        if window_size is None or stride is None:
+            return x.unsqueeze(0)
+        total_len = x.shape[1]
+        num_windows = (total_len + stride - 1) // stride  # Number of windows needed
+        pad_len = max(0, window_size + (num_windows - 1) * stride - total_len)  # How many elements are missing
+        if pad_len > 0:
+            x = torch.cat([x, x[:, :pad_len]], dim=1)  # Rollover padding
+        x = x.unfold(1, window_size, stride)
+        x = rearrange(x, "b num_windows dim tokens_per_window -> num_windows b tokens_per_window dim")
+        return x
 
+    def forward(
+        self,
+        x: torch.Tensor | list[torch.Tensor],
+        sliding_window: int | None = None,
+        sliding_stride: int | None = None,
+        return_all: bool = False,
+    ) -> torch.Tensor | dict[str, torch.Tensor]:
+        # x: [(b, in_channels, z, y, x), ...]
+
+        # Prepare keys and values
+        if not isinstance(x, list):
+            x = [x]
         if self.channel_mapping is not None:
-            x = self.channel_mapping(x)
-        # (b, dim, z, y, x)
+            for i in range(len(x)):
+                x[i] = self.channel_mapping(x[i])
+                x[i] = rearrange(x[i], "b d z y x -> b (z y x) d")
+        kv = torch.cat(x, dim=1)
+        # (b, num_kv_tokens, dim)
 
-        b = x.shape[0]
-
+        # Prepare queries
+        b = kv.shape[0]
         q = repeat(self.latent_tokens, "t d -> b t d", b=b)
         # (b, num_latent_tokens, dim)
-        kv = rearrange(x, "b d z y x -> b (z y x) d")
-        # (b, z*y*x, dim)
+
+        # Prepare sliding window
+        kv_windows = self.unfold_with_rollover(kv, sliding_window, sliding_stride)
+        # (num_windows, b, window_size, dim)
+
+        # Perform attention
         embeddings = [q]
         for cross_attention_layer in self.cross_attention:
-            q = embeddings[-1]
-            embeddings.append(cross_attention_layer(q, kv, kv))
+            for kv_window in kv_windows:
+                q = cross_attention_layer(q, kv_window, kv_window)
+            embeddings.append(q)
         # (b, num_latent_tokens, dim)
 
         return_value = embeddings[-1]
@@ -144,10 +174,9 @@ class Perceiver3DEncoderEncode(nn.Module):
                 "embeddings": return_value,
                 "all_embeddings": embeddings,
             }
-
         return return_value
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 13
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 14
 class Perceiver3DEncoderProcess(nn.Module):
     def __init__(self, config: Perceiver3DEncoderProcessConfig | Perceiver3DEncoderConfig = {}, **kwargs):
         super().__init__()
@@ -181,7 +210,7 @@ class Perceiver3DEncoderProcess(nn.Module):
 
         return return_value
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 15
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 16
 class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(
         self,
@@ -196,12 +225,18 @@ class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
         self.encode = Perceiver3DEncoderEncode(config.encode, channel_mapping)
         self.process = Perceiver3DEncoderProcess(config.process)
 
-    def forward(self, x, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
+    def forward(
+        self,
+        x,
+        sliding_window: int | None = None,
+        sliding_stride: int | None = None,
+        return_all: bool = False,
+    ) -> torch.Tensor | dict[str, torch.Tensor]:
         # x: (b, in_channels, z, y, x)
 
         return_value = {}
 
-        encode_embeddings = self.encode(x, return_all=True)["all_embeddings"]
+        encode_embeddings = self.encode(x, sliding_window, sliding_stride, return_all=True)["all_embeddings"]
         return_value["encode_embeddings"] = encode_embeddings
         embeddings = encode_embeddings[-1]
         # (b, num_tokens, dim)
@@ -217,7 +252,7 @@ class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
 
         return return_value
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 18
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 19
 class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(
         self,
