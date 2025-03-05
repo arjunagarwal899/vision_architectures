@@ -257,7 +257,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         # (b, dim, z, y, x)
 
         if self.position_embeddings is not None:
-            q = q + self.position_embeddings(batch_size=b)
+            q = q + self.position_embeddings(batch_size=b, grid_size=out_shape)
 
         q = rearrange(q, "b d z y x -> b (z y x) d")
         # (b, num_output_tokens, dim)
