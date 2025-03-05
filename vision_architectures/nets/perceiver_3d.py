@@ -135,7 +135,7 @@ class Perceiver3DEncoderEncode(nn.Module):
     def forward(
         self,
         x: torch.Tensor | list[torch.Tensor],
-        sliding_window: int | None = None,
+        sliding_window: int | None = None,  # Sliding window may be beneficial during inference time
         sliding_stride: int | None = None,
         return_all: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
