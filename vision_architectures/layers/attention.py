@@ -105,6 +105,7 @@ class Attention1D(nn.Module):
         config: Attention1DConfig = {},
         relative_position_bias: RelativePositionEmbeddings | None = None,
         logit_scale: float | None = None,
+        checkpointing_level: int = 0,
         **kwargs
     ):
         super().__init__()
@@ -133,7 +134,10 @@ class Attention1D(nn.Module):
 
         self.relative_position_bias = relative_position_bias
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+        self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
+
+    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
         """
         Parameters: T => number of tokens, b => batch size
             - query: (b, T_q, dim_qk)
@@ -141,27 +145,34 @@ class Attention1D(nn.Module):
             - value: (b, T_kv, dim_v)
         """
 
-        query = self.W_q(query)
-        key = self.W_k(key)
-        value = self.W_v(value)
+        def get_final_query_key_value(query, key, value):
+            query = self.W_q(query)
+            key = self.W_k(key)
+            value = self.W_v(value)
 
-        rearrange_partial = partial(rearrange, pattern="b T (num_heads d) -> b num_heads T d")
-        query = rearrange_partial(query, num_heads=self.config.num_heads)
-        key = rearrange_partial(key, num_heads=self.config.num_kv_heads)
-        value = rearrange_partial(value, num_heads=self.config.num_kv_heads)
-        # query: (b, num_heads, T, per_head_dim)
-        # key: (b, num_kv_heads, T, per_head_dim)
-        # value: (b, num_kv_heads, T, per_head_dim)
+            rearrange_partial = partial(rearrange, pattern="b T (num_heads d) -> b num_heads T d")
+            query = rearrange_partial(query, num_heads=self.config.num_heads)
+            key = rearrange_partial(key, num_heads=self.config.num_kv_heads)
+            value = rearrange_partial(value, num_heads=self.config.num_kv_heads)
+            # query: (b, num_heads, T, per_head_dim)
+            # key: (b, num_kv_heads, T, per_head_dim)
+            # value: (b, num_kv_heads, T, per_head_dim)
 
-        if isinstance(self.logit_scale, nn.Module):
-            logit_scale = self.logit_scale()
-        else:
-            logit_scale = self.logit_scale
+            if isinstance(self.logit_scale, nn.Module):
+                logit_scale = self.logit_scale()
+            else:
+                logit_scale = self.logit_scale
 
-        query_normalized = F.normalize(query, dim=-1)
-        key_normalized = F.normalize(key, dim=-1)
+            query_normalized = F.normalize(query, dim=-1)
+            key_normalized = F.normalize(key, dim=-1)
 
-        query_normalized_and_scaled = query_normalized * logit_scale  # Scale the query beforehand
+            query_normalized_and_scaled = query_normalized * logit_scale  # Scale the query beforehand
+
+            return query_normalized_and_scaled, key_normalized, value
+
+        query_normalized_and_scaled, key_normalized, value = self.checkpointing_level1(
+            get_final_query_key_value, query, key, value
+        )
 
         relative_position_bias = None
         if self.relative_position_bias is not None:
@@ -182,15 +193,22 @@ class Attention1D(nn.Module):
         output = rearrange(output, "b num_heads T d -> b T (num_heads d)")
         # (b, T, dim_qk)
 
-        output = self.proj(output)
-        output = self.proj_drop(output)
+        def get_final_output(output):
+            output = self.proj(output)
+            output = self.proj_drop(output)
+            return output
+
+        output = self.checkpointing_level1(get_final_output, output)
         # (b, T, dim_qk)
 
         return output
 
+    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
+        return self.checkpointing_level2(self._forward, query, key, value)
+
 # %% ../../nbs/layers/01_attention.ipynb 8
 class Attention3D(Attention1D):
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
         """
         Parameters: z => depth, y => height, x => width, b => batch size
             - query: (b, [dim_qk], z_q, y_q, x_q, [dim_qk])
@@ -215,15 +233,18 @@ class Attention3D(Attention1D):
         key = rearrange(key, forward_pattern)
         value = rearrange(value, forward_pattern)
 
-        output = super().forward(query, key, value)
+        output = super()._forward(query, key, value)
 
         output = rearrange(output, reverse_pattern, z=z_q, y=y_q, x=x_q)
 
         return output
 
+    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+        return self.checkpointing_level2(self._forward, query, key, value, channels_first)
+
 # %% ../../nbs/layers/01_attention.ipynb 10
 class Attention1DMLP(nn.Module):
-    def __init__(self, config: Attention1DMLPConfig = {}, checkpointing_level=0, **kwargs):
+    def __init__(self, config: Attention1DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
 
         self.config = Attention1DMLPConfig.model_validate(config | kwargs)
@@ -245,33 +266,34 @@ class Attention1DMLP(nn.Module):
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
-    def forward(self, hidden_states: torch.Tensor):
+    def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, T, dim)
-
-        def checkpoint_entire_mlp(hidden_states: torch.Tensor):
-            hidden_states = self.dense1(hidden_states)
-            hidden_states = self.act(hidden_states)
-            hidden_states = self.dense2(hidden_states)
-            hidden_states = self.dropout(hidden_states)
-            return hidden_states
-        
-        hidden_states = self.checkpointing_level1(checkpoint_entire_mlp, hidden_states)
+        hidden_states = self.dense1(hidden_states)
+        hidden_states = self.act(hidden_states)
+        hidden_states = self.dense2(hidden_states)
+        hidden_states = self.dropout(hidden_states)
         return hidden_states
+
+    def forward(self, hidden_states: torch.Tensor):
+        return self.checkpointing_level1(self._forward, hidden_states)
 
 # %% ../../nbs/layers/01_attention.ipynb 12
 class Attention3DMLP(Attention1DMLP):
-    def forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
         # hidden_states: (b, dim, z, y, x) or (b, z, y, x, dim)
 
         if channels_first:
             hidden_states = rearrange(hidden_states, "b d z y x -> b z y x d")
 
-        hidden_states = super().forward(hidden_states)
+        hidden_states = super()._forward(hidden_states)
 
         if channels_first:
             hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x")
 
         return hidden_states
+
+    def forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
+        return self.checkpointing_level1(self._forward, hidden_states, channels_first)
 
 # %% ../../nbs/layers/01_attention.ipynb 14
 class Attention1DWithMLP(nn.Module):
@@ -280,6 +302,7 @@ class Attention1DWithMLP(nn.Module):
         config: Attention1DWithMLPConfig = {},
         relative_position_bias: RelativePositionEmbeddings | None = None,
         logit_scale: float | None = None,
+        checkpointing_level: int = 0,
         **kwargs
     ):
         super().__init__()
@@ -289,12 +312,19 @@ class Attention1DWithMLP(nn.Module):
         dim_qk = self.config.dim_qk
         layer_norm_eps = self.config.layer_norm_eps
 
-        self.attn = Attention1D(self.config, relative_position_bias=relative_position_bias, logit_scale=logit_scale)
+        self.attn = Attention1D(
+            self.config,
+            relative_position_bias=relative_position_bias,
+            logit_scale=logit_scale,
+            checkpointing_level=checkpointing_level,
+        )
         self.layernorm1 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
-        self.mlp = Attention1DMLP(self.config)
+        self.mlp = Attention1DMLP(self.config, checkpointing_level=checkpointing_level)
         self.layernorm2 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
+        self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
+
+    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
         # Each is (b, T, dim)
         res_connection1 = query
         # (b, T, dim)
@@ -332,6 +362,9 @@ class Attention1DWithMLP(nn.Module):
 
         return hidden_states
 
+    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
+        return self.checkpointing_level3(self._forward, query, key, value)
+
 # %% ../../nbs/layers/01_attention.ipynb 16
 class Attention3DWithMLP(nn.Module):
     def __init__(
@@ -339,6 +372,7 @@ class Attention3DWithMLP(nn.Module):
         config: Attention3DWithMLPConfig = {},
         relative_position_bias: RelativePositionEmbeddings | None = None,
         logit_scale: float | None = None,
+        checkpointing_level: int = 0,
         **kwargs
     ):
         super().__init__()
@@ -348,12 +382,19 @@ class Attention3DWithMLP(nn.Module):
         dim_qk = self.config.dim_qk
         layer_norm_eps = self.config.layer_norm_eps
 
-        self.attn = Attention3D(self.config, relative_position_bias=relative_position_bias, logit_scale=logit_scale)
+        self.attn = Attention3D(
+            self.config,
+            relative_position_bias=relative_position_bias,
+            logit_scale=logit_scale,
+            checkpointing_level=checkpointing_level,
+        )
         self.layernorm1 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
-        self.mlp = Attention3DMLP(self.config)
+        self.mlp = Attention3DMLP(self.config, checkpointing_level=checkpointing_level)
         self.layernorm2 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+        self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
+
+    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
         # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         if channels_first:
@@ -401,3 +442,6 @@ class Attention3DWithMLP(nn.Module):
             # (b, dim, tokens_z, tokens_y, tokens_x)
 
         return hidden_states
+    
+    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+        return self.checkpointing_level3(self._forward, query, key, value, channels_first)
