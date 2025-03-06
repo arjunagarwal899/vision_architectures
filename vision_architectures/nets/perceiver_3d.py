@@ -13,6 +13,7 @@ from torch import nn
 
 from ..layers.attention import Attention1DWithMLP, Attention1DWithMLPConfig
 from ..layers.embeddings import AbsolutePositionEmbeddings3D
+from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, model_validator
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 4
@@ -97,6 +98,7 @@ class Perceiver3DEncoderEncode(nn.Module):
         self,
         config: Perceiver3DEncoderEncodeConfig | Perceiver3DEncoderConfig = {},
         channel_mapping: Perceiver3DChannelMapping | None = None,
+        checkpointing_level: int = 0,
         **kwargs
     ):
         super().__init__()
@@ -117,7 +119,15 @@ class Perceiver3DEncoderEncode(nn.Module):
 
         self.channel_mapping = channel_mapping
 
-        self.cross_attention = nn.ModuleList([Attention1DWithMLP(self.config.model_dump()) for _ in range(num_layers)])
+        self.cross_attention = nn.ModuleList(
+            [
+                Attention1DWithMLP(self.config.model_dump(), checkpointing_level=checkpointing_level)
+                for _ in range(num_layers)
+            ]
+        )
+
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+        self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
     @staticmethod
     def unfold_with_rollover(x: torch.Tensor, window_size: int | None, stride: int | None):
@@ -135,23 +145,27 @@ class Perceiver3DEncoderEncode(nn.Module):
         )
         return x
 
-    def forward(
+    def _forward(
         self,
         x: torch.Tensor | list[torch.Tensor],
-        sliding_window: int | None = None,  # Sliding window may be beneficial during inference time
+        sliding_window: int | None = None,
         sliding_stride: int | None = None,
         return_all: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # x: [(b, in_channels, z, y, x), ...]
 
         # Prepare keys and values
-        if not isinstance(x, list):
-            x = [x]
-        if self.channel_mapping is not None:
-            for i in range(len(x)):
-                x[i] = self.channel_mapping(x[i])
-                x[i] = rearrange(x[i], "b d z y x -> b (z y x) d")
-        kv = torch.cat(x, dim=1)
+        def prepare_keys_values(x: torch.Tensor):
+            if not isinstance(x, list):
+                x = [x]
+            if self.channel_mapping is not None:
+                for i in range(len(x)):
+                    x[i] = self.channel_mapping(x[i])
+                    x[i] = rearrange(x[i], "b d z y x -> b (z y x) d")
+            kv = torch.cat(x, dim=1)
+            return kv
+
+        kv = self.checkpointing_level1(prepare_keys_values, x)
         # (b, num_kv_tokens, dim)
 
         # Prepare queries
@@ -179,9 +193,23 @@ class Perceiver3DEncoderEncode(nn.Module):
             }
         return return_value
 
+    def forward(
+        self,
+        x: torch.Tensor | list[torch.Tensor],
+        sliding_window: int | None = None,  # Sliding window may be beneficial during inference time
+        sliding_stride: int | None = None,
+        return_all: bool = False,
+    ):
+        return self.checkpointing_level4(self._forward, x, sliding_window, sliding_stride, return_all)
+
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 14
 class Perceiver3DEncoderProcess(nn.Module):
-    def __init__(self, config: Perceiver3DEncoderProcessConfig | Perceiver3DEncoderConfig = {}, **kwargs):
+    def __init__(
+        self,
+        config: Perceiver3DEncoderProcessConfig | Perceiver3DEncoderConfig = {},
+        checkpointing_level: int = 0,
+        **kwargs
+    ):
         super().__init__()
 
         if isinstance(config, Perceiver3DEncoderConfig):
@@ -193,9 +221,16 @@ class Perceiver3DEncoderProcess(nn.Module):
 
         num_layers = self.config.num_layers
 
-        self.self_attention = nn.ModuleList([Attention1DWithMLP(self.config.model_dump()) for _ in range(num_layers)])
+        self.self_attention = nn.ModuleList(
+            [
+                Attention1DWithMLP(self.config.model_dump(), checkpointing_level=checkpointing_level)
+                for _ in range(num_layers)
+            ]
+        )
 
-    def forward(self, q, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
+        self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
+
+    def _forward(self, q, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
         # q: (b, num_tokens, dim)
 
         embeddings = [q]
@@ -213,22 +248,28 @@ class Perceiver3DEncoderProcess(nn.Module):
 
         return return_value
 
+    def forward(self, q: torch.Tensor, return_all: bool = False):
+        return self.checkpointing_level4(self._forward, q, return_all)
+
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 16
 class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(
         self,
         config: Perceiver3DEncoderConfig = {},
         channel_mapping: Perceiver3DChannelMapping | None = None,
+        checkpointing_level: int = 0,
         **kwargs,
     ):
         super().__init__()
 
         self.config = Perceiver3DEncoderConfig.model_validate(config | kwargs)
 
-        self.encode = Perceiver3DEncoderEncode(config.encode, channel_mapping)
-        self.process = Perceiver3DEncoderProcess(config.process)
+        self.encode = Perceiver3DEncoderEncode(config.encode, channel_mapping, checkpointing_level)
+        self.process = Perceiver3DEncoderProcess(config.process, checkpointing_level)
 
-    def forward(
+        self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
+
+    def _forward(
         self,
         x,
         sliding_window: int | None = None,
@@ -255,12 +296,22 @@ class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
 
         return return_value
 
+    def forward(
+        self,
+        x: torch.Tensor,
+        sliding_window: int | None = None,
+        sliding_stride: int | None = None,
+        return_all: bool = False,
+    ):
+        return self.checkpointing_level5(self._forward, x, sliding_window, sliding_stride, return_all)
+
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 19
 class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(
         self,
         config: Perceiver3DDecoderConfig | Perceiver3DConfig = {},
         position_embeddings: AbsolutePositionEmbeddings3D = None,
+        checkpointing_level: int = 0,
         **kwargs,
     ):
         super().__init__()
@@ -280,11 +331,18 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.position_embeddings = position_embeddings
 
-        self.cross_attention = nn.ModuleList([Attention1DWithMLP(config.model_dump()) for _ in range(num_layers)])
+        self.cross_attention = nn.ModuleList(
+            [
+                Attention1DWithMLP(config.model_dump(), checkpointing_level=checkpointing_level)
+                for _ in range(num_layers)
+            ]
+        )
 
         self.channel_mapping = Perceiver3DChannelMapping(in_channels=dim, out_channels=self.config.out_channels)
 
-    def forward(
+        self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
+
+    def _forward(
         self, kv, out_shape: tuple[int, int, int], return_all: bool = False
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # kv: (b, num_tokens, dim)
@@ -333,3 +391,11 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
             }
 
         return return_value
+
+    def forward(
+        self,
+        kv: torch.Tensor,
+        out_shape: tuple[int, int, int],
+        return_all: bool = False,
+    ):
+        return self.checkpointing_level4(self._forward, kv, out_shape, return_all)
