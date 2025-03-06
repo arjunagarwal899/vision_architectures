@@ -44,11 +44,26 @@ class MaxViTSqueezeExcitation(nn.Module):
 
 class MaxViTCNNBlock3d(nn.Module):
     def __init__(
-        self, in_channels, out_channels, kernel_size, stride=1, padding=0, groups=1, act=True, bn=True, bias=False
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        groups=1,
+        act=True,
+        bn=True,
+        bias=False,
     ):
         super().__init__()
         self.cnn = nn.Conv3d(
-            in_channels, out_channels, kernel_size, stride, padding, groups=groups, bias=bias
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            groups=groups,
+            bias=bias,
         )  # bias set to False as we are using BatchNorm
 
         self.bn = nn.BatchNorm3d(out_channels) if bn else nn.Identity()
@@ -103,7 +118,12 @@ class MaxViTMBConv3d(nn.Module):
 
         # Depthwise convolution phase
         self.depthwise_conv = MaxViTCNNBlock3d(
-            hidden_dim, hidden_dim, kernel_size=kernel_size, stride=stride, padding=padding, groups=hidden_dim
+            hidden_dim,
+            hidden_dim,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            groups=hidden_dim,
         )
 
         # Squeeze Excitation phase
@@ -198,7 +218,11 @@ class MaxViT3DMHSA(nn.Module):
 
         # total_b, num_heads, total_w, d/num_heads
         out = rearrange(
-            context, "b h (w1 w2 w3) d -> b w1 w2 w3 (h d)", w1=window_height, w2=window_width, w3=window_depth
+            context,
+            "b h (w1 w2 w3) d -> b w1 w2 w3 (h d)",
+            w1=window_height,
+            w2=window_width,
+            w3=window_depth,
         )  # merge heads
 
         # total_b, w1, w2 ,w3, d
@@ -221,7 +245,13 @@ class MaxViT3DStem0(nn.Module):
                 padding=1,
                 bias=self.config["bias"],
             ),
-            nn.Conv3d(self.config["hidden_dim"], self.config["out_channels"], 3, padding=1, bias=self.config["bias"]),
+            nn.Conv3d(
+                self.config["hidden_dim"],
+                self.config["out_channels"],
+                3,
+                padding=1,
+                bias=self.config["bias"],
+            ),
         )
 
     def forward(self, x):
@@ -255,7 +285,11 @@ class MaxViT3DBlock(nn.Module):
 
         self.layernorm1 = nn.LayerNorm(dim)
         self.blockAttn = MaxViT3DMHSA(
-            dim=dim, dim_per_head=dim_per_head, dropout=dropout, window_size=window_size, bias=bias
+            dim=dim,
+            dim_per_head=dim_per_head,
+            dropout=dropout,
+            window_size=window_size,
+            bias=bias,
         )
 
         self.layernorm2 = nn.LayerNorm(dim)
@@ -263,7 +297,11 @@ class MaxViT3DBlock(nn.Module):
 
         self.layernorm3 = nn.LayerNorm(dim)
         self.gridAttn = MaxViT3DMHSA(
-            dim=dim, dim_per_head=dim_per_head, dropout=dropout, window_size=window_size, bias=bias
+            dim=dim,
+            dim_per_head=dim_per_head,
+            dropout=dropout,
+            window_size=window_size,
+            bias=bias,
         )
         self.layernorm4 = nn.LayerNorm(dim)
         self.FFN2 = MaxViT3DMLP(dim=dim, dropout=dropout, bias=bias)
@@ -273,7 +311,11 @@ class MaxViT3DBlock(nn.Module):
         x = self.MBConv(x)
         # b,d,x,y,z
         x = rearrange(
-            x, "b d (x w1) (y w2) (z w3) -> b x y z w1 w2 w3 d", w1=self.w1, w2=self.w2, w3=self.w3
+            x,
+            "b d (x w1) (y w2) (z w3) -> b x y z w1 w2 w3 d",
+            w1=self.w1,
+            w2=self.w2,
+            w3=self.w3,
         )  # block-like attention
         # b,x/w1,y/w2,z/w3,w1,w2,w3,d
         x = self.layernorm1(x)
@@ -284,7 +326,11 @@ class MaxViT3DBlock(nn.Module):
         x = rearrange(x, "b x y z w1 w2 w3 d -> b d (x w1) (y w2) (z w3)")
         # b,d,x,y,z
         x = rearrange(
-            x, "b d (w1 x) (w2 y) (w3 z) -> b x y z w1 w2 w3 d", w1=self.w1, w2=self.w2, w3=self.w3
+            x,
+            "b d (w1 x) (w2 y) (w3 z) -> b x y z w1 w2 w3 d",
+            w1=self.w1,
+            w2=self.w2,
+            w3=self.w3,
         )  # grid-like attention
         # b,x/w1,y/w2,z/w3,w1,w2,w3,d
         x = self.layernorm3(x)
@@ -322,7 +368,6 @@ class MaxViT3DEncoder(nn.Module):
             self.stems.append(MaxViT3DStem(stage_config))
 
     def forward(self, hidden_states: torch.Tensor):
-
         for stem in self.stems:
             hidden_states = stem(hidden_states)
 

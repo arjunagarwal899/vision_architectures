@@ -15,14 +15,22 @@ from huggingface_hub import PyTorchModelHubMixin
 from munch import munchify
 from torch import nn
 
-from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
+from vision_architectures.layers.attention import (
+    Attention3DWithMLP,
+    Attention3DWithMLPConfig,
+)
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
     PatchEmbeddings3D,
     RelativePositionEmbeddings3DConfig,
     RelativePositionEmbeddings3DMetaNetwork,
 )
-from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
+from ..utils.activation_checkpointing import ActivationCheckpointing
+from vision_architectures.utils.custom_base_model import (
+    CustomBaseModel,
+    Field,
+    model_validator,
+)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 4
 class SwinV23DPatchMergingConfig(CustomBaseModel):
@@ -35,7 +43,11 @@ class SwinV23DPatchMergingConfig(CustomBaseModel):
         super().validate_before(data)
         merge_window_size = data.get("merge_window_size")
         if isinstance(merge_window_size, int):
-            data["merge_window_size"] = (merge_window_size, merge_window_size, merge_window_size)
+            data["merge_window_size"] = (
+                merge_window_size,
+                merge_window_size,
+                merge_window_size,
+            )
         return data
 
 
@@ -49,7 +61,11 @@ class SwinV23DPatchSplittingConfig(CustomBaseModel):
         super().validate_before(data)
         final_window_size = data.get("final_window_size")
         if isinstance(final_window_size, int):
-            data["final_window_size"] = (final_window_size, final_window_size, final_window_size)
+            data["final_window_size"] = (
+                final_window_size,
+                final_window_size,
+                final_window_size,
+            )
         return data
 
 
@@ -166,7 +182,12 @@ class SwinV23DLayerLogitScale(nn.Module):
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 9
 class SwinV23DLayer(nn.Module):
-    def __init__(self, config: RelativePositionEmbeddings3DConfig | Attention3DWithMLPConfig = {}, **kwargs):
+    def __init__(
+        self,
+        config: RelativePositionEmbeddings3DConfig | Attention3DWithMLPConfig = {},
+        checkpointing_level: int = 0,
+        **kwargs
+    ):
         super().__init__()
 
         all_inputs = config | kwargs
@@ -185,7 +206,9 @@ class SwinV23DLayer(nn.Module):
         logit_scale = SwinV23DLayerLogitScale(self.transformer_config.num_heads)
 
         self.transformer = Attention3DWithMLP(
-            self.transformer_config, relative_position_bias=relative_position_bias, logit_scale=logit_scale
+            self.transformer_config,
+            relative_position_bias=relative_position_bias,
+            logit_scale=logit_scale,
         )
 
     def forward(self, hidden_states: torch.Tensor):
@@ -461,7 +484,10 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
             embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
 
         absolute_position_embeddings = self.absolute_position_embeddings(
-            batch_size=embeddings.shape[0], grid_size=embeddings.shape[2:], spacings=spacings, device=embeddings.device
+            batch_size=embeddings.shape[0],
+            grid_size=embeddings.shape[2:],
+            spacings=spacings,
+            device=embeddings.device,
         )
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
         embeddings = embeddings + absolute_position_embeddings
@@ -554,7 +580,11 @@ class SwinV23DMIM(nn.Module):
             _mask_patches[: int(mask_ratio * num_patches)] = 1
             _mask_patches = _mask_patches[torch.randperm(num_patches)]
             _mask_patches = rearrange(
-                _mask_patches, "(z y x) -> z y x", z=mask_grid_size[0], y=mask_grid_size[1], x=mask_grid_size[2]
+                _mask_patches,
+                "(z y x) -> z y x",
+                z=mask_grid_size[0],
+                y=mask_grid_size[1],
+                x=mask_grid_size[2],
             )
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
@@ -640,7 +670,12 @@ class SwinV23DVAEMIM(SwinV23DMIM, PyTorchModelHubMixin):
         return mu + torch.randn_like(logvar) * torch.exp(0.5 * logvar)
 
     @staticmethod
-    def reconstruction_loss_fn(pred: torch.Tensor, target: torch.Tensor, loss_type: str = "l2", reduction="mean"):
+    def reconstruction_loss_fn(
+        pred: torch.Tensor,
+        target: torch.Tensor,
+        loss_type: str = "l2",
+        reduction="mean",
+    ):
         loss = ...
         if loss_type == "l2":
             loss = nn.functional.mse_loss(pred, target, reduction=reduction)

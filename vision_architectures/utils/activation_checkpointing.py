@@ -4,7 +4,7 @@
 __all__ = ['ActivationCheckpointing']
 
 # %% ../../nbs/utils/01_activation_checkpointing.ipynb 2
-from typing import Callable
+from collections.abc import Callable
 
 from torch.utils.checkpoint import checkpoint
 

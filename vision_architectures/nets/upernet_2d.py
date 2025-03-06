@@ -37,7 +37,12 @@ class UPerNet2DFusion(nn.Module):
             # (h, w)
 
         for i in range(len(features)):
-            features[i] = F.interpolate(features[i], size=self.fusion_shape, mode="bilinear", align_corners=False)
+            features[i] = F.interpolate(
+                features[i],
+                size=self.fusion_shape,
+                mode="bilinear",
+                align_corners=False,
+            )
             # Each is (b, dim, h, w)
 
         concatenated_features = torch.cat(features, dim=1)
@@ -132,7 +137,12 @@ class UPerNet2D(nn.Module, PyTorchModelHubMixin):
             object_logits = self.object_head(fused_features)
             # (b, num_objects, h1, w1)
 
-            object_logits = F.interpolate(object_logits, size=self.output_shape, mode="bilinear", align_corners=False)
+            object_logits = F.interpolate(
+                object_logits,
+                size=self.output_shape,
+                mode="bilinear",
+                align_corners=False,
+            )
             # (b, num_objects, h, w)
 
             output["object"] = object_logits

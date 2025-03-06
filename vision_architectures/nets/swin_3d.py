@@ -12,14 +12,21 @@ from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
+from vision_architectures.layers.attention import (
+    Attention3DWithMLP,
+    Attention3DWithMLPConfig,
+)
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
     PatchEmbeddings3D,
     RelativePositionEmbeddings3D,
     RelativePositionEmbeddings3DConfig,
 )
-from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
+from vision_architectures.utils.custom_base_model import (
+    CustomBaseModel,
+    Field,
+    model_validator,
+)
 
 # %% ../../nbs/nets/01_swin_3d.ipynb 4
 class Swin3DPatchMergingConfig(CustomBaseModel):
@@ -32,7 +39,11 @@ class Swin3DPatchMergingConfig(CustomBaseModel):
         super().validate_before(data)
         merge_window_size = data.get("merge_window_size")
         if isinstance(merge_window_size, int):
-            data["merge_window_size"] = (merge_window_size, merge_window_size, merge_window_size)
+            data["merge_window_size"] = (
+                merge_window_size,
+                merge_window_size,
+                merge_window_size,
+            )
         return data
 
 
@@ -46,7 +57,11 @@ class Swin3DPatchSplittingConfig(CustomBaseModel):
         super().validate_before(data)
         final_window_size = data.get("final_window_size")
         if isinstance(final_window_size, int):
-            data["final_window_size"] = (final_window_size, final_window_size, final_window_size)
+            data["final_window_size"] = (
+                final_window_size,
+                final_window_size,
+                final_window_size,
+            )
         return data
 
 
@@ -359,7 +374,10 @@ class Swin3DModel(nn.Module, PyTorchModelHubMixin):
             embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
 
         absolute_position_embeddings = self.absolute_position_embeddings(
-            batch_size=embeddings.shape[0], grid_size=embeddings.shape[2:], spacings=spacings, device=embeddings.device
+            batch_size=embeddings.shape[0],
+            grid_size=embeddings.shape[2:],
+            spacings=spacings,
+            device=embeddings.device,
         )
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
         embeddings = embeddings + absolute_position_embeddings
@@ -443,7 +461,11 @@ class Swin3DMIM(nn.Module, PyTorchModelHubMixin):
             _mask_patches[: int(mask_ratio * num_patches)] = 1
             _mask_patches = _mask_patches[torch.randperm(num_patches)]
             _mask_patches = rearrange(
-                _mask_patches, "(z y x) -> z y x", z=mask_grid_size[0], y=mask_grid_size[1], x=mask_grid_size[2]
+                _mask_patches,
+                "(z y x) -> z y x",
+                z=mask_grid_size[0],
+                y=mask_grid_size[1],
+                x=mask_grid_size[2],
             )
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)

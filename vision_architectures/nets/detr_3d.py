@@ -193,7 +193,8 @@ class DETR3DPositionEmbeddings(nn.Module):
         )
         if config["learnable_absolute_position_embeddings"]:
             absolute_position_embeddings = nn.Parameter(
-                torch.randn(1, dim, grid_size[0], grid_size[1], grid_size[2]), requires_grad=True
+                torch.randn(1, dim, grid_size[0], grid_size[1], grid_size[2]),
+                requires_grad=True,
             )
         else:
             absolute_position_embeddings = get_3d_position_embeddings(dim, grid_size, config["patch_size"])

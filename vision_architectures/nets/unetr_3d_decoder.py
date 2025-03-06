@@ -10,7 +10,10 @@ from einops import rearrange
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from ..utils.custom_base_model import CustomBaseModel, model_validator
+from vision_architectures.utils.custom_base_model import (
+    CustomBaseModel,
+    model_validator,
+)
 
 # %% ../../nbs/nets/02_unetr_3d_decoder.ipynb 4
 KernelSizeType = int | tuple[int, int, int]
@@ -184,7 +187,11 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
 
     @staticmethod
     def soft_dice_loss_fn(
-        prediction: torch.Tensor, target: torch.Tensor, reduction="mean", ignore_index: int = -100, smooth: float = 1e-8
+        prediction: torch.Tensor,
+        target: torch.Tensor,
+        reduction="mean",
+        ignore_index: int = -100,
+        smooth: float = 1e-8,
     ):
         """
         Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
@@ -214,7 +221,11 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
 
     @staticmethod
     def cross_entropy_loss_fn(
-        prediction: torch.Tensor, target: torch.Tensor, reduction="mean", ignore_index: int = -100, smooth: float = 1e-8
+        prediction: torch.Tensor,
+        target: torch.Tensor,
+        reduction="mean",
+        ignore_index: int = -100,
+        smooth: float = 1e-8,
     ):
         """
         Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).

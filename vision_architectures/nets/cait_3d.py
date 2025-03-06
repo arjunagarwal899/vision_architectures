@@ -8,10 +8,10 @@ __all__ = ['CaiT3DStage1Config', 'CaiT3DStage2Config', 'CaiT3DConfig', 'CaiT3DAt
 import torch
 from einops import repeat
 from huggingface_hub import PyTorchModelHubMixin
-from ..utils.custom_base_model import CustomBaseModel
 from torch import nn
 
 from ..layers.attention import Attention1D, Attention1DMLP
+from ..utils.custom_base_model import CustomBaseModel
 
 # %% ../../nbs/nets/05_cait_3d.ipynb 4
 class CaiT3DStage1Config(CustomBaseModel):
@@ -234,7 +234,8 @@ class CaiT3DStage2OnlyModel(nn.Module, PyTorchModelHubMixin):
         # layer_outputs: list of (b, num_embedding_tokens, dim)
 
         class_logits = torch.cat(
-            [self.classifiers[i](class_embeddings[:, i]) for i in range(len(self.classifiers))], dim=1
+            [self.classifiers[i](class_embeddings[:, i]) for i in range(len(self.classifiers))],
+            dim=1,
         )
         # list of (b, num_classes) for each class token
 
@@ -265,7 +266,8 @@ class CaiT3DModel(nn.Module, PyTorchModelHubMixin):
         # layer_outputs: list of (b, num_embedding_tokens, dim)
 
         class_logits = torch.cat(
-            [self.classifiers[i](class_embeddings[:, i]) for i in range(len(self.classifiers))], dim=1
+            [self.classifiers[i](class_embeddings[:, i]) for i in range(len(self.classifiers))],
+            dim=1,
         )
         # list of (b, num_classes) for each class token
 

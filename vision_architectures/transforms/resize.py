@@ -17,17 +17,17 @@ class ResizeWithSpacing(Resize):
         **kwargs,
     ) -> MetaTensor:
         old_shape = torch.tensor(img.shape[1:])  # Channel is first dim
-        old_spacing = torch.tensor(img.meta['spacing'])
+        old_spacing = torch.tensor(img.meta["spacing"])
         new_shape = torch.tensor(self.spatial_size)
         new_spacing = old_spacing * old_shape / new_shape
-        img.meta['spacing'] = new_spacing
+        img.meta["spacing"] = new_spacing
 
         return super().__call__(img, *args, **kwargs)
 
     def inverse_transform(self, data: MetaTensor, transform) -> MetaTensor:
         new_shape = data.shape[1:]
-        new_spacing = data.meta['spacing']
+        new_spacing = data.meta["spacing"]
         old_shape = transform[TraceKeys.ORIG_SIZE]
         old_spacing = new_spacing * new_shape / old_shape
-        data.meta['spacing'] = old_spacing
+        data.meta["spacing"] = old_spacing
         return super().inverse_transform(data, transform)

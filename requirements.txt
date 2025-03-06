@@ -4,5 +4,6 @@ monai
 munch
 nbdev
 numpy
+pre-commit
 pydantic
 torch

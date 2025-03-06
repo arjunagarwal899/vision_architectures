@@ -1,0 +1,9 @@
+[tool.isort]
+profile = "black"
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "E701"]
+
+[tool.black]
+line-length = 120

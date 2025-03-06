@@ -17,7 +17,11 @@ from torch import nn
 from .embeddings import RelativePositionEmbeddings
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
-from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
+from vision_architectures.utils.custom_base_model import (
+    CustomBaseModel,
+    Field,
+    model_validator,
+)
 
 # %% ../../nbs/layers/01_attention.ipynb 4
 class Attention1DConfig(CustomBaseModel):
@@ -128,7 +132,10 @@ class Attention1D(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop_prob)
 
         if logit_scale is None:
-            self.logit_scale = nn.Parameter(torch.tensor([per_head_dim**-0.5]), requires_grad=logit_scale_learnable)
+            self.logit_scale = nn.Parameter(
+                torch.tensor([per_head_dim**-0.5]),
+                requires_grad=logit_scale_learnable,
+            )
         else:
             self.logit_scale = logit_scale
 
@@ -208,7 +215,13 @@ class Attention1D(nn.Module):
 
 # %% ../../nbs/layers/01_attention.ipynb 8
 class Attention3D(Attention1D):
-    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+    def _forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        channels_first: bool = True,
+    ):
         """
         Parameters: z => depth, y => height, x => width, b => batch size
             - query: (b, [dim_qk], z_q, y_q, x_q, [dim_qk])
@@ -239,7 +252,13 @@ class Attention3D(Attention1D):
 
         return output
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+    def forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        channels_first: bool = True,
+    ):
         return self.checkpointing_level2(self._forward, query, key, value, channels_first)
 
 # %% ../../nbs/layers/01_attention.ipynb 10
@@ -273,7 +292,7 @@ class Attention1DMLP(nn.Module):
             hidden_states = self.dense1(hidden_states)
             hidden_states = self.act(hidden_states)
             return hidden_states
-        
+
         def second_half(hidden_states):
             hidden_states = self.dense2(hidden_states)
             hidden_states = self.dropout(hidden_states)
@@ -403,7 +422,13 @@ class Attention3DWithMLP(nn.Module):
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
-    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+    def _forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        channels_first: bool = True,
+    ):
         # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         if channels_first:
@@ -451,6 +476,12 @@ class Attention3DWithMLP(nn.Module):
             # (b, dim, tokens_z, tokens_y, tokens_x)
 
         return hidden_states
-    
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, channels_first: bool = True):
+
+    def forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        channels_first: bool = True,
+    ):
         return self.checkpointing_level3(self._forward, query, key, value, channels_first)

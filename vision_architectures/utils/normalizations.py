@@ -8,15 +8,15 @@ from torch import nn
 
 # %% ../../nbs/utils/03_normalizations.ipynb 4
 def get_norm_layer(normalization_name: str, *args, **kwargs):
-    if normalization_name == 'layernorm':
+    if normalization_name == "layernorm":
         norm_layer = nn.LayerNorm(*args, **kwargs)
-    elif normalization_name == 'batchnorm' or normalization_name == 'batchnorm1d':
+    elif normalization_name == "batchnorm" or normalization_name == "batchnorm1d":
         norm_layer = nn.BatchNorm1d(*args, **kwargs)
-    elif normalization_name == 'batchnorm2d':
+    elif normalization_name == "batchnorm2d":
         norm_layer = nn.BatchNorm2d(*args, **kwargs)
-    elif normalization_name == 'batchnorm3d':
+    elif normalization_name == "batchnorm3d":
         norm_layer = nn.BatchNorm3d(*args, **kwargs)
     else:
-        raise ValueError(f'Normalization {normalization_name} not implemented')
-    
+        raise ValueError(f"Normalization {normalization_name} not implemented")
+
     return norm_layer

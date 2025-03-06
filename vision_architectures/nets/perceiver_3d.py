@@ -11,9 +11,15 @@ from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from ..layers.attention import Attention1DWithMLP, Attention1DWithMLPConfig
+from vision_architectures.layers.attention import (
+    Attention1DWithMLP,
+    Attention1DWithMLPConfig,
+)
 from ..layers.embeddings import AbsolutePositionEmbeddings3D
-from ..utils.custom_base_model import CustomBaseModel, model_validator
+from vision_architectures.utils.custom_base_model import (
+    CustomBaseModel,
+    model_validator,
+)
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 4
 class Perceiver3DChannelMappingConfig(CustomBaseModel):
@@ -129,7 +135,10 @@ class Perceiver3DEncoderEncode(nn.Module):
         if pad_len > 0:
             x = torch.cat([x, x[:, :pad_len]], dim=1)  # Rollover padding
         x = x.unfold(1, window_size, stride)
-        x = rearrange(x, "b num_windows dim tokens_per_window -> num_windows b tokens_per_window dim")
+        x = rearrange(
+            x,
+            "b num_windows dim tokens_per_window -> num_windows b tokens_per_window dim",
+        )
         return x
 
     def forward(
@@ -288,7 +297,14 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         b = kv.shape[0]
 
-        q = repeat(self.empty_token, "d 1 -> b d z y x", b=b, z=out_shape[0], y=out_shape[1], x=out_shape[2])
+        q = repeat(
+            self.empty_token,
+            "d 1 -> b d z y x",
+            b=b,
+            z=out_shape[0],
+            y=out_shape[1],
+            x=out_shape[2],
+        )
         # (b, dim, z, y, x)
 
         if self.position_embeddings is not None:
@@ -303,7 +319,13 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         # (b, num_output_tokens, dim)
 
         output = outputs[-1]
-        output = rearrange(output, "b (z y x) d -> b d z y x", z=out_shape[0], y=out_shape[1], x=out_shape[2])
+        output = rearrange(
+            output,
+            "b (z y x) d -> b d z y x",
+            z=out_shape[0],
+            y=out_shape[1],
+            x=out_shape[2],
+        )
         # (b, dim, z, y, x)
 
         output = self.channel_mapping(output)

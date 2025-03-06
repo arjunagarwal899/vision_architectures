@@ -89,10 +89,16 @@ class SymSwin3DMHSA(nn.Module):
         self.use_relative_position_bias = use_relative_position_bias
         if use_relative_position_bias:
             self.cpb_mlp = nn.Sequential(
-                nn.Linear(3, 512, bias=True), nn.ReLU(inplace=True), nn.Linear(512, num_heads, bias=False)
+                nn.Linear(3, 512, bias=True),
+                nn.ReLU(inplace=True),
+                nn.Linear(512, num_heads, bias=False),
             )
 
-            relative_limits = (2 * window_size[0] - 1, 2 * window_size[1] - 1, 2 * window_size[2] - 1)
+            relative_limits = (
+                2 * window_size[0] - 1,
+                2 * window_size[1] - 1,
+                2 * window_size[2] - 1,
+            )
 
             # Relative coordinates table
             relative_coords_table = get_coords_grid(relative_limits).float()
@@ -114,7 +120,9 @@ class SymSwin3DMHSA(nn.Module):
             # Pair-wise relative position index for each token inside the window
             coords = get_coords_grid(window_size)
             coords_flatten = rearrange(
-                coords, "three_dimensional d h w -> three_dimensional (d h w)", three_dimensional=3
+                coords,
+                "three_dimensional d h w -> three_dimensional (d h w)",
+                three_dimensional=3,
             )
             relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]
             relative_coords = relative_coords.permute(1, 2, 0).contiguous()
@@ -236,7 +244,12 @@ class SymSwin3DLayer(nn.Module):
         self.window_size = window_size
 
         self.mhsa = SymSwin3DMHSA(
-            dim, num_heads, window_size, use_relative_position_bias, attn_drop_prob, proj_drop_prob
+            dim,
+            num_heads,
+            window_size,
+            use_relative_position_bias,
+            attn_drop_prob,
+            proj_drop_prob,
         )
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
         self.mlp = SymSwin3DLayerMLP(dim, mlp_ratio, mlp_drop_prob)
@@ -746,7 +759,11 @@ class SymSwin3DMIM(nn.Module):
             _mask_patches[: int(mask_ratio * num_patches)] = 1
             _mask_patches = _mask_patches[torch.randperm(num_patches)]
             _mask_patches = rearrange(
-                _mask_patches, "(z y x) -> z y x", z=mask_grid_size[0], y=mask_grid_size[1], x=mask_grid_size[2]
+                _mask_patches,
+                "(z y x) -> z y x",
+                z=mask_grid_size[0],
+                y=mask_grid_size[1],
+                x=mask_grid_size[2],
             )
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
@@ -813,8 +830,16 @@ class SymSwin3DVAEMIM(SymSwin3DMIM, PyTorchModelHubMixin):
             self.beta_schedule = None
             self.beta_increment = None
 
-        self.mu_layer = nn.Conv3d(symswin_config["stages"][-1]["_out_dim"], decoder_config["dim"], kernel_size=1)
-        self.logvar_layer = nn.Conv3d(symswin_config["stages"][-1]["_out_dim"], decoder_config["dim"], kernel_size=1)
+        self.mu_layer = nn.Conv3d(
+            symswin_config["stages"][-1]["_out_dim"],
+            decoder_config["dim"],
+            kernel_size=1,
+        )
+        self.logvar_layer = nn.Conv3d(
+            symswin_config["stages"][-1]["_out_dim"],
+            decoder_config["dim"],
+            kernel_size=1,
+        )
 
     def get_beta(self):
         # If fixed beta
@@ -834,7 +859,12 @@ class SymSwin3DVAEMIM(SymSwin3DMIM, PyTorchModelHubMixin):
         return mu + torch.randn_like(logvar) * torch.exp(0.5 * logvar)
 
     @staticmethod
-    def reconstruction_loss_fn(pred: torch.Tensor, target: torch.Tensor, loss_type: str = "l2", reduction="mean"):
+    def reconstruction_loss_fn(
+        pred: torch.Tensor,
+        target: torch.Tensor,
+        loss_type: str = "l2",
+        reduction="mean",
+    ):
         loss = ...
         if loss_type == "l2":
             loss = nn.functional.mse_loss(pred, target, reduction=reduction)

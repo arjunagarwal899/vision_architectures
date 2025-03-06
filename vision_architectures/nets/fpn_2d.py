@@ -36,7 +36,10 @@ class FPN2DBlock(nn.Module):
 
     def merge_features(self, shallow_features, deep_features):
         deep_features = F.interpolate(
-            deep_features, size=shallow_features.shape[2:], mode="bilinear", align_corners=False
+            deep_features,
+            size=shallow_features.shape[2:],
+            mode="bilinear",
+            align_corners=False,
         )
         # (b, fpn_dim, h1, w1)
 

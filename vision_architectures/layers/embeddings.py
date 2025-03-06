@@ -16,7 +16,11 @@ from einops import rearrange, repeat
 from torch import nn
 
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
+from vision_architectures.utils.custom_base_model import (
+    CustomBaseModel,
+    Field,
+    model_validator,
+)
 from ..utils.normalizations import get_norm_layer
 
 # %% ../../nbs/layers/02_embeddings.ipynb 4
@@ -57,7 +61,11 @@ class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
     @classmethod
     def validate_before(cls, data):
         if isinstance(data.get("grid_size"), int):
-            data["grid_size"] = (data["grid_size"], data["grid_size"], data["grid_size"])
+            data["grid_size"] = (
+                data["grid_size"],
+                data["grid_size"],
+                data["grid_size"],
+            )
         return data
 
     @model_validator(mode="after")
@@ -103,7 +111,11 @@ class RelativePositionEmbeddings3D(nn.Module):
 
         # TODO: Add embed_spacing_info functionality
 
-        relative_limits = (2 * grid_size[0] - 1, 2 * grid_size[1] - 1, 2 * grid_size[2] - 1)
+        relative_limits = (
+            2 * grid_size[0] - 1,
+            2 * grid_size[1] - 1,
+            2 * grid_size[2] - 1,
+        )
 
         self.relative_position_bias_table = nn.Parameter(torch.randn(num_heads, np.prod(relative_limits)))
         # (num_heads, num_patches_z * num_patches_y * num_patches_x)
@@ -152,7 +164,11 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
             nn.Linear(512, num_heads, bias=False),
         )
 
-        relative_limits = (2 * grid_size[0] - 1, 2 * grid_size[1] - 1, 2 * grid_size[2] - 1)
+        relative_limits = (
+            2 * grid_size[0] - 1,
+            2 * grid_size[1] - 1,
+            2 * grid_size[2] - 1,
+        )
 
         # Relative coordinates table
         relative_coords_table = get_coords_grid(relative_limits).float()
@@ -220,7 +236,9 @@ RelativePositionEmbeddings = Union[RelativePositionEmbeddings3D, RelativePositio
 
 # %% ../../nbs/layers/02_embeddings.ipynb 13
 def get_absolute_position_embeddings_3d(
-    dim: int, grid_size: tuple[int, int, int], spacing: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    dim: int,
+    grid_size: tuple[int, int, int],
+    spacing: tuple[float, float, float] = (1.0, 1.0, 1.0),
 ) -> torch.Tensor:
     if dim % 6 != 0:
         raise ValueError("embed_dim must be divisible by 6")
@@ -252,7 +270,11 @@ def get_absolute_position_embeddings_3d(
     position_embeddings = torch.cat(position_embeddings, axis=1)
     # (dim, d * h * w)
     position_embeddings = rearrange(
-        position_embeddings, "(d h w) e -> 1 e d h w", d=grid_size[0], h=grid_size[1], w=grid_size[2]
+        position_embeddings,
+        "(d h w) e -> 1 e d h w",
+        d=grid_size[0],
+        h=grid_size[1],
+        w=grid_size[2],
     )
     # (1, dim, d, h, w)
 
@@ -277,7 +299,13 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             self.position_embeddings_cache[grid_size] = get_absolute_position_embeddings_3d(dim, grid_size)
             self.position_embeddings = nn.Parameter(self.position_embeddings_cache[grid_size], requires_grad=learnable)
 
-    def forward(self, batch_size=None, grid_size=None, spacings: torch.Tensor = None, device=torch.device("cpu")):
+    def forward(
+        self,
+        batch_size=None,
+        grid_size=None,
+        spacings: torch.Tensor = None,
+        device=torch.device("cpu"),
+    ):
         assert self.position_embeddings is not None or grid_size is not None, "grid_size must be provided"
         assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
 
@@ -307,7 +335,10 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         if spacings is not None:
             # (b, 3)
             spacings = repeat(
-                spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=self.config.dim // 3
+                spacings,
+                "b three -> b (three dim_by_three) 1 1 1",
+                three=3,
+                dim_by_three=self.config.dim // 3,
             )
             # (b, dim, 1, 1, 1)
 
@@ -357,6 +388,6 @@ class PatchEmbeddings3D(nn.Module):
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         return embeddings
-    
+
     def forward(self, pixel_values: torch.Tensor):
         return self.checkpointing_level1(self._forward, pixel_values)

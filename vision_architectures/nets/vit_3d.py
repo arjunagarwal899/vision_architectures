@@ -11,11 +11,18 @@ import numpy as np
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
-from ..utils.custom_base_model import CustomBaseModel
 from torch import nn
 
-from ..layers.attention import Attention1D, Attention1DMLP, Attention1DWithMLP
-from ..layers.embeddings import AbsolutePositionEmbeddings3D, PatchEmbeddings3D
+from vision_architectures.layers.attention import (
+    Attention1D,
+    Attention1DMLP,
+    Attention1DWithMLP,
+)
+from vision_architectures.layers.embeddings import (
+    AbsolutePositionEmbeddings3D,
+    PatchEmbeddings3D,
+)
+from ..utils.custom_base_model import CustomBaseModel
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 4
 class ViT3DEncoderConfig(CustomBaseModel):
@@ -306,7 +313,10 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
             # (b, num_tokens + num_class_tokens, dim)
 
         encoder_output = self.encoder(embeddings, return_all=True)
-        encoded, layer_outputs = encoder_output["embeddings"], encoder_output["layer_outputs"]
+        encoded, layer_outputs = (
+            encoder_output["embeddings"],
+            encoder_output["layer_outputs"],
+        )
         # encoded: (b, num_tokens (+ num_class_tokens), dim)
         # layer_outputs: list of (b, num_tokens (+ 1), dim)
 
@@ -386,7 +396,13 @@ class ViT3DMIM(nn.Module):
             _mask_patches = torch.zeros(num_tokens, dtype=torch.int8, device=pixel_values.device)
             _mask_patches[: int(mask_ratio * num_tokens)] = 1
             _mask_patches = _mask_patches[torch.randperm(num_tokens)]
-            _mask_patches = rearrange(_mask_patches, "(z y x) -> z y x", z=grid_size[0], y=grid_size[1], x=grid_size[2])
+            _mask_patches = rearrange(
+                _mask_patches,
+                "(z y x) -> z y x",
+                z=grid_size[0],
+                y=grid_size[1],
+                x=grid_size[2],
+            )
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
 

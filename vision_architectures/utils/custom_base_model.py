@@ -6,7 +6,13 @@ __all__ = ['CustomBaseModel']
 # %% ../../nbs/utils/04_custom_base_model.ipynb 2
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import (  # noqa: F401
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    model_validator,
+)
 
 # %% ../../nbs/utils/04_custom_base_model.ipynb 4
 class CustomBaseModel(BaseModel):
@@ -21,21 +27,21 @@ class CustomBaseModel(BaseModel):
     def get(self, key: str, default: Any = None) -> Any:
         """Returns the value of the key if it exists, otherwise returns the default value."""
         return getattr(self, key, default)
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
         """Base class method for validating data before creating the model."""
         return data
-    
-    @model_validator(mode='after')
+
+    @model_validator(mode="after")
     def validate(self):
         """Base class method for validating the model after creation."""
         return self
-    
+
     def __contains__(self, key):
         return key in self.model_fields
-    
+
     def __or__(self, other: dict):
         if not isinstance(other, dict):
             raise TypeError(f"Cannot merge object of type {type(other)} with {self.__class__.__name__}")
