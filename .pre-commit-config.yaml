@@ -14,9 +14,9 @@ repos:
       name: pyupgrade (nbqa)
       args: [--py310-plus]
       additional_dependencies: [pyupgrade]
-    - id: nbqa-flake8
-      name: flake8 (nbqa)
-      additional_dependencies: [flake8, flake8-pyproject]
+    # - id: nbqa-flake8  # doesn't work well with notebooks, disabling for now
+    #   name: flake8 (nbqa)
+    #   additional_dependencies: [flake8, flake8-pyproject]
 - repo: https://github.com/fastai/nbdev
   rev: 2.2.10
   hooks:

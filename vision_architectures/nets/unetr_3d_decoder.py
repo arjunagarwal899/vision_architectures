@@ -10,10 +10,7 @@ from einops import rearrange
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from vision_architectures.utils.custom_base_model import (
-    CustomBaseModel,
-    model_validator,
-)
+from ..utils.custom_base_model import CustomBaseModel, model_validator
 
 # %% ../../nbs/nets/02_unetr_3d_decoder.ipynb 4
 KernelSizeType = int | tuple[int, int, int]

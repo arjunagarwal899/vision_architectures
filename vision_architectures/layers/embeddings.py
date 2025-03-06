@@ -11,16 +11,11 @@ from typing import Union
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
 
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from vision_architectures.utils.custom_base_model import (
-    CustomBaseModel,
-    Field,
-    model_validator,
-)
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.normalizations import get_norm_layer
 
 # %% ../../nbs/layers/02_embeddings.ipynb 4

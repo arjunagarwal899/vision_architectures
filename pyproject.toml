@@ -1,9 +1,11 @@
+[tool.black]
+line_length = 120
+
 [tool.isort]
 profile = "black"
+line_length = 120
+filter_files = true
 
 [tool.flake8]
 max-line-length = 120
 extend-ignore = ["E203", "E701"]
-
-[tool.black]
-line-length = 120

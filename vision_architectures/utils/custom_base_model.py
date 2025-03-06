@@ -6,13 +6,7 @@ __all__ = ['CustomBaseModel']
 # %% ../../nbs/utils/04_custom_base_model.ipynb 2
 from typing import Any
 
-from pydantic import (  # noqa: F401
-    BaseModel,
-    ConfigDict,
-    Field,
-    computed_field,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator  # noqa: F401
 
 # %% ../../nbs/utils/04_custom_base_model.ipynb 4
 class CustomBaseModel(BaseModel):

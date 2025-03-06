@@ -15,10 +15,7 @@ from huggingface_hub import PyTorchModelHubMixin
 from munch import munchify
 from torch import nn
 
-from vision_architectures.layers.attention import (
-    Attention3DWithMLP,
-    Attention3DWithMLPConfig,
-)
+from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
     PatchEmbeddings3D,
@@ -26,11 +23,7 @@ from vision_architectures.layers.embeddings import (
     RelativePositionEmbeddings3DMetaNetwork,
 )
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from vision_architectures.utils.custom_base_model import (
-    CustomBaseModel,
-    Field,
-    model_validator,
-)
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 4
 class SwinV23DPatchMergingConfig(CustomBaseModel):

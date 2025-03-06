@@ -12,21 +12,14 @@ from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from vision_architectures.layers.attention import (
-    Attention3DWithMLP,
-    Attention3DWithMLPConfig,
-)
+from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
     PatchEmbeddings3D,
     RelativePositionEmbeddings3D,
     RelativePositionEmbeddings3DConfig,
 )
-from vision_architectures.utils.custom_base_model import (
-    CustomBaseModel,
-    Field,
-    model_validator,
-)
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
 # %% ../../nbs/nets/01_swin_3d.ipynb 4
 class Swin3DPatchMergingConfig(CustomBaseModel):

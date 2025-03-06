@@ -17,11 +17,7 @@ from torch import nn
 from .embeddings import RelativePositionEmbeddings
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
-from vision_architectures.utils.custom_base_model import (
-    CustomBaseModel,
-    Field,
-    model_validator,
-)
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
 # %% ../../nbs/layers/01_attention.ipynb 4
 class Attention1DConfig(CustomBaseModel):

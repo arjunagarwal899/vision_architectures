@@ -11,15 +11,9 @@ from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from vision_architectures.layers.attention import (
-    Attention1DWithMLP,
-    Attention1DWithMLPConfig,
-)
+from ..layers.attention import Attention1DWithMLP, Attention1DWithMLPConfig
 from ..layers.embeddings import AbsolutePositionEmbeddings3D
-from vision_architectures.utils.custom_base_model import (
-    CustomBaseModel,
-    model_validator,
-)
+from ..utils.custom_base_model import CustomBaseModel, model_validator
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 4
 class Perceiver3DChannelMappingConfig(CustomBaseModel):

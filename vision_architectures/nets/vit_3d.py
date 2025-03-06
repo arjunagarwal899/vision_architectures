@@ -13,15 +13,8 @@ from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from vision_architectures.layers.attention import (
-    Attention1D,
-    Attention1DMLP,
-    Attention1DWithMLP,
-)
-from vision_architectures.layers.embeddings import (
-    AbsolutePositionEmbeddings3D,
-    PatchEmbeddings3D,
-)
+from ..layers.attention import Attention1D, Attention1DMLP, Attention1DWithMLP
+from ..layers.embeddings import AbsolutePositionEmbeddings3D, PatchEmbeddings3D
 from ..utils.custom_base_model import CustomBaseModel
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 4
