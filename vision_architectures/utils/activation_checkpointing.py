@@ -24,7 +24,7 @@ class ActivationCheckpointing:
 
         self.perform_checkpointing = fn_checkpoint_level <= training_checkpoint_level
 
-    def __call__(self, fn: Callable, *args, **kwargs):
+    def __call__(self, fn: Callable, *fn_args, use_reentrant: bool = False, **fn_kwargs):
         if self.perform_checkpointing:
-            return checkpoint(lambda: fn(*args, **kwargs), use_reentrant=False)
-        return fn(*args, **kwargs)
+            return checkpoint(lambda: fn(*fn_args, **fn_kwargs), use_reentrant=use_reentrant)
+        return fn(*fn_args, **fn_kwargs)
