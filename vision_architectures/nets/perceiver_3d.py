@@ -155,14 +155,19 @@ class Perceiver3DEncoderEncode(nn.Module):
         # x: [(b, in_channels, z, y, x), ...]
 
         # Prepare keys and values
-        def prepare_keys_values(x: torch.Tensor):
+        def prepare_keys_values(x: torch.Tensor | list[torch.Tensor]):
             if not isinstance(x, list):
                 x = [x]
-            if self.channel_mapping is not None:
+            # x is now a list of tensors
+            if self.channel_mapping is None:
+                kv = x
+            else:
+                kv = []
                 for i in range(len(x)):
-                    x[i] = self.channel_mapping(x[i])
-                    x[i] = rearrange(x[i], "b d z y x -> b (z y x) d")
-            kv = torch.cat(x, dim=1)
+                    mapped = self.channel_mapping(x[i])  # modifying in-place leads to errors when checkpointing
+                    mapped = rearrange(mapped, "b d z y x -> b (z y x) d")
+                    kv.append(mapped)
+            kv = torch.cat(kv, dim=1)
             return kv
 
         kv = self.checkpointing_level1(prepare_keys_values, x)
