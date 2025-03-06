@@ -265,17 +265,26 @@ class Attention1DMLP(nn.Module):
         self.dropout = nn.Dropout(mlp_drop_prob)
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+        self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
     def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, T, dim)
-        hidden_states = self.dense1(hidden_states)
-        hidden_states = self.act(hidden_states)
-        hidden_states = self.dense2(hidden_states)
-        hidden_states = self.dropout(hidden_states)
+        def first_half(hidden_states):
+            hidden_states = self.dense1(hidden_states)
+            hidden_states = self.act(hidden_states)
+            return hidden_states
+        
+        def second_half(hidden_states):
+            hidden_states = self.dense2(hidden_states)
+            hidden_states = self.dropout(hidden_states)
+            return hidden_states
+
+        hidden_states = self.checkpointing_level1(first_half, hidden_states)
+        hidden_states = self.checkpointing_level1(second_half, hidden_states)
         return hidden_states
 
     def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level1(self._forward, hidden_states)
+        return self.checkpointing_level2(self._forward, hidden_states)
 
 # %% ../../nbs/layers/01_attention.ipynb 12
 class Attention3DMLP(Attention1DMLP):

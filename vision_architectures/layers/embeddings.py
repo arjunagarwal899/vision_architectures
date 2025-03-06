@@ -15,6 +15,7 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
 
+from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.normalizations import get_norm_layer
 
@@ -136,7 +137,7 @@ class RelativePositionEmbeddings3D(nn.Module):
 
 # %% ../../nbs/layers/02_embeddings.ipynb 10
 class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
-    def __init__(self, config: RelativePositionEmbeddings3DConfig = {}, **kwargs):
+    def __init__(self, config: RelativePositionEmbeddings3DConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
 
         self.config = RelativePositionEmbeddings3DConfig.model_validate(config | kwargs)
@@ -187,11 +188,18 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
         self.relative_position_index = relative_position_index.flatten()
         # (num_patches, num_patches)
 
-    def forward(self):
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+
+    def get_relative_position_embeddings_table(self):
         # (num_patches_z, num_patches_y, num_patches_x, 3)
-        relative_position_embeddings_table = self.cpb_mlp(self.relative_coords_table)
+        relative_position_embeddings_table: torch.Tensor = self.cpb_mlp(self.relative_coords_table)
         # (num_patches_z, num_patches_y, num_patches_x, num_heads)
         relative_position_embeddings_table = relative_position_embeddings_table.reshape(-1, self.config.num_heads)
+        # (num_patches, num_heads)
+        return relative_position_embeddings_table
+
+    def forward(self):
+        relative_position_embeddings_table = self.checkpointing_level1(self.get_relative_position_embeddings_table)
         # (num_patches, num_heads)
         relative_position_embeddings = relative_position_embeddings_table[self.relative_position_index]
         # (num_patches * num_patches, num_heads)
@@ -310,7 +318,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
 # %% ../../nbs/layers/02_embeddings.ipynb 17
 class PatchEmbeddings3D(nn.Module):
-    def __init__(self, config: PatchEmbeddings3DConfig = {}, **kwargs):
+    def __init__(self, config: PatchEmbeddings3DConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
 
         self.config = PatchEmbeddings3DConfig.model_validate(config | kwargs)
@@ -334,7 +342,9 @@ class PatchEmbeddings3D(nn.Module):
         else:
             self.normalization = get_norm_layer(norm_layer, dim)
 
-    def forward(self, pixel_values: torch.Tensor):
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+
+    def _forward(self, pixel_values: torch.Tensor):
         # pixel_values: (b, c, z, y, x)
 
         embeddings = self.patch_embeddings(pixel_values)
@@ -347,3 +357,6 @@ class PatchEmbeddings3D(nn.Module):
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         return embeddings
+    
+    def forward(self, pixel_values: torch.Tensor):
+        return self.checkpointing_level1(self._forward, pixel_values)
