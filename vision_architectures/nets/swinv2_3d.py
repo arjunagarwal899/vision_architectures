@@ -9,7 +9,6 @@ __all__ = ['SwinV23DPatchMergingConfig', 'SwinV23DPatchSplittingConfig', 'SwinV2
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 2
 import numpy as np
 import torch
-import torch.nn.functional as F
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from munch import munchify
@@ -194,7 +193,9 @@ class SwinV23DLayer(nn.Module):
 
         relative_position_bias = None
         if use_relative_position_bias:
-            relative_position_bias = RelativePositionEmbeddings3DMetaNetwork(self.embeddings_config)
+            relative_position_bias = RelativePositionEmbeddings3DMetaNetwork(
+                self.embeddings_config, checkpointing_level=checkpointing_level
+            )
 
         logit_scale = SwinV23DLayerLogitScale(self.transformer_config.num_heads)
 
@@ -202,9 +203,12 @@ class SwinV23DLayer(nn.Module):
             self.transformer_config,
             relative_position_bias=relative_position_bias,
             logit_scale=logit_scale,
+            checkpointing_level=checkpointing_level,
         )
 
-    def forward(self, hidden_states: torch.Tensor):
+        self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
+
+    def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
         _, num_patches_z, num_patches_y, num_patches_x, _ = hidden_states.shape
 
@@ -244,15 +248,18 @@ class SwinV23DLayer(nn.Module):
 
         return output
 
+    def forward(self, hidden_states: torch.Tensor):
+        return self.checkpointing_level3(self._forward, hidden_states)
+
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 12
 class SwinV23DBlock(nn.Module):
-    def __init__(self, stage_config):
+    def __init__(self, stage_config, checkpointing_level: int = 0):
         super().__init__()
 
         self.stage_config = SwinV23DStageConfig.model_validate(stage_config)
 
-        self.w_layer = SwinV23DLayer(self.stage_config.model_dump())
-        self.sw_layer = SwinV23DLayer(self.stage_config.model_dump())
+        self.w_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
+        self.sw_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
 
     def forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
@@ -286,7 +293,7 @@ class SwinV23DBlock(nn.Module):
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 14
 class SwinV23DPatchMerging(nn.Module):
-    def __init__(self, merge_window_size, in_dim, out_dim):
+    def __init__(self, merge_window_size, in_dim, out_dim, checkpointing_level: int = 0):
         super().__init__()
 
         self.merge_window_size = merge_window_size
@@ -295,7 +302,9 @@ class SwinV23DPatchMerging(nn.Module):
         self.layer_norm = nn.LayerNorm(in_dim)
         self.proj = nn.Linear(in_dim, out_dim)
 
-    def forward(self, hidden_states: torch.Tensor):
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+
+    def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         window_size_z, window_size_y, window_size_x = self.merge_window_size
@@ -313,9 +322,12 @@ class SwinV23DPatchMerging(nn.Module):
         hidden_states = self.proj(hidden_states)
         return hidden_states
 
+    def forward(self, hidden_states: torch.Tensor):
+        return self.checkpointing_level1(self._forward, hidden_states)
+
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 16
 class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and is not part of the paper.
-    def __init__(self, final_window_size, in_dim, out_dim):
+    def __init__(self, final_window_size, in_dim, out_dim, checkpointing_level: int = 0):
         super().__init__()
 
         self.final_window_size = final_window_size
@@ -324,7 +336,9 @@ class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and
         self.layer_norm = nn.LayerNorm(in_dim)
         self.proj = nn.Linear(in_dim, out_dim)
 
-    def forward(self, hidden_states: torch.Tensor):
+        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
+
+    def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         hidden_states = self.layer_norm(hidden_states)
@@ -343,9 +357,12 @@ class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and
 
         return hidden_states
 
+    def forward(self, hidden_states: torch.Tensor):
+        return self.checkpointing_level1(self._forward, hidden_states)
+
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 18
 class SwinV23DStage(nn.Module):
-    def __init__(self, stage_config):
+    def __init__(self, stage_config, checkpointing_level: int = 0):
         super().__init__()
 
         stage_config = SwinV23DStageConfig.model_validate(stage_config)
@@ -358,10 +375,11 @@ class SwinV23DStage(nn.Module):
                 stage_config.patch_merging.merge_window_size,
                 stage_config.in_dim,
                 stage_config.dim,
+                checkpointing_level,
             )
 
         self.blocks = nn.ModuleList(
-            [SwinV23DBlock(stage_config) for _ in range(stage_config.depth)],
+            [SwinV23DBlock(stage_config, checkpointing_level) for _ in range(stage_config.depth)],
         )
 
         self.patch_splitting = None
@@ -370,9 +388,12 @@ class SwinV23DStage(nn.Module):
                 stage_config.patch_splitting.final_window_size,
                 stage_config.dim,
                 stage_config.out_dim,
+                checkpointing_level,
             )
 
-    def forward(self, hidden_states: torch.Tensor):
+        self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
+
+    def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         if self.patch_merging:
@@ -391,9 +412,12 @@ class SwinV23DStage(nn.Module):
 
         return hidden_states, layer_outputs
 
+    def forward(self, hidden_states: torch.Tensor):
+        return self.checkpointing_level4(self._forward, hidden_states)
+
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 22
 class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, config):
+    def __init__(self, config, checkpointing_level: int = 0):
         super().__init__()
 
         for stage_config in config.stages:
@@ -402,9 +426,13 @@ class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
                     stage_config.patch_merging is not None
                 ), "SwinV23DEncoder is not for decoding (mid blocks are ok)."
 
-        self.stages = nn.ModuleList([SwinV23DStage(stage_config) for stage_config in config.stages])
+        self.stages = nn.ModuleList(
+            [SwinV23DStage(stage_config, checkpointing_level) for stage_config in config.stages]
+        )
 
-    def forward(self, hidden_states: torch.Tensor):
+        self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
+
+    def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         stage_outputs, layer_outputs = [], []
@@ -417,9 +445,12 @@ class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
 
         return hidden_states, stage_outputs, layer_outputs
 
+    def forward(self, hidden_states: torch.Tensor):
+        return self.checkpointing_level5(self._forward, hidden_states)
+
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 25
 class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, config: SwinV23DDecoderConfig):
+    def __init__(self, config: SwinV23DDecoderConfig, checkpointing_level: int = 0):
         super().__init__()
 
         self.config = SwinV23DDecoderConfig.model_validate(config)
@@ -430,9 +461,13 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
                     stage_config.patch_splitting is not None
                 ), "SwinV23DDecoder is not for encoding (mid blocks are ok)."
 
-        self.stages = nn.ModuleList([SwinV23DStage(stage_config) for stage_config in config.stages])
+        self.stages = nn.ModuleList(
+            [SwinV23DStage(stage_config, checkpointing_level) for stage_config in config.stages]
+        )
 
-    def forward(self, hidden_states: torch.Tensor):
+        self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
+
+    def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         stage_outputs, layer_outputs = [], []
@@ -445,16 +480,26 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
 
         return hidden_states, stage_outputs, layer_outputs
 
+    def forward(self, hidden_states: torch.Tensor):
+        return self.checkpointing_level5(self._forward, hidden_states)
+
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 28
 class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, config: SwinV23DConfig):
+    def __init__(self, config: SwinV23DConfig, checkpointing_level: int = 0):
         super().__init__()
 
         self.config = config
 
-        self.patchify = PatchEmbeddings3D(patch_size=config.patch_size, in_channels=config.in_channels, dim=config.dim)
-        self.absolute_position_embeddings = AbsolutePositionEmbeddings3D(dim=config.dim, learnable=False)
-        self.encoder = SwinV23DEncoder(config)
+        self.patchify = PatchEmbeddings3D(
+            patch_size=config.patch_size,
+            in_channels=config.in_channels,
+            dim=config.dim,
+            checkpointing_level=checkpointing_level,
+        )
+        self.absolute_position_embeddings = AbsolutePositionEmbeddings3D(
+            dim=config.dim, learnable=False, checkpointing_level=checkpointing_level
+        )
+        self.encoder = SwinV23DEncoder(config, checkpointing_level)
 
     def forward(
         self,
