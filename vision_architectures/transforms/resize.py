@@ -9,7 +9,7 @@ from monai.data import MetaTensor
 from monai.transforms.spatial.array import Resize, TraceKeys
 
 # %% ../../nbs/transforms/01_resize.ipynb 4
-class ResizeWithSpacing(Resize):
+class ResizeWithSpacing(Resize):  # Turns out that meta_tensor.pixdim already tracks this and so this class is unhelpful
     def __call__(
         self,
         img: MetaTensor,
