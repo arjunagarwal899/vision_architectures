@@ -76,28 +76,23 @@ class SwinV23DStageConfig(Attention3DWithMLPConfig):
     # Freeze other fields
     logit_scale_learnable: bool = Field(False, frozen=True)
 
-    def get_out_patch_size(self, in_patch_size: tuple[int, int, int]):
-        patch_size = in_patch_size
+    @property
+    def spatial_compression_ratio(self):
+        compression_ratio = (1.0, 1.0, 1.0)
         if self.patch_merging is not None:
-            patch_size = tuple(
-                [patch * window for patch, window in zip(patch_size, self.patch_merging.merge_window_size)]
-            )
+            compression_ratio = tuple(compression_ratio[i] * self.patch_merging.merge_window_size[i] for i in range(3))
         if self.patch_splitting is not None:
-            patch_size = tuple(
-                [patch // window for patch, window in zip(patch_size, self.patch_splitting.final_window_size)]
+            compression_ratio = tuple(
+                compression_ratio[i] / self.patch_splitting.final_window_size[i] for i in range(3)
             )
+        return compression_ratio
+
+    def get_out_patch_size(self, in_patch_size: tuple[int, int, int]):
+        patch_size = tuple(in_patch_size[i] / self.spatial_compression_ratio[i] for i in range(3))
         return patch_size
 
     def get_in_patch_size(self, out_patch_size: tuple[int, int, int]):
-        patch_size = out_patch_size
-        if self.patch_merging is not None:
-            patch_size = tuple(
-                [patch // window for patch, window in zip(patch_size, self.patch_merging.merge_window_size)]
-            )
-        if self.patch_splitting is not None:
-            patch_size = tuple(
-                [patch * window for patch, window in zip(patch_size, self.patch_splitting.final_window_size)]
-            )
+        patch_size = tuple(out_patch_size[i] * self.spatial_compression_ratio[i] for i in range(3))
         return patch_size
 
 
