@@ -234,27 +234,19 @@ def get_absolute_position_embeddings_3d(
     dim: int,
     grid_size: tuple[int, int, int],
     spacing: tuple[float, float, float] = (1.0, 1.0, 1.0),
-    # Used if the embeddings required are of a crop of a larger image
-    full_image_size: tuple[int, int, int] = None,
-    crop_center: tuple[int, int, int] = None,
+    crop_offset: tuple[int, int, int] = None,  # Used if the embeddings required are of a crop of a larger image
 ) -> torch.Tensor:
     if dim % 6 != 0:
         raise ValueError("embed_dim must be divisible by 6")
-
-    if full_image_size is None:
-        full_image_size = grid_size
 
     grid = get_coords_grid(grid_size)
     # (3, d, h, w)
 
     # Apply offset if crop parameters are provided
-    if crop_center is not None:
-        # Calculate crop boundaries
-        crop_start = tuple(max(0, center - size // 2) for center, size in zip(crop_center, grid_size))
-
+    if crop_offset is not None:
         # Offset the grid coordinates to represent their position in the full volume
         for i in range(3):
-            grid[i] = grid[i] + crop_start[i]
+            grid[i] = grid[i] + crop_offset[i]
 
     grid = rearrange(grid, "x d h w -> x 1 d h w")
     # (3, 1, d, h, w)
@@ -316,9 +308,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         grid_size=None,
         spacings: torch.Tensor = None,
         device=torch.device("cpu"),
-        # Used if the embeddings required are of a crop of a larger image
-        full_image_size: tuple[int, int, int] = None,
-        crop_center: tuple[int, int, int] = None,
+        crop_offset: tuple[int, int, int] = None,  # Used if the embeddings required are of a crop of a larger image
     ):
         assert self.position_embeddings is not None or grid_size is not None, "grid_size must be provided"
         assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
@@ -329,10 +319,10 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         if self.position_embeddings is not None:
             position_embeddings = self.position_embeddings
         else:
-            cache_key = (grid_size, full_image_size, crop_center)
+            cache_key = (grid_size, crop_offset)
             if cache_key not in self.position_embeddings_cache:
                 self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_3d(
-                    self.config.dim, grid_size, full_image_size=full_image_size, crop_center=crop_center
+                    self.config.dim, grid_size, crop_offset=crop_offset
                 )
             position_embeddings = self.position_embeddings_cache[cache_key].to(device)
         # (1, dim, d, h, w)

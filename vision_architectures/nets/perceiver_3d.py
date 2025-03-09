@@ -474,53 +474,13 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    #     # Prepare sliding windows
-    #     q_windows, positions, usage_mask = unfold_with_rollover_3d_with_mask(q, sliding_window, sliding_stride)
-    #     # (num_windows, b, dim, window_size_z, window_size_y, window_size_x)
-
-    #     # Perform attention
-    #     outputs = []
-    #     for cross_attention_layer in self.cross_attention:
-    #         output = torch.zeros_like(q)
-    #         for q_window in q_windows:
-    #             output_window = cross_attention_layer(q_window, kv, kv)
-    #             output = output + output_window
-    #     q = rearrange(q, "b d z y x -> b (z y x) d")
-    #     # (b, num_output_tokens, dim)
-    #     outputs = [q]
-    #     for cross_attention_layer in self.cross_attention:
-    #         q = outputs[-1]
-    #         outputs.append(cross_attention_layer(q, kv, kv))
-    #     # (b, num_output_tokens, dim)
-
-    #     output = outputs[-1]
-    #     output = rearrange(
-    #         output,
-    #         "b (z y x) d -> b d z y x",
-    #         z=out_shape[0],
-    #         y=out_shape[1],
-    #         x=out_shape[2],
-    #     )
-    #     # (b, dim, z, y, x)
-
-    #     output = self.channel_mapping(output)
-    #     # (b, out_channels, z, y, x)
-
-    #     return_value = output
-    #     if return_all:
-    #         return_value = {
-    #             "output": output,
-    #             "all_outputs": outputs,
-    #         }
-
-    #     return return_value
-
     def _forward(
         self,
         kv,
         out_shape: tuple[int, int, int],
         sliding_window: tuple[int, int, int] | None = None,
         sliding_stride: tuple[int, int, int] | None = None,
+        crop_offset: torch.Tensor = None,
         return_all: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # kv: (b, num_tokens, dim)
@@ -538,86 +498,39 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         # (b, dim, z, y, x)
 
         if self.position_embeddings is not None:
-            q = q + self.position_embeddings(batch_size=b, grid_size=out_shape, device=q.device)
-
-        # Conditional execution based on sliding window parameters
-        if sliding_window is not None and sliding_stride is not None:
-            # Apply sliding window processing
-            q_windows, positions, usage_mask = unfold_with_rollover_3d_with_mask(q, sliding_window, sliding_stride)
-            # q_windows: (num_windows, b, dim, window_size_z, window_size_y, window_size_x)
-
-            # Process each window with attention
-            num_windows = q_windows.shape[0]
-            window_shape = q_windows.shape[-3:]  # (window_size_z, window_size_y, window_size_x)
-
-            # Initialize output tensor for each layer's output
-            outputs = []
-            current_windows = q_windows
-
-            # Apply cross-attention to each window sequentially through all layers
-            for layer_idx, cross_attention_layer in enumerate(self.cross_attention):
-                processed_windows = torch.zeros_like(current_windows)
-
-                for window_idx in range(num_windows):
-                    # Extract current window
-                    window = current_windows[window_idx]  # (b, dim, w_z, w_y, w_x)
-
-                    # Reshape for attention operation
-                    flat_window = rearrange(window, "b d z y x -> b (z y x) d")
-
-                    # Apply cross-attention
-                    attended_window = cross_attention_layer(flat_window, kv, kv)
-
-                    # Reshape back to 3D
-                    processed_window = rearrange(
-                        attended_window,
-                        "b (z y x) d -> b d z y x",
-                        z=window_shape[0],
-                        y=window_shape[1],
-                        x=window_shape[2],
-                    )
-
-                    # Store processed window
-                    processed_windows[window_idx] = processed_window
-
-                # Update current windows for next layer
-                current_windows = processed_windows
-
-                # Fold windows back to full volume for this layer's output
-                folded_output = fold_back_3d(
-                    processed_windows, positions, usage_mask, (b, q.shape[1], out_shape[0], out_shape[1], out_shape[2])
-                )
-
-                # Store layer output for return_all
-                flat_output = rearrange(
-                    folded_output, "b d z y x -> b (z y x) d", z=out_shape[0], y=out_shape[1], x=out_shape[2]
-                )
-                outputs.append(flat_output)
-
-            # Final output is from the last layer
-            output = folded_output
-
-        else:
-            # Original processing without sliding windows
-            q = rearrange(q, "b d z y x -> b (z y x) d")
-            # (b, num_output_tokens, dim)
-            outputs = [q]
-            for cross_attention_layer in self.cross_attention:
-                q = outputs[-1]
-                outputs.append(cross_attention_layer(q, kv, kv))
-            # (b, num_output_tokens, dim)
-
-            output = outputs[-1]
-            output = rearrange(
-                output,
-                "b (z y x) d -> b d z y x",
-                z=out_shape[0],
-                y=out_shape[1],
-                x=out_shape[2],
+            q = q + self.position_embeddings(
+                batch_size=b, grid_size=out_shape, device=q.device, crop_offset=crop_offset
             )
-            # (b, dim, z, y, x)
 
-        # Apply channel mapping to get final output
+        # Prepare sliding windows
+        # q_windows, _, _ = unfold_with_rollover_3d_with_mask(q, sliding_window, sliding_stride)
+        # (num_windows, b, dim, window_size_z, window_size_y, window_size_x)
+
+        # Perform attention
+        # outputs = []
+        # for cross_attention_layer in self.cross_attention:
+        #     output = torch.zeros_like(q)
+        #     for q_window in q_windows:
+        #         output_window = cross_attention_layer(q_window, kv, kv)
+        #         ...
+        q = rearrange(q, "b d z y x -> b (z y x) d")
+        # (b, num_output_tokens, dim)
+        outputs = [q]
+        for cross_attention_layer in self.cross_attention:
+            q = outputs[-1]
+            outputs.append(cross_attention_layer(q, kv, kv))
+        # (b, num_output_tokens, dim)
+
+        output = outputs[-1]
+        output = rearrange(
+            output,
+            "b (z y x) d -> b d z y x",
+            z=out_shape[0],
+            y=out_shape[1],
+            x=out_shape[2],
+        )
+        # (b, dim, z, y, x)
+
         output = self.channel_mapping(output)
         # (b, out_channels, z, y, x)
 
@@ -629,6 +542,124 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
             }
 
         return return_value
+
+    # def _forward(
+    #     self,
+    #     kv,
+    #     out_shape: tuple[int, int, int],
+    #     sliding_window: tuple[int, int, int] | None = None,
+    #     sliding_stride: tuple[int, int, int] | None = None,
+    #     crop_offset: torch.Tensor = None,
+    #     return_all: bool = False,
+    # ) -> torch.Tensor | dict[str, torch.Tensor]:
+    #     # kv: (b, num_tokens, dim)
+
+    #     b = kv.shape[0]
+
+    #     q = repeat(
+    #         self.empty_token,
+    #         "d 1 -> b d z y x",
+    #         b=b,
+    #         z=out_shape[0],
+    #         y=out_shape[1],
+    #         x=out_shape[2],
+    #     )
+    #     # (b, dim, z, y, x)
+
+    #     if self.position_embeddings is not None:
+    #         q = q + self.position_embeddings(
+    #             batch_size=b, grid_size=out_shape, device=q.device, crop_offset=crop_offset
+    #         )
+
+    #     # Conditional execution based on sliding window parameters
+    #     if sliding_window is not None and sliding_stride is not None:
+    #         # Apply sliding window processing
+    #         q_windows, positions, usage_mask = unfold_with_rollover_3d_with_mask(q, sliding_window, sliding_stride)
+    #         # q_windows: (num_windows, b, dim, window_size_z, window_size_y, window_size_x)
+
+    #         # Process each window with attention
+    #         num_windows = q_windows.shape[0]
+    #         window_shape = q_windows.shape[-3:]  # (window_size_z, window_size_y, window_size_x)
+
+    #         # Initialize output tensor for each layer's output
+    #         outputs = []
+    #         current_windows = q_windows
+
+    #         # Apply cross-attention to each window sequentially through all layers
+    #         for layer_idx, cross_attention_layer in enumerate(self.cross_attention):
+    #             processed_windows = torch.zeros_like(current_windows)
+
+    #             for window_idx in range(num_windows):
+    #                 # Extract current window
+    #                 window = current_windows[window_idx]  # (b, dim, w_z, w_y, w_x)
+
+    #                 # Reshape for attention operation
+    #                 flat_window = rearrange(window, "b d z y x -> b (z y x) d")
+
+    #                 # Apply cross-attention
+    #                 attended_window = cross_attention_layer(flat_window, kv, kv)
+
+    #                 # Reshape back to 3D
+    #                 processed_window = rearrange(
+    #                     attended_window,
+    #                     "b (z y x) d -> b d z y x",
+    #                     z=window_shape[0],
+    #                     y=window_shape[1],
+    #                     x=window_shape[2],
+    #                 )
+
+    #                 # Store processed window
+    #                 processed_windows[window_idx] = processed_window
+
+    #             # Update current windows for next layer
+    #             current_windows = processed_windows
+
+    #             # Fold windows back to full volume for this layer's output
+    #             folded_output = fold_back_3d(
+    #                 processed_windows, positions, usage_mask, (b, q.shape[1], out_shape[0], out_shape[1], out_shape[2])
+    #             )
+
+    #             # Store layer output for return_all
+    #             flat_output = rearrange(
+    #                 folded_output, "b d z y x -> b (z y x) d", z=out_shape[0], y=out_shape[1], x=out_shape[2]
+    #             )
+    #             outputs.append(flat_output)
+
+    #         # Final output is from the last layer
+    #         output = folded_output
+
+    #     else:
+    #         # Original processing without sliding windows
+    #         q = rearrange(q, "b d z y x -> b (z y x) d")
+    #         # (b, num_output_tokens, dim)
+    #         outputs = [q]
+    #         for cross_attention_layer in self.cross_attention:
+    #             q = outputs[-1]
+    #             outputs.append(cross_attention_layer(q, kv, kv))
+    #         # (b, num_output_tokens, dim)
+
+    #         output = outputs[-1]
+    #         output = rearrange(
+    #             output,
+    #             "b (z y x) d -> b d z y x",
+    #             z=out_shape[0],
+    #             y=out_shape[1],
+    #             x=out_shape[2],
+    #         )
+    #         # (b, dim, z, y, x)
+
+    #     # Apply channel mapping to get final output
+    #     output = self.channel_mapping(output)
+    #     # (b, out_channels, z, y, x)
+
+    #     return_value = output
+    #     if return_all:
+    #         return_value = {
+    #             "output": output,
+    #             "all_outputs": outputs,
+    #         }
+
+    #     return return_value
 
     def forward(
         self,
