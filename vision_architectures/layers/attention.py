@@ -27,6 +27,13 @@ class Attention1DConfig(CustomBaseModel):
     logit_scale_learnable: bool = False
     attn_drop_prob: float = 0.0
     proj_drop_prob: float = 0.0
+    max_attention_batch_size: int = Field(
+        -1,
+        description=(
+            "Runs attention by splitting the inputs into chunks of this size. 0 means no chunking. "
+            "Useful for large inputs during inference."
+        ),
+    )
 
     @property
     def num_q_heads(self) -> int:
@@ -181,16 +188,29 @@ class Attention1D(nn.Module):
         if self.relative_position_bias is not None:
             relative_position_bias = self.relative_position_bias()
 
-        output = F.scaled_dot_product_attention(
-            query_normalized_and_scaled,
-            key_normalized,
-            value,
-            attn_mask=relative_position_bias,  # Use this as a way to introduce relative position bias
-            dropout_p=self.attn_drop_prob,
-            is_causal=False,
-            scale=1.0,  # Already scaled the vectors
-            enable_gqa=self.config.gqa_mqa_enabled,
-        )
+        # Split tensors into batches and perform attention
+        output = []
+        chunk_size = self.config.max_attention_batch_size
+        if chunk_size == -1:
+            chunk_size = query_normalized_and_scaled.size(0)
+        for query_normalized_and_scaled_chunk, key_normalized_chunk, value_chunk in zip(
+            torch.split(query_normalized_and_scaled, chunk_size, dim=0),
+            torch.split(key_normalized, chunk_size, dim=0),
+            torch.split(value, chunk_size, dim=0),
+        ):
+            output_chunk = F.scaled_dot_product_attention(
+                query_normalized_and_scaled_chunk,
+                key_normalized_chunk,
+                value_chunk,
+                attn_mask=relative_position_bias,  # Use this as a way to introduce relative position bias
+                dropout_p=self.attn_drop_prob,
+                is_causal=False,
+                scale=1.0,  # Already scaled the vectors
+                enable_gqa=self.config.gqa_mqa_enabled,
+            )
+            output.append(output_chunk)
+            # (chunk_size, num_heads, T, per_head_dim)
+        output = torch.cat(output, dim=0)
         # (b, num_heads, T, per_head_dim)
 
         output = rearrange(output, "b num_heads T d -> b T (num_heads d)")

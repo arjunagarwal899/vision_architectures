@@ -2,8 +2,9 @@
 
 # %% auto 0
 __all__ = ['Perceiver3DChannelMappingConfig', 'Perceiver3DEncoderEncodeConfig', 'Perceiver3DEncoderProcessConfig',
-           'Perceiver3DEncoderConfig', 'Perceiver3DDecoderConfig', 'Perceiver3DConfig', 'Perceiver3DChannelMapping',
-           'Perceiver3DEncoderEncode', 'Perceiver3DEncoderProcess', 'Perceiver3DEncoder', 'Perceiver3DDecoder']
+           'Perceiver3DEncoderConfig', 'Perceiver3DDecoderConfig', 'Perceiver3DConfig', 'unfold_with_rollover_1d',
+           'unfold_with_rollover_3d_with_mask', 'fold_back_3d', 'Perceiver3DChannelMapping', 'Perceiver3DEncoderEncode',
+           'Perceiver3DEncoderProcess', 'Perceiver3DEncoder', 'Perceiver3DDecoder']
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 2
 import torch
@@ -63,7 +64,145 @@ class Perceiver3DConfig(Perceiver3DEncoderConfig):
         assert self.encode.dim == self.decode.dim, "encode and decode dims must be equal"
         return self
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 8
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 7
+def unfold_with_rollover_1d(x: torch.Tensor, window_size: int | None, stride: int | None):
+    # x: (b, T, dim)
+    if window_size is None or stride is None:
+        return x.unsqueeze(0)
+    total_len = x.shape[1]
+    num_windows = (total_len + stride - 1) // stride  # Number of windows needed
+    pad_len = max(0, window_size + (num_windows - 1) * stride - total_len)  # How many elements are missing
+    if pad_len > 0:
+        x = torch.cat([x, x[:, :pad_len]], dim=1)  # Rollover padding
+    x = x.unfold(1, window_size, stride)
+    x = rearrange(x, "b num_windows dim window_size -> num_windows b window_size dim")
+    # (num_windows, b, window_size, dim)
+    return x
+
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 9
+def unfold_with_rollover_3d_with_mask(
+    x: torch.Tensor, window_size: tuple[int, int, int] | None, stride: tuple[int, int, int] | None
+):
+    if window_size is None or stride is None:
+        return x.unsqueeze(0)
+
+    b, c, d, h, w = x.shape
+    w_d, w_h, w_w = window_size
+    s_d, s_h, s_w = stride
+
+    # Calculate number of windows and required padding
+    n_d = (d + s_d - 1) // s_d
+    n_h = (h + s_h - 1) // s_h
+    n_w = (w + s_w - 1) // s_w
+
+    # Calculate padding with rollover
+    pad_d = max(0, w_d + (n_d - 1) * s_d - d)
+    pad_h = max(0, w_h + (n_h - 1) * s_h - h)
+    pad_w = max(0, w_w + (n_w - 1) * s_w - w)
+
+    # Apply rollover padding efficiently
+    if pad_d > 0:
+        x = torch.cat([x, x[:, :, :pad_d]], dim=2)
+    if pad_h > 0:
+        x = torch.cat([x, x[:, :, :, :pad_h]], dim=3)
+    if pad_w > 0:
+        x = torch.cat([x, x[:, :, :, :, :pad_w]], dim=4)
+
+    # Extract patches using stride tricks
+    # This approach avoids creating intermediate tensors
+    patches = x.unfold(2, w_d, s_d).unfold(3, w_h, s_h).unfold(4, w_w, s_w)
+
+    # Rearrange dimensions using einops for clarity and efficiency
+    patches = rearrange(
+        patches, "b c d_windows h_windows w_windows w_d w_h w_w -> (d_windows h_windows w_windows) b c w_d w_h w_w"
+    )
+
+    # Padded shape
+    padded_d, padded_h, padded_w = x.shape[2], x.shape[3], x.shape[4]
+
+    # Generate positional information for each fold
+    # Create meshgrid for all window positions
+    d_indices = torch.arange(n_d, device=x.device)
+    h_indices = torch.arange(n_h, device=x.device)
+    w_indices = torch.arange(n_w, device=x.device)
+
+    # Calculate starting indices for each window
+    d_starts = d_indices * s_d
+    h_starts = h_indices * s_h
+    w_starts = w_indices * s_w
+
+    # Generate all possible window starting positions
+    d_pos, h_pos, w_pos = torch.meshgrid(d_starts, h_starts, w_starts, indexing="ij")
+    positions = torch.stack([d_pos, h_pos, w_pos], dim=-1).reshape(-1, 3)
+
+    # Generate usage count mask
+    usage_mask = torch.zeros(padded_d, padded_h, padded_w, device=x.device)
+
+    # For each position, increment the count for all pixels in that window
+    for pos in positions:
+        pos_d, pos_h, pos_w = pos
+        # Handle potential out-of-bounds for the last window
+        end_d = min(pos_d + w_d, padded_d)
+        end_h = min(pos_h + w_h, padded_h)
+        end_w = min(pos_w + w_w, padded_w)
+
+        usage_mask[pos_d:end_d, pos_h:end_h, pos_w:end_w] += 1
+
+    # Crop usage_mask back to original dimensions (without padding)
+    usage_mask = usage_mask[:d, :h, :w]
+
+    # Repeat usage mask for batch and channel dimensions
+    usage_mask = usage_mask.expand(b, c, d, h, w)
+
+    return patches, positions, usage_mask
+
+
+def fold_back_3d(
+    patches: torch.Tensor,
+    positions: torch.Tensor,
+    usage_mask: torch.Tensor,
+    output_shape: tuple,
+    window_size: tuple[int, int, int],
+    aggregation_mode: str = "mean",
+):
+    b, c, d, h, w = output_shape
+    w_d, w_h, w_w = window_size
+
+    # Initialize output tensor
+    output = torch.zeros(output_shape, dtype=patches.dtype, device=patches.device)
+
+    # Handle case where we want sum instead of mean
+    if aggregation_mode == "sum":
+        usage_mask = torch.ones_like(usage_mask)
+
+    # Fold each patch back to its position
+    for i, pos in enumerate(positions):
+        pos_d, pos_h, pos_w = pos
+        # Get the patch
+        patch = patches[i]
+
+        # Handle window dimensions (might be smaller at edges)
+        valid_w_d = min(w_d, d - pos_d) if pos_d < d else 0
+        valid_w_h = min(w_h, h - pos_h) if pos_h < h else 0
+        valid_w_w = min(w_w, w - pos_w) if pos_w < w else 0
+
+        if valid_w_d <= 0 or valid_w_h <= 0 or valid_w_w <= 0:
+            continue
+
+        # Only add the valid portion of the patch
+        output[:, :, pos_d : pos_d + valid_w_d, pos_h : pos_h + valid_w_h, pos_w : pos_w + valid_w_w] += patch[
+            :, :, :valid_w_d, :valid_w_h, :valid_w_w
+        ]
+
+    # Average according to usage count
+    if aggregation_mode == "mean":
+        # Avoid division by zero
+        mask = (usage_mask > 0).float()
+        output = output / (usage_mask + (1 - mask))
+
+    return output
+
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 12
 class Perceiver3DChannelMapping(nn.Module):
     def __init__(self, config: Perceiver3DChannelMappingConfig = {}, **kwargs):
         super().__init__()
@@ -92,7 +231,7 @@ class Perceiver3DChannelMapping(nn.Module):
 
         return x
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 11
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 15
 class Perceiver3DEncoderEncode(nn.Module):
     def __init__(
         self,
@@ -129,22 +268,6 @@ class Perceiver3DEncoderEncode(nn.Module):
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    @staticmethod
-    def unfold_with_rollover(x: torch.Tensor, window_size: int | None, stride: int | None):
-        if window_size is None or stride is None:
-            return x.unsqueeze(0)
-        total_len = x.shape[1]
-        num_windows = (total_len + stride - 1) // stride  # Number of windows needed
-        pad_len = max(0, window_size + (num_windows - 1) * stride - total_len)  # How many elements are missing
-        if pad_len > 0:
-            x = torch.cat([x, x[:, :pad_len]], dim=1)  # Rollover padding
-        x = x.unfold(1, window_size, stride)
-        x = rearrange(
-            x,
-            "b num_windows dim tokens_per_window -> num_windows b tokens_per_window dim",
-        )
-        return x
-
     def _forward(
         self,
         x: torch.Tensor | list[torch.Tensor],
@@ -179,15 +302,18 @@ class Perceiver3DEncoderEncode(nn.Module):
         # (b, num_latent_tokens, dim)
 
         # Prepare sliding window
-        kv_windows = self.unfold_with_rollover(kv, sliding_window, sliding_stride)
+        kv_windows = unfold_with_rollover_1d(kv, sliding_window, sliding_stride)
         # (num_windows, b, window_size, dim)
 
         # Perform attention
-        embeddings = [q]
+        embeddings = []
         for cross_attention_layer in self.cross_attention:
+            embedding = torch.zeros_like(q)
             for kv_window in kv_windows:
-                q = cross_attention_layer(q, kv_window, kv_window)
-            embeddings.append(q)
+                embedding_window = cross_attention_layer(q, kv_window, kv_window)
+                embedding = embedding + embedding_window
+            q = embedding  # To pass to the next layer
+            embeddings.append(embedding)
         # (b, num_latent_tokens, dim)
 
         return_value = embeddings[-1]
@@ -207,7 +333,7 @@ class Perceiver3DEncoderEncode(nn.Module):
     ):
         return self.checkpointing_level4(self._forward, x, sliding_window, sliding_stride, return_all)
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 14
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 18
 class Perceiver3DEncoderProcess(nn.Module):
     def __init__(
         self,
@@ -235,13 +361,14 @@ class Perceiver3DEncoderProcess(nn.Module):
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    def _forward(self, q, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
-        # q: (b, num_tokens, dim)
+    def _forward(self, qkv, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
+        # qkv: (b, num_tokens, dim)
 
-        embeddings = [q]
+        embeddings = []
         for self_attention_layer in self.self_attention:
-            qkv = embeddings[-1]
-            embeddings.append(self_attention_layer(qkv, qkv, qkv))
+            embedding = self_attention_layer(qkv, qkv, qkv)
+            qkv = embedding  # To pass to the next layer
+            embeddings.append(embedding)
         # (b, num_tokens, dim)
 
         return_value = embeddings[-1]
@@ -256,7 +383,7 @@ class Perceiver3DEncoderProcess(nn.Module):
     def forward(self, q: torch.Tensor, return_all: bool = False):
         return self.checkpointing_level4(self._forward, q, return_all)
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 16
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 20
 class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(
         self,
@@ -310,7 +437,7 @@ class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
     ):
         return self.checkpointing_level5(self._forward, x, sliding_window, sliding_stride, return_all)
 
-# %% ../../nbs/nets/13_perceiver_3d.ipynb 19
+# %% ../../nbs/nets/13_perceiver_3d.ipynb 23
 class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(
         self,
@@ -331,8 +458,8 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         dim = self.config.dim
         num_layers = self.config.num_layers
 
-        self.empty_token = nn.Parameter(torch.empty(dim, 1), requires_grad=True)
-        nn.init.xavier_uniform_(self.empty_token)
+        self.empty_token = nn.Parameter(torch.randn(dim, 1) * 0.02, requires_grad=True)
+        # Initialized with gaussian for robust training stability
 
         self.position_embeddings = position_embeddings
 
@@ -347,8 +474,54 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
+    #     # Prepare sliding windows
+    #     q_windows, positions, usage_mask = unfold_with_rollover_3d_with_mask(q, sliding_window, sliding_stride)
+    #     # (num_windows, b, dim, window_size_z, window_size_y, window_size_x)
+
+    #     # Perform attention
+    #     outputs = []
+    #     for cross_attention_layer in self.cross_attention:
+    #         output = torch.zeros_like(q)
+    #         for q_window in q_windows:
+    #             output_window = cross_attention_layer(q_window, kv, kv)
+    #             output = output + output_window
+    #     q = rearrange(q, "b d z y x -> b (z y x) d")
+    #     # (b, num_output_tokens, dim)
+    #     outputs = [q]
+    #     for cross_attention_layer in self.cross_attention:
+    #         q = outputs[-1]
+    #         outputs.append(cross_attention_layer(q, kv, kv))
+    #     # (b, num_output_tokens, dim)
+
+    #     output = outputs[-1]
+    #     output = rearrange(
+    #         output,
+    #         "b (z y x) d -> b d z y x",
+    #         z=out_shape[0],
+    #         y=out_shape[1],
+    #         x=out_shape[2],
+    #     )
+    #     # (b, dim, z, y, x)
+
+    #     output = self.channel_mapping(output)
+    #     # (b, out_channels, z, y, x)
+
+    #     return_value = output
+    #     if return_all:
+    #         return_value = {
+    #             "output": output,
+    #             "all_outputs": outputs,
+    #         }
+
+    #     return return_value
+
     def _forward(
-        self, kv, out_shape: tuple[int, int, int], return_all: bool = False
+        self,
+        kv,
+        out_shape: tuple[int, int, int],
+        sliding_window: tuple[int, int, int] | None = None,
+        sliding_stride: tuple[int, int, int] | None = None,
+        return_all: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # kv: (b, num_tokens, dim)
 
@@ -367,24 +540,84 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         if self.position_embeddings is not None:
             q = q + self.position_embeddings(batch_size=b, grid_size=out_shape, device=q.device)
 
-        q = rearrange(q, "b d z y x -> b (z y x) d")
-        # (b, num_output_tokens, dim)
-        outputs = [q]
-        for cross_attention_layer in self.cross_attention:
-            q = outputs[-1]
-            outputs.append(cross_attention_layer(q, kv, kv))
-        # (b, num_output_tokens, dim)
+        # Conditional execution based on sliding window parameters
+        if sliding_window is not None and sliding_stride is not None:
+            # Apply sliding window processing
+            q_windows, positions, usage_mask = unfold_with_rollover_3d_with_mask(q, sliding_window, sliding_stride)
+            # q_windows: (num_windows, b, dim, window_size_z, window_size_y, window_size_x)
 
-        output = outputs[-1]
-        output = rearrange(
-            output,
-            "b (z y x) d -> b d z y x",
-            z=out_shape[0],
-            y=out_shape[1],
-            x=out_shape[2],
-        )
-        # (b, dim, z, y, x)
+            # Process each window with attention
+            num_windows = q_windows.shape[0]
+            window_shape = q_windows.shape[-3:]  # (window_size_z, window_size_y, window_size_x)
 
+            # Initialize output tensor for each layer's output
+            outputs = []
+            current_windows = q_windows
+
+            # Apply cross-attention to each window sequentially through all layers
+            for layer_idx, cross_attention_layer in enumerate(self.cross_attention):
+                processed_windows = torch.zeros_like(current_windows)
+
+                for window_idx in range(num_windows):
+                    # Extract current window
+                    window = current_windows[window_idx]  # (b, dim, w_z, w_y, w_x)
+
+                    # Reshape for attention operation
+                    flat_window = rearrange(window, "b d z y x -> b (z y x) d")
+
+                    # Apply cross-attention
+                    attended_window = cross_attention_layer(flat_window, kv, kv)
+
+                    # Reshape back to 3D
+                    processed_window = rearrange(
+                        attended_window,
+                        "b (z y x) d -> b d z y x",
+                        z=window_shape[0],
+                        y=window_shape[1],
+                        x=window_shape[2],
+                    )
+
+                    # Store processed window
+                    processed_windows[window_idx] = processed_window
+
+                # Update current windows for next layer
+                current_windows = processed_windows
+
+                # Fold windows back to full volume for this layer's output
+                folded_output = fold_back_3d(
+                    processed_windows, positions, usage_mask, (b, q.shape[1], out_shape[0], out_shape[1], out_shape[2])
+                )
+
+                # Store layer output for return_all
+                flat_output = rearrange(
+                    folded_output, "b d z y x -> b (z y x) d", z=out_shape[0], y=out_shape[1], x=out_shape[2]
+                )
+                outputs.append(flat_output)
+
+            # Final output is from the last layer
+            output = folded_output
+
+        else:
+            # Original processing without sliding windows
+            q = rearrange(q, "b d z y x -> b (z y x) d")
+            # (b, num_output_tokens, dim)
+            outputs = [q]
+            for cross_attention_layer in self.cross_attention:
+                q = outputs[-1]
+                outputs.append(cross_attention_layer(q, kv, kv))
+            # (b, num_output_tokens, dim)
+
+            output = outputs[-1]
+            output = rearrange(
+                output,
+                "b (z y x) d -> b d z y x",
+                z=out_shape[0],
+                y=out_shape[1],
+                x=out_shape[2],
+            )
+            # (b, dim, z, y, x)
+
+        # Apply channel mapping to get final output
         output = self.channel_mapping(output)
         # (b, out_channels, z, y, x)
 
