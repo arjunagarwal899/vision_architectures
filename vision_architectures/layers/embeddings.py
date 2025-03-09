@@ -297,8 +297,9 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         self.position_embeddings_cache = {}
         self.position_embeddings = None
         if dim is not None and grid_size is not None:
-            self.position_embeddings_cache[grid_size] = get_absolute_position_embeddings_3d(dim, grid_size)
-            self.position_embeddings = nn.Parameter(self.position_embeddings_cache[grid_size], requires_grad=learnable)
+            self.position_embeddings = nn.Parameter(
+                get_absolute_position_embeddings_3d(dim, grid_size), requires_grad=learnable
+            )
 
     def forward(
         self,
@@ -307,7 +308,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         grid_size=None,
         spacings: torch.Tensor = None,
         device=torch.device("cpu"),
-        crop_offset: tuple[int, int, int] = None,  # Used if the embeddings required are of a crop of a larger image
+        crop_offsets: torch.Tensor | None = None,  # Used if the embeddings required are of a crop of a larger image
     ):
         # Check if sufficient information has been provided
         if self.position_embeddings is None:
@@ -323,30 +324,42 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
 
-        if self.position_embeddings is not None:
-            position_embeddings = self.position_embeddings
-        else:
-            if isinstance(grid_size, int):
-                grid_size = (grid_size, grid_size, grid_size)
-
-            cache_key = (dim, grid_size, crop_offset)
-            if cache_key not in self.position_embeddings_cache:
-                self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_3d(
-                    dim, grid_size, crop_offset=crop_offset
-                )
-            position_embeddings = self.position_embeddings_cache[cache_key].to(device)
-        # (1, dim, d, h, w)
-
+        # Estimate batch size
         if batch_size is not None:
             b = batch_size
         else:
             assert spacings.ndim == 2 and spacings.shape[1] == 3, "spacings must be of shape (batch_size, 3)"
             assert dim % 3 == 0, "embed_dim must be divisible by 3"
-
             b = spacings.shape[0]
 
-        position_embeddings = repeat(position_embeddings, "1 e d h w -> b e d h w", b=b)
+        # Get position embeddings, adjust based on crop offsets if applicable
+        if self.position_embeddings is not None:
+            position_embeddings = self.position_embeddings
+            position_embeddings = repeat(position_embeddings, "1 e d h w -> b e d h w", b=b)
+        else:
+            if isinstance(grid_size, int):
+                grid_size = (grid_size, grid_size, grid_size)
 
+            if crop_offsets is None:
+                cache_key = (dim, grid_size, None)
+                if cache_key not in self.position_embeddings_cache:
+                    self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_3d(dim, grid_size)
+                position_embeddings = self.position_embeddings_cache[cache_key]
+                position_embeddings = repeat(position_embeddings, "1 e d h w -> b e d h w", b=b)
+            else:
+                if crop_offsets.ndim == 1:
+                    crop_offsets = crop_offsets.unsqueeze(0)
+
+                position_embeddings = []
+                for crop_offset in crop_offsets:
+                    position_embeddings.append(
+                        get_absolute_position_embeddings_3d(dim, grid_size, crop_offset=crop_offset.tolist())
+                    )
+                position_embeddings = torch.cat(position_embeddings, dim=0)
+            position_embeddings = position_embeddings.to(device)
+        # (b, dim, d, h, w)
+
+        # Incorporate spacing information
         if spacings is not None:
             # (b, 3)
             spacings = repeat(spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=dim // 3)

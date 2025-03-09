@@ -500,7 +500,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
         self,
         pixel_values: torch.Tensor,
         spacings: torch.Tensor = None,
-        crop_offset: torch.Tensor = None,
+        crop_offsets: torch.Tensor = None,
         mask_patches: torch.Tensor = None,
         mask_token: torch.Tensor = None,
     ):
@@ -523,7 +523,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
             grid_size=embeddings.shape[2:],
             spacings=spacings,
             device=embeddings.device,
-            crop_offset=crop_offset,
+            crop_offsets=crop_offsets,
         )
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
         embeddings = embeddings + absolute_position_embeddings

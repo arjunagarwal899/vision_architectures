@@ -365,9 +365,9 @@ class Perceiver3DEncoderProcess(nn.Module):
         # qkv: (b, num_tokens, dim)
 
         embeddings = []
+        embedding = qkv
         for self_attention_layer in self.self_attention:
-            embedding = self_attention_layer(qkv, qkv, qkv)
-            qkv = embedding  # To pass to the next layer
+            embedding = self_attention_layer(embedding, embedding, embedding)
             embeddings.append(embedding)
         # (b, num_tokens, dim)
 
@@ -480,7 +480,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         out_shape: tuple[int, int, int],
         sliding_window: tuple[int, int, int] | None = None,
         sliding_stride: tuple[int, int, int] | None = None,
-        crop_offset: torch.Tensor = None,
+        crop_offsets: torch.Tensor = None,
         return_all: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # kv: (b, num_tokens, dim)
@@ -499,10 +499,10 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         if self.position_embeddings is not None:
             q = q + self.position_embeddings(
-                batch_size=b, dim=q.shape[1], grid_size=out_shape, device=q.device, crop_offset=crop_offset
+                batch_size=b, dim=q.shape[1], grid_size=out_shape, device=q.device, crop_offsets=crop_offsets
             )
 
-        # Prepare sliding windows
+        # Prepare sliding windows  # TODO
         # q_windows, _, _ = unfold_with_rollover_3d_with_mask(q, sliding_window, sliding_stride)
         # (num_windows, b, dim, window_size_z, window_size_y, window_size_x)
 
@@ -665,6 +665,11 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         self,
         kv: torch.Tensor,
         out_shape: tuple[int, int, int],
+        sliding_window: tuple[int, int, int] | None = None,
+        sliding_stride: tuple[int, int, int] | None = None,
+        crop_offsets: torch.Tensor = None,
         return_all: bool = False,
     ):
-        return self.checkpointing_level4(self._forward, kv, out_shape, return_all)
+        return self.checkpointing_level4(
+            self._forward, kv, out_shape, sliding_window, sliding_stride, crop_offsets, return_all
+        )
