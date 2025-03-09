@@ -499,7 +499,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         if self.position_embeddings is not None:
             q = q + self.position_embeddings(
-                batch_size=b, grid_size=out_shape, device=q.device, crop_offset=crop_offset
+                batch_size=b, dim=q.shape[1], grid_size=out_shape, device=q.device, crop_offset=crop_offset
             )
 
         # Prepare sliding windows

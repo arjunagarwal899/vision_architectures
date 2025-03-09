@@ -44,7 +44,7 @@ class RelativePositionEmbeddings3DConfig(CustomBaseModel):
 
 
 class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
-    dim: int
+    dim: int | None = None
     grid_size: tuple[int, int, int] | None = None
     learnable: bool = False
 
@@ -69,8 +69,8 @@ class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
         if isinstance(self.grid_size, int):
             self.grid_size = (self.grid_size, self.grid_size, self.grid_size)
 
-        if self.learnable and self.grid_size is None:
-            raise ValueError("grid_size must be provided if learnable is True")
+        if self.learnable and (self.dim is None or self.grid_size is None):
+            raise ValueError("dim and grid_size must be provided if learnable is True")
         return self
 
 
@@ -294,35 +294,45 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         grid_size = self.config.grid_size
         learnable = self.config.learnable
 
-        # TODO: Add getting absolute position embeddings of subsection of the grid
-
         self.position_embeddings_cache = {}
         self.position_embeddings = None
-        if grid_size is not None:
+        if dim is not None and grid_size is not None:
             self.position_embeddings_cache[grid_size] = get_absolute_position_embeddings_3d(dim, grid_size)
             self.position_embeddings = nn.Parameter(self.position_embeddings_cache[grid_size], requires_grad=learnable)
 
     def forward(
         self,
         batch_size=None,
+        dim=None,
         grid_size=None,
         spacings: torch.Tensor = None,
         device=torch.device("cpu"),
         crop_offset: tuple[int, int, int] = None,  # Used if the embeddings required are of a crop of a larger image
     ):
-        assert self.position_embeddings is not None or grid_size is not None, "grid_size must be provided"
-        assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
+        # Check if sufficient information has been provided
+        if self.position_embeddings is None:
+            if dim is None:
+                assert self.config.dim is not None, "dim must be provided"
+                dim = self.config.dim
+            if grid_size is None:
+                assert self.config.grid_size is not None, "grid_size must be provided"
+                self.config.grid_size = grid_size
+        else:
+            dim = self.config.dim
+            grid_size = self.config.grid_size
 
-        if isinstance(grid_size, int):
-            grid_size = (grid_size, grid_size, grid_size)
+        assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
 
         if self.position_embeddings is not None:
             position_embeddings = self.position_embeddings
         else:
-            cache_key = (grid_size, crop_offset)
+            if isinstance(grid_size, int):
+                grid_size = (grid_size, grid_size, grid_size)
+
+            cache_key = (dim, grid_size, crop_offset)
             if cache_key not in self.position_embeddings_cache:
                 self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_3d(
-                    self.config.dim, grid_size, crop_offset=crop_offset
+                    dim, grid_size, crop_offset=crop_offset
                 )
             position_embeddings = self.position_embeddings_cache[cache_key].to(device)
         # (1, dim, d, h, w)
@@ -331,7 +341,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             b = batch_size
         else:
             assert spacings.ndim == 2 and spacings.shape[1] == 3, "spacings must be of shape (batch_size, 3)"
-            assert self.config.dim % 3 == 0, "embed_dim must be divisible by 3"
+            assert dim % 3 == 0, "embed_dim must be divisible by 3"
 
             b = spacings.shape[0]
 
@@ -339,12 +349,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         if spacings is not None:
             # (b, 3)
-            spacings = repeat(
-                spacings,
-                "b three -> b (three dim_by_three) 1 1 1",
-                three=3,
-                dim_by_three=self.config.dim // 3,
-            )
+            spacings = repeat(spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=dim // 3)
             # (b, dim, 1, 1, 1)
 
             position_embeddings = position_embeddings * spacings.to(position_embeddings.device)

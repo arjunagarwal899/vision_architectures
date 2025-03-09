@@ -368,6 +368,7 @@ class Swin3DModel(nn.Module, PyTorchModelHubMixin):
 
         absolute_position_embeddings = self.absolute_position_embeddings(
             batch_size=embeddings.shape[0],
+            dim=embeddings.shape[1],
             grid_size=embeddings.shape[2:],
             spacings=spacings,
             device=embeddings.device,

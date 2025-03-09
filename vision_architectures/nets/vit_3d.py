@@ -148,7 +148,7 @@ class ViT3DDecoderLayer(nn.Module):
             proj_drop_prob=proj_drop_prob,
         )
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = Attention1DMLP(dim, mlp_ratio=mlp_ratio, activation="gelu", mlp_drop_prob=mlp_drop_prob)
+        self.mlp = Attention1DMLP(dim=dim, mlp_ratio=mlp_ratio, activation="gelu", mlp_drop_prob=mlp_drop_prob)
         self.layernorm3 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
     def forward(self, q: torch.Tensor, kv: torch.Tensor):
@@ -253,8 +253,8 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: ViT3DConfig):
         super().__init__()
 
-        self.patchify = PatchEmbeddings3D(config.patch_size, config.in_channels, config.dim)
-        self.absolute_position_embeddings = AbsolutePositionEmbeddings3D(config.dim, learnable=False)
+        self.patchify = PatchEmbeddings3D(patch_size=config.patch_size, in_channels=config.in_channels, dim=config.dim)
+        self.absolute_position_embeddings = AbsolutePositionEmbeddings3D(dim=config.dim, learnable=False)
         self.pos_drop = nn.Dropout(config.drop_prob)
         self.num_class_tokens = config.num_class_tokens
         if self.num_class_tokens > 0:
@@ -285,6 +285,7 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
 
         absolute_position_embeddings = self.absolute_position_embeddings(
             batch_size=embeddings.shape[0],
+            dim=embeddings.shape[1],
             grid_size=embeddings.shape[2:],
             spacings=spacings,
             device=pixel_values.device,
