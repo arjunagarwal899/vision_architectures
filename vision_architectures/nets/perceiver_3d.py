@@ -13,7 +13,11 @@ from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
 from ..layers.attention import Attention1DWithMLP, Attention1DWithMLPConfig
-from ..layers.embeddings import AbsolutePositionEmbeddings3D
+from vision_architectures.layers.embeddings import (
+    AbsolutePositionEmbeddings1D,
+    AbsolutePositionEmbeddings1DConfig,
+    AbsolutePositionEmbeddings3D,
+)
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, model_validator
 
@@ -27,6 +31,7 @@ class Perceiver3DEncoderEncodeConfig(Attention1DWithMLPConfig):
     dim: int
     num_latent_tokens: int
     num_layers: int
+    learnable_position_embeddings: bool = True
 
 
 class Perceiver3DEncoderProcessConfig(Attention1DWithMLPConfig):
@@ -256,6 +261,11 @@ class Perceiver3DEncoderEncode(nn.Module):
         self.latent_tokens = nn.Parameter(torch.empty(num_latent_tokens, dim), requires_grad=True)
         nn.init.xavier_uniform_(self.latent_tokens)
 
+        self.position_embeddings_config = AbsolutePositionEmbeddings1DConfig(
+            dim=dim, length=num_latent_tokens, learnable=self.config.learnable_position_embeddings
+        )
+        self.position_embeddings = AbsolutePositionEmbeddings1D(self.position_embeddings_config)
+
         self.channel_mapping = channel_mapping
 
         self.cross_attention = nn.ModuleList(
@@ -299,6 +309,7 @@ class Perceiver3DEncoderEncode(nn.Module):
         # Prepare queries
         b = kv.shape[0]
         q = repeat(self.latent_tokens, "t d -> b t d", b=b)
+        q = q + self.position_embeddings(batch_size=b)
         # (b, num_latent_tokens, dim)
 
         # Prepare sliding window
