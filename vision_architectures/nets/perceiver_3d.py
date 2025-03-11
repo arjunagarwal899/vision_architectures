@@ -31,7 +31,6 @@ class Perceiver3DEncoderEncodeConfig(Attention1DWithMLPConfig):
     dim: int
     num_latent_tokens: int
     num_layers: int
-    learnable_position_embeddings: bool = True
 
 
 class Perceiver3DEncoderProcessConfig(Attention1DWithMLPConfig):
@@ -262,7 +261,7 @@ class Perceiver3DEncoderEncode(nn.Module):
         nn.init.xavier_uniform_(self.latent_tokens)
 
         self.position_embeddings_config = AbsolutePositionEmbeddings1DConfig(
-            dim=dim, length=num_latent_tokens, learnable=self.config.learnable_position_embeddings
+            dim=dim, length=num_latent_tokens, learnable=False
         )
         self.position_embeddings = AbsolutePositionEmbeddings1D(self.position_embeddings_config)
 
