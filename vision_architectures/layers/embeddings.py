@@ -2,9 +2,10 @@
 
 # %% auto 0
 __all__ = ['RelativePositionEmbeddings', 'RelativePositionEmbeddings3DConfig', 'AbsolutePositionEmbeddings3DConfig',
-           'PatchEmbeddings3DConfig', 'get_coords_grid', 'RelativePositionEmbeddings3D',
-           'RelativePositionEmbeddings3DMetaNetwork', 'get_absolute_position_embeddings_3d',
-           'AbsolutePositionEmbeddings3D', 'PatchEmbeddings3D']
+           'AbsolutePositionEmbeddings1DConfig', 'PatchEmbeddings3DConfig', 'get_coords_grid',
+           'RelativePositionEmbeddings3D', 'RelativePositionEmbeddings3DMetaNetwork',
+           'get_absolute_position_embeddings_3d', 'AbsolutePositionEmbeddings3D', 'get_absolute_position_embeddings_1d',
+           'AbsolutePositionEmbeddings1D', 'PatchEmbeddings3D']
 
 # %% ../../nbs/layers/02_embeddings.ipynb 2
 from typing import Union
@@ -66,11 +67,21 @@ class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
     @model_validator(mode="after")
     def validate(self):
         super().validate()
-        if isinstance(self.grid_size, int):
-            self.grid_size = (self.grid_size, self.grid_size, self.grid_size)
-
         if self.learnable and (self.dim is None or self.grid_size is None):
             raise ValueError("dim and grid_size must be provided if learnable is True")
+        return self
+
+
+class AbsolutePositionEmbeddings1DConfig(CustomBaseModel):
+    dim: int | None = None
+    length: int | None = None
+    learnable: bool = False
+
+    @model_validator(mode="after")
+    def validate(self):
+        super().validate()
+        if self.learnable and (self.dim is None or self.length is None):
+            raise ValueError("dim and length must be provided if learnable is True")
         return self
 
 
@@ -237,7 +248,7 @@ def get_absolute_position_embeddings_3d(
     crop_offset: tuple[int, int, int] = None,  # Used if the embeddings required are of a crop of a larger image
 ) -> torch.Tensor:
     if dim % 6 != 0:
-        raise ValueError("embed_dim must be divisible by 6")
+        raise ValueError("dim must be divisible by 6")
 
     grid = get_coords_grid(grid_size)
     # (3, d, h, w)
@@ -253,7 +264,7 @@ def get_absolute_position_embeddings_3d(
 
     omega = torch.arange(dim // 6, dtype=torch.float32)
     omega /= dim / 6.0
-    omega = 1.0 / 10000**omega
+    omega = 1.0 / (10000**omega)
     # (dim // 6)
 
     patch_multiplier = torch.Tensor(spacing) / min(spacing)
@@ -329,7 +340,7 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             b = batch_size
         else:
             assert spacings.ndim == 2 and spacings.shape[1] == 3, "spacings must be of shape (batch_size, 3)"
-            assert dim % 3 == 0, "embed_dim must be divisible by 3"
+            assert dim % 3 == 0, "dim must be divisible by 3"
             b = spacings.shape[0]
 
         # Get position embeddings, adjust based on crop offsets if applicable
@@ -370,7 +381,92 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         return position_embeddings
 
+# %% ../../nbs/layers/02_embeddings.ipynb 16
+def get_absolute_position_embeddings_1d(dim: int, length: int) -> torch.Tensor:
+    if dim % 2 != 0:
+        raise ValueError("dim must be divisible by 2")
+
+    # Create position indices
+    positions = torch.arange(length, dtype=torch.int32)
+    # (length,)
+
+    # Create frequency bands
+    omega = torch.arange(dim // 2, dtype=torch.float32)
+    omega /= dim / 2.0
+    omega = 1.0 / (10000**omega)
+    # (dim // 2)
+
+    # Outer product of positions and frequencies
+    out = torch.einsum("n,d->nd", positions, omega)
+    # (length, dim//2)
+
+    # Apply sin and cos functions
+    emb_sin = torch.sin(out)
+    emb_cos = torch.cos(out)
+
+    # Interleave sin and cos embeddings
+    position_embeddings = torch.stack([emb_sin, emb_cos], dim=2)
+    position_embeddings = position_embeddings.flatten(1)
+    # (length, dim)
+
+    # Reshape to expected output format
+    position_embeddings = rearrange(position_embeddings, "length dim -> 1 length dim")
+    # (1, length, dim)
+
+    return position_embeddings
+
 # %% ../../nbs/layers/02_embeddings.ipynb 17
+class AbsolutePositionEmbeddings1D(nn.Module):
+    def __init__(self, config: AbsolutePositionEmbeddings1DConfig = {}, **kwargs):
+        super().__init__()
+
+        self.config = AbsolutePositionEmbeddings1DConfig.model_validate(config | kwargs)
+
+        dim = self.config.dim
+        length = self.config.length
+        learnable = self.config.learnable
+
+        self.position_embeddings_cache = {}
+        self.position_embeddings = None
+        if dim is not None and length is not None:
+            self.position_embeddings = nn.Parameter(
+                get_absolute_position_embeddings_1d(dim, length), requires_grad=learnable
+            )
+
+    def forward(
+        self,
+        batch_size,
+        dim=None,
+        length=None,
+        device=torch.device("cpu"),
+    ):
+        # Check if sufficient information has been provided
+        if self.position_embeddings is None:
+            if dim is None:
+                assert self.config.dim is not None, "dim must be provided"
+                dim = self.config.dim
+            if length is None:
+                assert self.config.length is not None, "length must be provided"
+                self.config.length = length
+        else:
+            dim = self.config.dim
+            length = self.config.length
+
+        # Get position embeddings, adjust based on crop offsets if applicable
+        if self.position_embeddings is not None:
+            position_embeddings = self.position_embeddings
+            position_embeddings = repeat(position_embeddings, "1 l d-> b l d", b=batch_size)
+        else:
+            cache_key = (dim, length)
+            if cache_key not in self.position_embeddings_cache:
+                self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_1d(dim, length)
+            position_embeddings = self.position_embeddings_cache[cache_key]
+            position_embeddings = repeat(position_embeddings, "1 l d -> b l d", b=batch_size).to(device)
+        # (b, length, dim)
+
+        return position_embeddings
+
+# %% ../../nbs/layers/02_embeddings.ipynb 20
 class PatchEmbeddings3D(nn.Module):
     def __init__(self, config: PatchEmbeddings3DConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
