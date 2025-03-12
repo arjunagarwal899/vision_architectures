@@ -34,14 +34,13 @@ class Perceiver3DEncoderEncodeConfig(Attention3DWithMLPConfig):
     dim: int
     latent_grid_size: tuple[int, int, int]
     num_layers: int
-    use_relative_position_embeddings: bool = True
 
 
 class Perceiver3DEncoderProcessConfig(Attention3DWithMLPConfig):
     dim: int
     num_layers: int
     latent_grid_size: tuple[int, int, int] | None
-    use_relative_position_embeddings: bool = True
+    use_relative_position_embeddings: bool = True  # can help with self attention
 
     @model_validator(mode="after")
     def validate(self):
@@ -61,18 +60,22 @@ class Perceiver3DEncoderConfig(CustomBaseModel):
     def dim(self):
         return self.encode.dim
 
+    @property
+    def latent_grid_size(self):
+        return self.encode.latent_grid_size
+
     @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
-        cls.validate_before(data)
+        super().validate_before(data)
         if isinstance(data, dict):
             data.setdefault("encode", {})
             data.setdefault("process", {})
             for key, value in data.items():
-                if key in {"encode", "process"}:
+                if key in {"encode", "process", "decode"}:
                     continue
-                key["encode"][key] = value
-                key["process"][key] = value
+                data["encode"].setdefault(key, value)
+                data["process"].setdefault(key, value)
         return data
 
     @model_validator(mode="after")
@@ -86,17 +89,7 @@ class Perceiver3DDecoderConfig(Attention3DWithMLPConfig):
     dim: int
     num_layers: int
     out_channels: int
-    latent_grid_size: tuple[int, int, int] | None
-    use_relative_position_embeddings: bool = True
-
-    @model_validator(mode="after")
-    def validate(self):
-        super().validate()
-        if self.use_relative_position_embeddings:
-            assert (
-                self.latent_grid_size is not None
-            ), "latent_grid_size must be provided if using relative position embeddings"
-        return self
+    use_absolute_position_embeddings: bool = True
 
 
 class Perceiver3DConfig(Perceiver3DEncoderConfig):
@@ -105,9 +98,13 @@ class Perceiver3DConfig(Perceiver3DEncoderConfig):
     @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
-        cls.validate_before(data)
+        super().validate_before(data)
         if isinstance(data, dict):
-            data.setdefault("encode", {})
+            data.setdefault("decode", {})
+            for key, value in data.items():
+                if key in {"encode", "process", "decode"}:
+                    continue
+                data["decode"].setdefault(key, value)
         return data
 
     @model_validator(mode="after")
@@ -274,16 +271,7 @@ class Perceiver3DEncoderEncode(nn.Module):
         self.latent_tokens = nn.Parameter(torch.empty(dim, *latent_grid_size), requires_grad=True)
         nn.init.xavier_uniform_(self.latent_tokens)
 
-        if self.config.use_relative_position_embeddings:
-            relative_position_embeddings_config = RelativePositionEmbeddings3DConfig(
-                num_heads=self.config.num_heads, grid_size=latent_grid_size
-            )
-            self.relative_position_embeddings = RelativePositionEmbeddings3D(relative_position_embeddings_config)
-
-        # self.position_embeddings_config = AbsolutePositionEmbeddings3DConfig(
-        #     dim=dim, grid_size=latent_grid_size, learnable=False
-        # )
-        # self.position_embeddings = AbsolutePositionEmbeddings3D(self.position_embeddings_config)
+        self.position_embeddings = AbsolutePositionEmbeddings3D(dim=dim, grid_size=latent_grid_size, learnable=False)
 
         self.channel_mapping = channel_mapping
 
@@ -320,19 +308,18 @@ class Perceiver3DEncoderEncode(nn.Module):
                     # (b, dim, z, y, x)
                     mapped_windows, _ = unfold_with_roll_3d(mapped, sliding_window, sliding_stride)
                     # (num_windows, b, dim, *sliding_window])
-                    mapped_windows = rearrange(mapped_windows, "n b d z y x -> n b (z y x) d")
-                    # (num_windows, b, num_kv_tokens_per_widow, dim)
                     kvs.append(mapped_windows)
             return kvs
 
         kvs = self.checkpointing_level1(prepare_keys_values, x)
-        # list of (num_windows, b, num_kv_tokens_per_window[max is torch.prod(sliding_window)], dim)
+        # list of (num_windows, b, dim, *sliding_window)
 
         # Prepare queries
         b = kvs[0].shape[1]
-        q = repeat(self.latent_tokens, "t d -> b t d", b=b)
-        q = q + self.position_embeddings(batch_size=b)
-        # (b, latent_grid_size, dim)
+        q = repeat(self.latent_tokens, "d zl yl xl -> b d zl yl xl", b=b)
+        if self.position_embeddings is not None:
+            q = q + self.position_embeddings(batch_size=b, device=q.device)
+        # (b, dim, zl, yl, xl)
 
         # Perform attention
         embeddings = []
@@ -382,9 +369,20 @@ class Perceiver3DEncoderProcess(nn.Module):
 
         num_layers = self.config.num_layers
 
+        relative_position_embeddings = None
+        if self.config.use_relative_position_embeddings:
+            relative_position_embeddings_config = RelativePositionEmbeddings3DConfig(
+                num_heads=self.config.num_heads, grid_size=self.config.latent_grid_size
+            )
+            relative_position_embeddings = RelativePositionEmbeddings3D(relative_position_embeddings_config)
+
         self.self_attention = nn.ModuleList(
             [
-                Attention1DWithMLP(self.config.model_dump(), checkpointing_level=checkpointing_level)
+                Attention3DWithMLP(
+                    self.config.model_dump(),
+                    relative_position_bias=relative_position_embeddings,
+                    checkpointing_level=checkpointing_level,
+                )
                 for _ in range(num_layers)
             ]
         )
@@ -392,14 +390,14 @@ class Perceiver3DEncoderProcess(nn.Module):
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
     def _forward(self, qkv, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
-        # qkv: (b, num_tokens, dim)
+        # qkv: (b, dim, zl, yl, xl)
 
         embeddings = []
         embedding = qkv
         for self_attention_layer in self.self_attention:
             embedding = self_attention_layer(embedding, embedding, embedding)
             embeddings.append(embedding)
-        # (b, num_tokens, dim)
+        # (b, dim, zl, yl, xl)
 
         return_value = embeddings[-1]
         if return_all:
@@ -445,11 +443,12 @@ class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
         encode_embeddings = self.encode(x, sliding_window, sliding_stride, return_all=True)["all_embeddings"]
         return_value["encode_embeddings"] = encode_embeddings
         embeddings = encode_embeddings[-1]
-        # (b, num_tokens, dim)
+        # (b, dim, zl, yl, xl)
 
         process_embeddings = self.process(embeddings, return_all=True)["all_embeddings"]
         return_value["process_embeddings"] = process_embeddings
         embeddings = process_embeddings[-1]
+        # (b, dim, zl, yl, xl)
 
         return_value["embeddings"] = embeddings
 
@@ -472,7 +471,6 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(
         self,
         config: Perceiver3DDecoderConfig | Perceiver3DConfig = {},
-        position_embeddings: AbsolutePositionEmbeddings3D = None,
         checkpointing_level: int = 0,
         **kwargs,
     ):
@@ -491,11 +489,13 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         self.empty_token = nn.Parameter(torch.randn(dim, 1) * 0.02, requires_grad=True)
         # Initialized with gaussian for robust training stability
 
-        self.position_embeddings = position_embeddings
+        self.position_embeddings = None
+        if self.config.use_absolute_position_embeddings:
+            self.position_embeddings = AbsolutePositionEmbeddings3D()
 
         self.cross_attention = nn.ModuleList(
             [
-                Attention1DWithMLP(config.model_dump(), checkpointing_level=checkpointing_level)
+                Attention3DWithMLP(config.model_dump(), checkpointing_level=checkpointing_level)
                 for _ in range(num_layers)
             ]
         )
@@ -506,14 +506,14 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
     def _forward(
         self,
-        kv,
+        kv: torch.Tensor,
         out_shape: tuple[int, int, int],
         sliding_window: tuple[int, int, int] | None = None,
         sliding_stride: tuple[int, int, int] | None = None,
         crop_offsets: torch.Tensor = None,
         return_all: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
-        # kv: (b, num_tokens, dim)
+        # kv: (b, dim, zl, yl, xl)
 
         # Prepare queries
         b = kv.shape[0]
@@ -531,16 +531,12 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         for cross_attention_layer in self.cross_attention:
             q_windows, q_positions = unfold_with_roll_3d(q, sliding_window, sliding_stride)
             # (num_windows, b, dim, *sliding_window)
-            wz, wy, wx = q_windows.shape[3:]
-            q_windows = rearrange(q_windows, "n b d wz wy wx -> n b (wz wy wx) d")
-            # (num_windows, b, num_q_tokens_per_window, dim)
             new_q_windows = []
             for q_window in q_windows:
                 output_window = cross_attention_layer(q_window, kv, kv)
                 new_q_windows.append(output_window)
             new_q_windows = torch.stack(new_q_windows, dim=0)
-            # (num_windows, b, num_q_tokens_per_window, dim)
-            new_q_windows = rearrange(new_q_windows, "n b (wz wy wx) d -> n b d wz wy wx", wz=wz, wy=wy, wx=wx)
+            # (num_windows, b, dim, *sliding_window)
             q = fold_back_3d(new_q_windows, q_positions, q.shape[2:])
             outputs.append(q)
         # list of (b, dim, z, y, x)
