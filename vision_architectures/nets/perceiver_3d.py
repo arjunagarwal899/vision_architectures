@@ -7,8 +7,6 @@ __all__ = ['Perceiver3DChannelMappingConfig', 'Perceiver3DEncoderEncodeConfig', 
            'Perceiver3DEncoder', 'Perceiver3DDecoder']
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 2
-import math
-
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
@@ -17,7 +15,6 @@ from torch import nn
 from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
-    AbsolutePositionEmbeddings3DConfig,
     RelativePositionEmbeddings3D,
     RelativePositionEmbeddings3DConfig,
 )

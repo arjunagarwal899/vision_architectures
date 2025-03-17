@@ -11,7 +11,6 @@ import numpy as np
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
-from munch import munchify
 from torch import nn
 
 from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
@@ -24,7 +23,7 @@ from vision_architectures.layers.embeddings import (
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 4
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 5
 class SwinV23DPatchMergingConfig(CustomBaseModel):
     out_dim_ratio: int
     merge_window_size: tuple[int, int, int]
@@ -156,7 +155,7 @@ class SwinV23DConfig(SwinV23DDecoderConfig):
 class Swin3DMIMConfig(SwinV23DConfig):  # TODO: Implement and fix
     mim: dict
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 8
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 9
 class SwinV23DLayerLogitScale(nn.Module):
     def __init__(self, num_heads):
         super().__init__()
@@ -167,7 +166,7 @@ class SwinV23DLayerLogitScale(nn.Module):
         logit_scale = torch.clamp(self.logit_scale, max=np.log(1.0 / 0.01)).exp()
         return logit_scale
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 9
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 10
 class SwinV23DLayer(nn.Module):
     def __init__(
         self,
@@ -246,7 +245,7 @@ class SwinV23DLayer(nn.Module):
     def forward(self, hidden_states: torch.Tensor):
         return self.checkpointing_level3(self._forward, hidden_states)
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 12
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 13
 class SwinV23DBlock(nn.Module):
     def __init__(self, stage_config, checkpointing_level: int = 0):
         super().__init__()
@@ -286,7 +285,7 @@ class SwinV23DBlock(nn.Module):
 
         return hidden_states, layer_outputs
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 14
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 15
 class SwinV23DPatchMerging(nn.Module):
     def __init__(self, merge_window_size, in_dim, out_dim, checkpointing_level: int = 0):
         super().__init__()
@@ -320,7 +319,7 @@ class SwinV23DPatchMerging(nn.Module):
     def forward(self, hidden_states: torch.Tensor):
         return self.checkpointing_level1(self._forward, hidden_states)
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 16
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 17
 class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and is not part of the paper.
     def __init__(self, final_window_size, in_dim, out_dim, checkpointing_level: int = 0):
         super().__init__()
@@ -355,7 +354,7 @@ class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and
     def forward(self, hidden_states: torch.Tensor):
         return self.checkpointing_level1(self._forward, hidden_states)
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 18
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 19
 class SwinV23DStage(nn.Module):
     def __init__(self, stage_config, checkpointing_level: int = 0):
         super().__init__()
@@ -410,7 +409,7 @@ class SwinV23DStage(nn.Module):
     def forward(self, hidden_states: torch.Tensor):
         return self.checkpointing_level4(self._forward, hidden_states)
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 22
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 23
 class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config, checkpointing_level: int = 0):
         super().__init__()
@@ -443,7 +442,7 @@ class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
     def forward(self, hidden_states: torch.Tensor):
         return self.checkpointing_level5(self._forward, hidden_states)
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 25
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 26
 class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: SwinV23DDecoderConfig, checkpointing_level: int = 0):
         super().__init__()
@@ -478,7 +477,7 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
     def forward(self, hidden_states: torch.Tensor):
         return self.checkpointing_level5(self._forward, hidden_states)
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 28
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 29
 class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: SwinV23DConfig, checkpointing_level: int = 0):
         super().__init__()
@@ -549,7 +548,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
 
         return encoded, stage_outputs, layer_outputs
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 31
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 32
 class SwinV23DReconstructionDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -582,7 +581,7 @@ class SwinV23DReconstructionDecoder(nn.Module):
 
         return decoded
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 33
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 34
 class SwinV23DMIM(nn.Module):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__()
@@ -639,7 +638,7 @@ class SwinV23DMIM(nn.Module):
 
         return mask_patches
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 34
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 35
 class SwinV23DSimMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__(swin_config, decoder_config, mim_config)
@@ -667,7 +666,7 @@ class SwinV23DSimMIM(SwinV23DMIM, PyTorchModelHubMixin):
 
         return decoded, loss, mask
 
-# %% ../../nbs/nets/03_swinv2_3d.ipynb 36
+# %% ../../nbs/nets/03_swinv2_3d.ipynb 37
 class SwinV23DVAEMIM(SwinV23DMIM, PyTorchModelHubMixin):
     def __init__(self, swin_config, decoder_config, mim_config):
         super().__init__(swin_config, decoder_config, mim_config)

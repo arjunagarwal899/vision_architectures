@@ -7,7 +7,6 @@ __all__ = ['get_updated_crop_start', 'CropForegroundWithCropTrackingd', 'RandSpa
 # %% ../../nbs/transforms/02_croppad.ipynb 2
 from collections.abc import Sequence
 
-import numpy as np
 import torch
 from monai.data import MetaTensor
 from monai.data.meta_obj import get_track_meta
@@ -15,7 +14,7 @@ from monai.transforms.croppad.array import RandSpatialCropSamples
 from monai.transforms.croppad.dictionary import CropForegroundd, RandSpatialCropSamplesd
 from monai.utils import ImageMetaKey as Key
 
-# %% ../../nbs/transforms/02_croppad.ipynb 4
+# %% ../../nbs/transforms/02_croppad.ipynb 5
 def get_updated_crop_start(current_crop_start, new_crop_start):
     if not torch.is_tensor(new_crop_start):
         new_crop_start = torch.tensor(new_crop_start)
@@ -29,7 +28,7 @@ def get_updated_crop_start(current_crop_start, new_crop_start):
     updated_crop_start = current_crop_start + new_crop_start
     return updated_crop_start
 
-# %% ../../nbs/transforms/02_croppad.ipynb 8
+# %% ../../nbs/transforms/02_croppad.ipynb 9
 class CropForegroundWithCropTrackingd(CropForegroundd):
     def __init__(
         self,
@@ -46,7 +45,7 @@ class CropForegroundWithCropTrackingd(CropForegroundd):
         output[self.crop_offset_key] = get_updated_crop_start(output.get(self.crop_offset_key), crop_offset)
         return output
 
-# %% ../../nbs/transforms/02_croppad.ipynb 10
+# %% ../../nbs/transforms/02_croppad.ipynb 11
 class RandSpatialCropSamplesWithCropTracking(RandSpatialCropSamples):  # To return the crops along with the crop offset
     def __init__(self, crop_offset_key: str = "crop_offset", *args, **kwargs):
         super().__init__(*args, **kwargs)

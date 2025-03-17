@@ -1,11 +1,11 @@
 repos:
 - repo: https://github.com/psf/black-pre-commit-mirror
-  rev: 23.9.1
+  rev: 25.1.0
   hooks:
     - id: black-jupyter
       types: [jupyter]
 - repo: https://github.com/nbQA-dev/nbQA
-  rev: 1.7.0
+  rev: 1.9.1
   hooks:
     - id: nbqa-isort
       name: isort (nbqa)
@@ -18,12 +18,21 @@ repos:
     #   name: flake8 (nbqa)
     #   additional_dependencies: [flake8, flake8-pyproject]
 - repo: https://github.com/fastai/nbdev
-  rev: 2.2.10
+  rev: 2.3.32
   hooks:
     - id: nbdev_clean
     - id: nbdev_export
+- repo: https://github.com/pycqa/flake8
+  rev: 7.1.2
+  hooks:
+    - id: flake8  # Run only for specific codes
+      args: [
+        --max-line-length=120, 
+        --per-file-ignores=__init__.py:F401,  # Doesn't raise 'import unused' error in __init__.py files
+        --select=F401
+      ]
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.5.0
+  rev: v5.0.0
   hooks:
     - id: check-ast
     - id: check-json

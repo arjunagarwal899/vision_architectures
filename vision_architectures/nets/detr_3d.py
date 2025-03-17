@@ -5,7 +5,6 @@ __all__ = ['DETR3DDecoderLayer', 'DETR3DDecoder', 'DETR3DBBoxMLP', 'get_coords_g
            'embed_spacings_in_position_embeddings', 'DETR3DPositionEmbeddings', 'DETR3DModel']
 
 # %% ../../nbs/nets/06_detr_3d.ipynb 2
-import numpy as np
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin

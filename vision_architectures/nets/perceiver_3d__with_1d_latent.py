@@ -7,8 +7,6 @@ __all__ = ['Perceiver3DChannelMappingConfig', 'Perceiver3DEncoderEncodeConfig', 
            'Perceiver3DEncoder', 'Perceiver3DDecoder']
 
 # %% ../../nbs/nets/13.1_perceiver_3d_with_1d_latent.ipynb 2
-import math
-
 import torch
 from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
