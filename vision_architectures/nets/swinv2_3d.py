@@ -139,8 +139,8 @@ class SwinV23DConfig(SwinV23DDecoderConfig):
     image_size: tuple[int, int, int] | None = Field(
         None, description="required for learnable absolute position embeddings"
     )
-    use_absolute_position_embeddings: bool = True
-    learnable_absolute_position_embeddings: bool = False
+    use_absolute_position_embeddings: bool = True  # TODO: Use it in the code
+    learnable_absolute_position_embeddings: bool = False  # TODO: Use it in the code
 
     @model_validator(mode="after")
     def validate(self):

@@ -32,8 +32,8 @@ class Perceiver3DChannelMappingConfig(CustomBaseModel):
 
 class Perceiver3DEncoderEncodeConfig(Attention3DWithMLPConfig):
     dim: int
-    latent_grid_size: tuple[int, int, int]
     num_layers: int
+    latent_grid_size: tuple[int, int, int]
 
 
 class Perceiver3DEncoderProcessConfig(Attention3DWithMLPConfig):
@@ -82,6 +82,9 @@ class Perceiver3DEncoderConfig(CustomBaseModel):
     def validate(self):
         super().validate()
         assert self.encode.dim == self.process.dim, "encode and process dims must be equal"
+        assert (
+            self.encode.latent_grid_size == self.process.latent_grid_size
+        ), "encode and process latent_grid_size must be equal"
         return self
 
 
@@ -369,23 +372,22 @@ class Perceiver3DEncoderProcess(nn.Module):
 
         num_layers = self.config.num_layers
 
-        relative_position_embeddings = None
-        if self.config.use_relative_position_embeddings:
-            relative_position_embeddings_config = RelativePositionEmbeddings3DConfig(
-                num_heads=self.config.num_heads, grid_size=self.config.latent_grid_size
-            )
-            relative_position_embeddings = RelativePositionEmbeddings3D(relative_position_embeddings_config)
+        self.self_attention = nn.ModuleList()
+        for _ in range(num_layers):
+            relative_position_embeddings = None
+            if self.config.use_relative_position_embeddings:
+                relative_position_embeddings_config = RelativePositionEmbeddings3DConfig(
+                    num_heads=self.config.num_heads, grid_size=self.config.latent_grid_size
+                )
+                relative_position_embeddings = RelativePositionEmbeddings3D(relative_position_embeddings_config)
 
-        self.self_attention = nn.ModuleList(
-            [
+            self.self_attention.append(
                 Attention3DWithMLP(
                     self.config.model_dump(),
                     relative_position_bias=relative_position_embeddings,
                     checkpointing_level=checkpointing_level,
                 )
-                for _ in range(num_layers)
-            ]
-        )
+            )
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
