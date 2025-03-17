@@ -299,16 +299,16 @@ class Perceiver3DEncoderEncode(nn.Module):
             if not isinstance(x, list):
                 x = [x]
             # x is now a list of tensors
-            if self.channel_mapping is None:
-                kvs = x
-            else:
-                kvs = []
-                for i in range(len(x)):
+            kvs = []
+            for i in range(len(x)):
+                if self.channel_mapping is not None:
                     mapped = self.channel_mapping(x[i])  # modifying in-place leads to errors when checkpointing
-                    # (b, dim, z, y, x)
-                    mapped_windows, _ = unfold_with_roll_3d(mapped, sliding_window, sliding_stride)
-                    # (num_windows, b, dim, *sliding_window])
-                    kvs.append(mapped_windows)
+                else:
+                    mapped = x[i]
+                # (b, dim, z, y, x)
+                mapped_windows, _ = unfold_with_roll_3d(mapped, sliding_window, sliding_stride)
+                # (num_windows, b, dim, *sliding_window])
+                kvs.append(mapped_windows)
             return kvs
 
         kvs = self.checkpointing_level1(prepare_keys_values, x)
