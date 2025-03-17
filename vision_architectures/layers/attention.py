@@ -198,6 +198,10 @@ class Attention1D(nn.Module):
             torch.split(key_normalized, chunk_size, dim=0),
             torch.split(value, chunk_size, dim=0),
         ):
+            torch250plus_kwargs = {}
+            if torch.__version__ >= "2.5":
+                torch250plus_kwargs["enable_gqa"] = self.config.gqa_mqa_enabled
+
             output_chunk = F.scaled_dot_product_attention(
                 query_normalized_and_scaled_chunk,
                 key_normalized_chunk,
@@ -206,7 +210,7 @@ class Attention1D(nn.Module):
                 dropout_p=self.attn_drop_prob,
                 is_causal=False,
                 scale=1.0,  # Already scaled the vectors
-                enable_gqa=self.config.gqa_mqa_enabled,
+                **torch250plus_kwargs,
             )
             output.append(output_chunk)
             # (chunk_size, num_heads, T, per_head_dim)
