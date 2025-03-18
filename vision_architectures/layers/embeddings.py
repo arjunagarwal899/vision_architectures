@@ -143,13 +143,16 @@ class RelativePositionEmbeddings3D(nn.Module):
         # (num_patches, num_patches)
 
     def forward(self):
-        relative_position_embeddings = self.relative_position_bias_table[:, self.relative_position_index]
+        relative_position_embeddings = self.relative_position_bias_table[:, self.relative_position_index].contiguous()
         # (num_heads, num_patches, num_patches)
         relative_position_embeddings = relative_position_embeddings.reshape(
             1, self.config.num_patches, self.config.num_patches, -1
         )
         # (1, num_patches, num_patches, num_heads)
-        relative_position_embeddings = relative_position_embeddings.permute(0, 3, 1, 2).contiguous()
+        relative_position_embeddings = rearrange(
+            relative_position_embeddings,
+            "1 num_patches1 num_patches2 num_heads -> 1 num_heads num_patches1 num_patches2",
+        )
         # (1, num_heads, num_patches, num_patches)
         return relative_position_embeddings
 
@@ -231,9 +234,11 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
             num_patches1=self.config.num_patches,
             num_patches2=self.config.num_patches,
             num_heads=self.config.num_heads,
-        ).contiguous()
+        )
         # (num_heads, num_patches, num_patches)
         relative_position_embeddings = 16 * torch.sigmoid(relative_position_embeddings)
+        # (num_heads, num_patches, num_patches)
+        relative_position_embeddings = relative_position_embeddings.contiguous()
         # (num_heads, num_patches, num_patches)
         return relative_position_embeddings
 
