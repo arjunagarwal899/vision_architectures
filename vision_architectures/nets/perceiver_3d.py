@@ -423,8 +423,8 @@ class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
 
         self.config = Perceiver3DEncoderConfig.model_validate(config | kwargs)
 
-        self.encode = Perceiver3DEncoderEncode(config.encode, channel_mapping, checkpointing_level)
-        self.process = Perceiver3DEncoderProcess(config.process, checkpointing_level)
+        self.encode = Perceiver3DEncoderEncode(self.config.encode, channel_mapping, checkpointing_level)
+        self.process = Perceiver3DEncoderProcess(self.config.process, checkpointing_level)
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
@@ -494,7 +494,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.cross_attention = nn.ModuleList(
             [
-                Attention3DWithMLP(config.model_dump(), checkpointing_level=checkpointing_level)
+                Attention3DWithMLP(self.config.model_dump(), checkpointing_level=checkpointing_level)
                 for _ in range(num_layers)
             ]
         )
