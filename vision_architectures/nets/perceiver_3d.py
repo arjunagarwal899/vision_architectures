@@ -318,7 +318,7 @@ class Perceiver3DEncoderEncode(nn.Module):
         b = kvs[0].shape[1]
         q = repeat(self.latent_tokens, "d zl yl xl -> b d zl yl xl", b=b)
         if self.position_embeddings is not None:
-            q = q + self.position_embeddings(batch_size=b, device=q.device)
+            q = self.position_embeddings(q, device=q.device)
         # (b, dim, zl, yl, xl)
 
         # Perform attention
@@ -520,9 +520,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         q = repeat(self.empty_token, "d 1 -> b d z y x", b=b, z=z, y=y, x=x)
         # (b, dim, z, y, x)
         if self.position_embeddings is not None:
-            q = q + self.position_embeddings(
-                batch_size=b, dim=q.shape[1], grid_size=out_shape, device=q.device, crop_offsets=crop_offsets
-            )
+            q = self.position_embeddings(q, device=q.device, crop_offsets=crop_offsets)
         # (b, dim, z, y, x)
 
         # Perform attention

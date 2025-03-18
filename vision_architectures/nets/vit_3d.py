@@ -283,15 +283,8 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
             mask_patches = repeat(mask_patches, "b z y x -> b d z y x", d=embeddings.shape[1])
             embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
 
-        absolute_position_embeddings = self.absolute_position_embeddings(
-            batch_size=embeddings.shape[0],
-            dim=embeddings.shape[1],
-            grid_size=embeddings.shape[2:],
-            spacings=spacings,
-            device=pixel_values.device,
-        )
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
-        embeddings = embeddings + absolute_position_embeddings
+        embeddings = self.absolute_position_embeddings(embeddings, spacings=spacings, device=pixel_values.device)
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         embeddings = rearrange(embeddings, "b e nz ny nx -> b (nz ny nx) e").contiguous()

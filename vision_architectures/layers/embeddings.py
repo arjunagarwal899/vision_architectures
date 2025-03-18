@@ -8,7 +8,7 @@ __all__ = ['RelativePositionEmbeddings', 'RelativePositionEmbeddings3DConfig', '
            'AbsolutePositionEmbeddings1D', 'PatchEmbeddings3D']
 
 # %% ../../nbs/layers/02_embeddings.ipynb 2
-from typing import Union
+from typing import Literal, Union
 
 import numpy as np
 import torch
@@ -319,34 +319,27 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
     def forward(
         self,
-        batch_size=None,
-        dim=None,
-        grid_size=None,
+        x: torch.Tensor,
+        embedding_type: Literal["add", "concat"] = "add",
         spacings: torch.Tensor = None,
         device=torch.device("cpu"),
         crop_offsets: torch.Tensor | None = None,  # Used if the embeddings required are of a crop of a larger image
     ):
+        assert x.ndim == 5, "Input tensor must be of shape (b, d, z, y, x)"
         # Check if sufficient information has been provided
         if self.position_embeddings is None:
+            dim = self.config.dim
             if dim is None:
-                assert self.config.dim is not None, "dim must be provided"
-                dim = self.config.dim
+                dim = x.shape[1]
+            grid_size = self.config.grid_size
             if grid_size is None:
-                assert self.config.grid_size is not None, "grid_size must be provided"
-                self.config.grid_size = grid_size
+                grid_size = (x.shape[2], x.shape[3], x.shape[4])
         else:
             dim = self.config.dim
             grid_size = self.config.grid_size
 
-        assert batch_size is not None or spacings is not None, "Either batch_size or spacings must be provided"
-
         # Estimate batch size
-        if batch_size is not None:
-            b = batch_size
-        else:
-            assert spacings.ndim == 2 and spacings.shape[1] == 3, "spacings must be of shape (batch_size, 3)"
-            assert dim % 3 == 0, "dim must be divisible by 3"
-            b = spacings.shape[0]
+        b = x.shape[0]
 
         # Get position embeddings, adjust based on crop offsets if applicable
         if self.position_embeddings is not None:
@@ -377,6 +370,8 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         # Incorporate spacing information
         if spacings is not None:
+            assert spacings.shape == (b, 3), "spacings must be of shape (batch_size, 3)"
+            assert dim % 3 == 0, "dim must be divisible by 3"
             # (b, 3)
             spacings = repeat(spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=dim // 3)
             # (b, dim, 1, 1, 1)
@@ -384,7 +379,14 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             position_embeddings = position_embeddings * spacings.to(position_embeddings.device)
             # (b, dim, d, h, w)
 
-        return position_embeddings
+        if embedding_type == "add":
+            x = x + position_embeddings
+        elif embedding_type == "concat":
+            x = torch.cat([x, position_embeddings], dim=1)
+        else:
+            raise NotImplementedError("Only 'add' and 'concat' are supported for embedding_type")
+
+        return x
 
 # %% ../../nbs/layers/02_embeddings.ipynb 16
 def get_absolute_position_embeddings_1d(dim: int, length: int) -> torch.Tensor:
@@ -440,36 +442,46 @@ class AbsolutePositionEmbeddings1D(nn.Module):
 
     def forward(
         self,
-        batch_size,
-        dim=None,
-        length=None,
+        x: torch.Tensor,
+        embedding_type: Literal["add", "concat"] = "add",
         device=torch.device("cpu"),
     ):
+        assert x.ndim == 3, "Input tensor must be of shape (b, length, dim)"
         # Check if sufficient information has been provided
         if self.position_embeddings is None:
+            dim = self.config.dim
             if dim is None:
-                assert self.config.dim is not None, "dim must be provided"
-                dim = self.config.dim
+                dim = x.shape[2]
+            length = self.config.length
             if length is None:
-                assert self.config.length is not None, "length must be provided"
-                self.config.length = length
+                length = x.shape[1]
         else:
             dim = self.config.dim
             length = self.config.length
 
+        # Estimate batch size
+        b = x.shape[0]
+
         # Get position embeddings, adjust based on crop offsets if applicable
         if self.position_embeddings is not None:
             position_embeddings = self.position_embeddings
-            position_embeddings = repeat(position_embeddings, "1 l d-> b l d", b=batch_size)
+            position_embeddings = repeat(position_embeddings, "1 l d-> b l d", b=b)
         else:
             cache_key = (dim, length)
             if cache_key not in self.position_embeddings_cache:
                 self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_1d(dim, length)
             position_embeddings = self.position_embeddings_cache[cache_key]
-            position_embeddings = repeat(position_embeddings, "1 l d -> b l d", b=batch_size).to(device)
+            position_embeddings = repeat(position_embeddings, "1 l d -> b l d", b=b).to(device)
         # (b, length, dim)
 
-        return position_embeddings
+        if embedding_type == "add":
+            x = x + position_embeddings
+        elif embedding_type == "concat":
+            x = torch.cat([x, position_embeddings], dim=1)
+        else:
+            raise NotImplementedError("Only 'add' and 'concat' are supported for embedding_type")
+
+        return x
 
 # %% ../../nbs/layers/02_embeddings.ipynb 20
 class PatchEmbeddings3D(nn.Module):

@@ -57,10 +57,12 @@ class CaiT3DAttentionLayer(nn.Module):
     ):
         super().__init__()
 
-        self.mhsa = Attention1D(dim, num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob)
+        self.mhsa = Attention1D(
+            dim=dim, num_heads=num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob
+        )
         self.gamma1 = nn.Parameter(torch.empty(1, 1, dim))
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = Attention1DMLP(dim, mlp_ratio, "gelu", mlp_drop_prob)
+        self.mlp = Attention1DMLP(dim=dim, mlp_ratio=mlp_ratio, activation="gelu", mlp_drop_prob=mlp_drop_prob)
         self.gamma2 = nn.Parameter(torch.empty(1, 1, dim))
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
 

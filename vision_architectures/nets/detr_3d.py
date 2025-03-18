@@ -26,11 +26,15 @@ class DETR3DDecoderLayer(nn.Module):
     ):
         super().__init__()
 
-        self.mhsa = Attention1D(dim, num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob)
+        self.mhsa = Attention1D(
+            dim=dim, num_heads=num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob
+        )
         self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mhca = Attention1D(dim, num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob)
+        self.mhca = Attention1D(
+            dim=dim, num_heads=num_heads, attn_drop_prob=attn_drop_prob, proj_drop_prob=proj_drop_prob
+        )
         self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = Attention1DMLP(dim, mlp_ratio, mlp_drop_prob=mlp_drop_prob)
+        self.mlp = Attention1DMLP(dim=dim, mlp_ratio=mlp_ratio, mlp_drop_prob=mlp_drop_prob)
         self.layernorm3 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
     def forward(self, object_queries: torch.Tensor, embeddings: torch.Tensor):  # This uses post-normalization
