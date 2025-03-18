@@ -107,6 +107,8 @@ class Attention3DWithMLPConfig(Attention3DConfig, Attention3DMLPConfig):
 class Attention1D(nn.Module):
     """Performs attention (MHA, GQA, and MQA) on 1D sequences"""
 
+    _warn_relative_position_bias: bool = True
+
     def __init__(
         self,
         config: Attention1DConfig = {},
@@ -142,6 +144,11 @@ class Attention1D(nn.Module):
         else:
             self.logit_scale = logit_scale
 
+        if self._warn_relative_position_bias and relative_position_bias is not None:
+            print(
+                "Warning: Relative position bias is not used in Attention1D. "
+                "Use Attention3D for relative position bias."
+            )
         self.relative_position_bias = relative_position_bias
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
@@ -235,6 +242,18 @@ class Attention1D(nn.Module):
 
 # %% ../../nbs/layers/01_attention.ipynb 8
 class Attention3D(Attention1D):
+    _warn_relative_position_bias: bool = False
+
+    def __init__(
+        self,
+        config: Attention3DConfig = {},
+        relative_position_bias: RelativePositionEmbeddings | None = None,
+        logit_scale: float | None = None,
+        checkpointing_level: int = 0,
+        **kwargs
+    ):
+        super().__init__(config, relative_position_bias, logit_scale, checkpointing_level, **kwargs)
+
     def _forward(
         self,
         query: torch.Tensor,
@@ -327,6 +346,9 @@ class Attention1DMLP(nn.Module):
 
 # %% ../../nbs/layers/01_attention.ipynb 12
 class Attention3DMLP(Attention1DMLP):
+    def __init__(self, config: Attention3DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
+        super().__init__(config, checkpointing_level, **kwargs)
+
     def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
         # hidden_states: (b, dim, z, y, x) or (b, z, y, x, dim)
 
