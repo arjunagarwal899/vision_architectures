@@ -193,7 +193,7 @@ class Swin3DLayer(nn.Module):
             window_size_z=window_size_z,
             window_size_y=window_size_y,
             window_size_x=window_size_x,
-        )
+        ).contiguous()
 
         hidden_states = self.transformer(hidden_states, hidden_states, hidden_states, channels_first=False)
 
@@ -208,7 +208,7 @@ class Swin3DLayer(nn.Module):
             window_size_z=window_size_z,
             window_size_y=window_size_y,
             window_size_x=window_size_x,
-        )
+        ).contiguous()
 
         return output
 
@@ -275,7 +275,7 @@ class Swin3DPatchMerging(nn.Module):
             window_size_z=window_size_z,
             window_size_y=window_size_y,
             window_size_x=window_size_x,
-        )
+        ).contiguous()
 
         hidden_states = self.layer_norm(hidden_states)
         hidden_states = self.proj(hidden_states)
@@ -377,22 +377,22 @@ class Swin3DModel(nn.Module, PyTorchModelHubMixin):
         embeddings = embeddings + absolute_position_embeddings
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
-        embeddings = rearrange(embeddings, "b e nz ny nx -> b nz ny nx e")
+        embeddings = rearrange(embeddings, "b e nz ny nx -> b nz ny nx e").contiguous()
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         encoded, stage_outputs, layer_outputs = self.encoder(embeddings)
         # encoded: (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
         # stage_outputs, layer_outputs: list of (b, some_num_patches_z, some_num_patches_y, some_num_patches_x, dim)
 
-        encoded = rearrange(encoded, "b nz ny nx d -> b d nz ny nx")
+        encoded = rearrange(encoded, "b nz ny nx d -> b d nz ny nx").contiguous()
         # (b, dim, new_num_patches_z, new_num_patches_y, new_num_patches_x)
 
         for i in range(len(stage_outputs)):
-            stage_outputs[i] = rearrange(stage_outputs[i], "b nz ny nx d -> b d nz ny nx")
+            stage_outputs[i] = rearrange(stage_outputs[i], "b nz ny nx d -> b d nz ny nx").contiguous()
             # (b, dim, some_num_patches_z, some_num_patches_y, some_num_patches_x)
 
         for i in range(len(layer_outputs)):
-            layer_outputs[i] = rearrange(layer_outputs[i], "b nz ny nx d -> b d nz ny nx")
+            layer_outputs[i] = rearrange(layer_outputs[i], "b nz ny nx d -> b d nz ny nx").contiguous()
             # (b, dim, some_num_patches_z, some_num_patches_y, some_num_patches_x)
 
         return encoded, stage_outputs, layer_outputs
@@ -426,7 +426,7 @@ class Swin3DMIMDecoder(nn.Module):
             pz=self.final_patch_size[0],
             py=self.final_patch_size[1],
             px=self.final_patch_size[2],
-        )
+        ).contiguous()
         # (b, c, z, y, x)
 
         return decoded
@@ -460,7 +460,7 @@ class Swin3DMIM(nn.Module, PyTorchModelHubMixin):
                 z=mask_grid_size[0],
                 y=mask_grid_size[1],
                 x=mask_grid_size[2],
-            )
+            ).contiguous()
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
 

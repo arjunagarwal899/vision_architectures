@@ -142,7 +142,7 @@ def unfold_with_roll_3d(
     positions_y = torch.arange(0, y, sy, device=ten.device)
     positions_x = torch.arange(0, x, sx, device=ten.device)
     positions = torch.stack(torch.meshgrid(positions_z, positions_y, positions_x, indexing="ij"), dim=-1)
-    positions = rearrange(positions, "z y x three -> (z y x) three")
+    positions = rearrange(positions, "z y x three -> (z y x) three").contiguous()
 
     # If required, number of patches along each dimension is calculated here:
     # nz = positions_z.shape[0]

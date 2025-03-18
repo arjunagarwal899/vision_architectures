@@ -294,7 +294,7 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
         embeddings = embeddings + absolute_position_embeddings
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
-        embeddings = rearrange(embeddings, "b e nz ny nx -> b (nz ny nx) e")
+        embeddings = rearrange(embeddings, "b e nz ny nx -> b (nz ny nx) e").contiguous()
         # (b, num_tokens, dim)
 
         embeddings = self.pos_drop(embeddings)
@@ -357,7 +357,7 @@ class ViT3DMIMDecoder(nn.Module):
             nz=self.image_size[0] // self.patch_size[0],
             ny=self.image_size[1] // self.patch_size[1],
             nx=self.image_size[2] // self.patch_size[2],
-        )
+        ).contiguous()
         # (b, c, z, y, x)
 
         return decoded
@@ -396,7 +396,7 @@ class ViT3DMIM(nn.Module):
                 z=grid_size[0],
                 y=grid_size[1],
                 x=grid_size[2],
-            )
+            ).contiguous()
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
 

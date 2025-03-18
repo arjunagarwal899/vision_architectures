@@ -199,8 +199,8 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         num_classes = prediction.shape[1]
 
-        prediction = rearrange(prediction, "b n d h w -> b n (d h w)")
-        target = rearrange(target, "b n d h w -> b n (d h w)")
+        prediction = rearrange(prediction, "b n d h w -> b n (d h w)").contiguous()
+        target = rearrange(target, "b n d h w -> b n (d h w)").contiguous()
 
         if ignore_index is not None:
             # Remove gradients of the predictions based on the target
@@ -233,8 +233,8 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
 
         num_voxels = torch.prod(torch.tensor(prediction.shape[2:]))
 
-        prediction = rearrange(prediction, "b n d h w -> b n (d h w)")
-        target = rearrange(target, "b n d h w -> b n (d h w)")
+        prediction = rearrange(prediction, "b n d h w -> b n (d h w)").contiguous()
+        target = rearrange(target, "b n d h w -> b n (d h w)").contiguous()
 
         if ignore_index is not None:
             # Remove gradients of the predictions based on the target

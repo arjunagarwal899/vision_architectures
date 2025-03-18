@@ -123,7 +123,7 @@ class SymSwin3DMHSA(nn.Module):
                 coords,
                 "three_dimensional d h w -> three_dimensional (d h w)",
                 three_dimensional=3,
-            )
+            ).contiguous()
             relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]
             relative_coords = relative_coords.permute(1, 2, 0).contiguous()
             relative_coords[:, :, 0] += window_size[0] - 1
@@ -166,7 +166,7 @@ class SymSwin3DMHSA(nn.Module):
             "b nz ny nx (n num_heads d) -> n b num_heads (nz ny nx) d",
             n=3,
             num_heads=self.num_heads,
-        )
+        ).contiguous()
         # num_patches = window_size_z * window_size_y * window_size_x
         # Each is (windowed_b, num_heads, num_patches, per_head_dim)
 
@@ -199,7 +199,7 @@ class SymSwin3DMHSA(nn.Module):
             num_patches_z=num_patches_z,
             num_patches_y=num_patches_y,
             num_patches_x=num_patches_x,
-        )
+        ).contiguous()
         # (windowed_b, window_size_z window_size_y window_size_x, dim)
 
         context = self.proj(context)
@@ -276,7 +276,7 @@ class SymSwin3DLayer(nn.Module):
             window_size_z=window_size_z,
             window_size_y=window_size_y,
             window_size_x=window_size_x,
-        )
+        ).contiguous()
 
         res_connection1 = hidden_states
         # (windowed_b, window_size_z window_size_y window_size_x, dim)
@@ -306,7 +306,7 @@ class SymSwin3DLayer(nn.Module):
             window_size_z=window_size_z,
             window_size_y=window_size_y,
             window_size_x=window_size_x,
-        )
+        ).contiguous()
 
         return output
 
@@ -331,7 +331,7 @@ def symmetry_attention_rearrange_forward(hidden_states: torch.Tensor):
         "b num_patches_z num_patches_y (two half_num_patches_x) dim -> "
         "b num_patches_z num_patches_y (half_num_patches_x two) dim",
         two=2,
-    )
+    ).contiguous()
     # (b, num_patches_z, num_patches_y, rearranged_num_patches_x, dim)
 
     return hidden_states
@@ -346,7 +346,7 @@ def symmetry_attention_rearrange_backward(hidden_states: torch.Tensor):
         "b num_patches_z num_patches_y (half_num_patches_x two) dim -> "
         "b num_patches_z num_patches_y (two half_num_patches_x) dim",
         two=2,
-    )
+    ).contiguous()
     # (b, num_patches_z, num_patches_y, num_patches_x_first_half + flipped_num_patches_second_half, dim)
 
     # Flip the second half of the patches along the x axis to return to the original state
@@ -463,7 +463,7 @@ class SymSwin3DPatchMerging(nn.Module):
             window_size_z=window_size_z,
             window_size_y=window_size_y,
             window_size_x=window_size_x,
-        )
+        ).contiguous()
 
         hidden_states = self.layer_norm(hidden_states)
         hidden_states = self.proj(hidden_states)
@@ -555,7 +555,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
     grid = get_coords_grid(grid_size)
     # (3, d, h, w)
 
-    grid = rearrange(grid, "x d h w -> x 1 d h w")
+    grid = rearrange(grid, "x d h w -> x 1 d h w").contiguous()
     # (3, 1, d, h, w)
 
     omega = torch.arange(embedding_size // 6, dtype=torch.float32)
@@ -579,7 +579,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
     position_embeddings = torch.cat(position_embeddings, axis=1)
     # (embedding_size, d * h * w)
     d, h, w = grid_size
-    position_embeddings = rearrange(position_embeddings, "(d h w) e -> 1 e d h w", d=d, h=h, w=w)
+    position_embeddings = rearrange(position_embeddings, "(d h w) e -> 1 e d h w", d=d, h=h, w=w).contiguous()
     # (1, embedding_size, d, h, w)
 
     return position_embeddings
@@ -631,9 +631,9 @@ class SymSwin3DEmbeddings(nn.Module):
 
         embeddings = self.patch_embeddings(pixel_values)
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
-        embeddings = rearrange(embeddings, "b d nz ny nx -> b nz ny nx d")
+        embeddings = rearrange(embeddings, "b d nz ny nx -> b nz ny nx d").contiguous()
         embeddings = self.layer_norm(embeddings)
-        embeddings = rearrange(embeddings, "b nz ny nx d -> b d nz ny nx")
+        embeddings = rearrange(embeddings, "b nz ny nx d -> b d nz ny nx").contiguous()
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         if mask_patches is not None:
@@ -680,22 +680,22 @@ class SymSwin3DModel(nn.Module, PyTorchModelHubMixin):
         embeddings = self.pos_drop(embeddings)
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
-        embeddings = rearrange(embeddings, "b e nz ny nx -> b nz ny nx e")
+        embeddings = rearrange(embeddings, "b e nz ny nx -> b nz ny nx e").contiguous()
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         encoded, stage_outputs, layer_outputs = self.encoder(embeddings)
         # encoded: (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
         # stage_outputs, layer_outputs: list of (b, some_num_patches_z, some_num_patches_y, some_num_patches_x, dim)
 
-        encoded = rearrange(encoded, "b nz ny nx d -> b d nz ny nx")
+        encoded = rearrange(encoded, "b nz ny nx d -> b d nz ny nx").contiguous()
         # (b, dim, new_num_patches_z, new_num_patches_y, new_num_patches_x)
 
         for i in range(len(stage_outputs)):
-            stage_outputs[i] = rearrange(stage_outputs[i], "b nz ny nx d -> b d nz ny nx")
+            stage_outputs[i] = rearrange(stage_outputs[i], "b nz ny nx d -> b d nz ny nx").contiguous()
             # (b, dim, some_num_patches_z, some_num_patches_y, some_num_patches_x)
 
         for i in range(len(layer_outputs)):
-            layer_outputs[i] = rearrange(layer_outputs[i], "b nz ny nx d -> b d nz ny nx")
+            layer_outputs[i] = rearrange(layer_outputs[i], "b nz ny nx d -> b d nz ny nx").contiguous()
             # (b, dim, some_num_patches_z, some_num_patches_y, some_num_patches_x)
 
         return encoded, stage_outputs, layer_outputs
@@ -728,7 +728,7 @@ class SymSwin3DReconstructionDecoder(nn.Module):
             pz=self.final_patch_size[0],
             py=self.final_patch_size[1],
             px=self.final_patch_size[2],
-        )
+        ).contiguous()
         # (b, c, z, y, x)
 
         return decoded
@@ -764,7 +764,7 @@ class SymSwin3DMIM(nn.Module):
                 z=mask_grid_size[0],
                 y=mask_grid_size[1],
                 x=mask_grid_size[2],
-            )
+            ).contiguous()
             mask_patches.append(_mask_patches)
         mask_patches: torch.Tensor = torch.stack(mask_patches, dim=0)
 

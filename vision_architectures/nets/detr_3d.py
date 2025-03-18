@@ -139,7 +139,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
     grid = get_coords_grid(grid_size)
     # (3, d, h, w)
 
-    grid = rearrange(grid, "x d h w -> x 1 d h w")
+    grid = rearrange(grid, "x d h w -> x 1 d h w").contiguous()
     # (3, 1, d, h, w)
 
     omega = torch.arange(embedding_size // 6, dtype=torch.float32)
@@ -163,7 +163,7 @@ def get_3d_position_embeddings(embedding_size, grid_size, patch_size=(1, 1, 1)):
     position_embeddings = torch.cat(position_embeddings, axis=1)
     # (embedding_size, d * h * w)
     d, h, w = grid_size
-    position_embeddings = rearrange(position_embeddings, "(d h w) e -> 1 e d h w", d=d, h=h, w=w)
+    position_embeddings = rearrange(position_embeddings, "(d h w) e -> 1 e d h w", d=d, h=h, w=w).contiguous()
     # (1, embedding_size, d, h, w)
 
     return position_embeddings
@@ -215,7 +215,7 @@ class DETR3DPositionEmbeddings(nn.Module):
         embeddings = embeddings + absolute_position_embeddings
         # (b, dim, num_tokens_z, num_tokens_y, num_tokens_x)
 
-        embeddings = rearrange(embeddings, "b d nz ny nx -> b (nz ny nx) d")
+        embeddings = rearrange(embeddings, "b d nz ny nx -> b (nz ny nx) d").contiguous()
 
         return embeddings
 

@@ -168,9 +168,9 @@ class Attention1D(nn.Module):
             value = self.W_v(value)
 
             rearrange_partial = partial(rearrange, pattern="b T (num_heads d) -> b num_heads T d")
-            query = rearrange_partial(query, num_heads=self.config.num_heads)
-            key = rearrange_partial(key, num_heads=self.config.num_kv_heads)
-            value = rearrange_partial(value, num_heads=self.config.num_kv_heads)
+            query = rearrange_partial(query, num_heads=self.config.num_heads).contiguous()
+            key = rearrange_partial(key, num_heads=self.config.num_kv_heads).contiguous()
+            value = rearrange_partial(value, num_heads=self.config.num_kv_heads).contiguous()
             # query: (b, num_heads, T, per_head_dim)
             # key: (b, num_kv_heads, T, per_head_dim)
             # value: (b, num_kv_heads, T, per_head_dim)
@@ -224,7 +224,7 @@ class Attention1D(nn.Module):
         output = torch.cat(output, dim=0)
         # (b, num_heads, T, per_head_dim)
 
-        output = rearrange(output, "b num_heads T d -> b T (num_heads d)")
+        output = rearrange(output, "b num_heads T d -> b T (num_heads d)").contiguous()
         # (b, T, dim_qk)
 
         def get_final_output(output):
@@ -281,13 +281,13 @@ class Attention3D(Attention1D):
             forward_pattern = "b z y x d -> b (z y x) d"
             reverse_pattern = "b (z y x) d -> b z y x d"
 
-        query = rearrange(query, forward_pattern)
-        key = rearrange(key, forward_pattern)
-        value = rearrange(value, forward_pattern)
+        query = rearrange(query, forward_pattern).contiguous()
+        key = rearrange(key, forward_pattern).contiguous()
+        value = rearrange(value, forward_pattern).contiguous()
 
         output = super()._forward(query, key, value)
 
-        output = rearrange(output, reverse_pattern, z=z_q, y=y_q, x=x_q)
+        output = rearrange(output, reverse_pattern, z=z_q, y=y_q, x=x_q).contiguous()
 
         return output
 
@@ -353,12 +353,12 @@ class Attention3DMLP(Attention1DMLP):
         # hidden_states: (b, dim, z, y, x) or (b, z, y, x, dim)
 
         if channels_first:
-            hidden_states = rearrange(hidden_states, "b d z y x -> b z y x d")
+            hidden_states = rearrange(hidden_states, "b d z y x -> b z y x d").contiguous()
 
         hidden_states = super()._forward(hidden_states)
 
         if channels_first:
-            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x")
+            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x").contiguous()
 
         return hidden_states
 
@@ -474,9 +474,9 @@ class Attention3DWithMLP(nn.Module):
         # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         if channels_first:
-            query = rearrange(query, "b d z y x -> b z y x d")
-            key = rearrange(key, "b d z y x -> b z y x d")
-            value = rearrange(value, "b d z y x -> b z y x d")
+            query = rearrange(query, "b d z y x -> b z y x d").contiguous()
+            key = rearrange(key, "b d z y x -> b z y x d").contiguous()
+            value = rearrange(value, "b d z y x -> b z y x d").contiguous()
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
         res_connection1 = query
@@ -514,7 +514,7 @@ class Attention3DWithMLP(nn.Module):
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
         if channels_first:
-            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x")
+            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x").contiguous()
             # (b, dim, tokens_z, tokens_y, tokens_x)
 
         return hidden_states

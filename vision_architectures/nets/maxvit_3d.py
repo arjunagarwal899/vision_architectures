@@ -176,9 +176,9 @@ class MaxViT3DMHSA(nn.Module):
         # First we use the torch.arange and torch.meshgrid functions to generate the corresponding coordinates, [3,H,W,D]
         # and then stack them up and expand them into a two-dimensional vector to get the absolute position index.
         grid = torch.stack(torch.meshgrid(pos1, pos2, pos3, indexing="ij"))
-        grid = rearrange(grid, "c i j k -> (i j k) c")
+        grid = rearrange(grid, "c i j k -> (i j k) c").contiguous()
         # insert a dimension in the first dimension and the second dimension respectively, perform broadcast subtraction, and obtain the tensor of 3, whd*ww, whd*ww
-        rel_pos = rearrange(grid, "i ... -> i 1 ...") - rearrange(grid, "j ... -> 1 j ...")
+        rel_pos = rearrange(grid, "i ... -> i 1 ...").contiguous() - rearrange(grid, "j ... -> 1 j ...").contiguous()
         rel_pos[..., 0] += w1 - 1
         rel_pos[..., 1] += w2 - 1
         rel_pos[..., 2] += w3 - 1
@@ -194,16 +194,13 @@ class MaxViT3DMHSA(nn.Module):
         h = self.heads
 
         # b, x/w1, y/w2, z/w3, w1, w2, w3, d
-        x = rearrange(x, "b x y z w1 w2 w3 d -> (b x y z) (w1 w2 w3) d")
+        x = rearrange(x, "b x y z w1 w2 w3 d -> (b x y z) (w1 w2 w3) d").contiguous()
         # total_b, total_w, d
         q, k, v = self.to_qkv(x).chunk(3, dim=-1)
-        q, k, v = map(lambda t: rearrange(t, "b n (h d ) -> b h n d", h=h), (q, k, v))  # split_heads
+        q, k, v = map(lambda t: rearrange(t, "b n (h d ) -> b h n d", h=h).contiguous(), (q, k, v))  # split_heads
 
         # Calculate rel_pos_bias
-        rel_pos_bias = rearrange(
-            self.rel_pos_bias(self.rel_pos_indices),
-            "i j h -> h i j",
-        )
+        rel_pos_bias = rearrange(self.rel_pos_bias(self.rel_pos_indices), "i j h -> h i j").contiguous()
 
         # total_b, num_heads, total_w, d/num_heads
         context = F.scaled_dot_product_attention(
@@ -223,11 +220,11 @@ class MaxViT3DMHSA(nn.Module):
             w1=window_height,
             w2=window_width,
             w3=window_depth,
-        )  # merge heads
+        ).contiguous()  # merge heads
 
         # total_b, w1, w2 ,w3, d
         out = self.to_out(out)  # combine heads out
-        out = rearrange(out, "(b x y z) ... -> b x y z ...", x=height, y=width, z=depth)
+        out = rearrange(out, "(b x y z) ... -> b x y z ...", x=height, y=width, z=depth).contiguous()
         # b, x/w1, y/w2, z/w3, w1, w2, w3, d
         return out
 
@@ -316,14 +313,14 @@ class MaxViT3DBlock(nn.Module):
             w1=self.w1,
             w2=self.w2,
             w3=self.w3,
-        )  # block-like attention
+        ).contiguous()  # block-like attention
         # b,x/w1,y/w2,z/w3,w1,w2,w3,d
         x = self.layernorm1(x)
         x = x + self.blockAttn(x)
         x = self.layernorm2(x)
         x = x + self.FFN1(x)
         # b,x/w1,y/w2,z/w3,w1,w2,w3,d
-        x = rearrange(x, "b x y z w1 w2 w3 d -> b d (x w1) (y w2) (z w3)")
+        x = rearrange(x, "b x y z w1 w2 w3 d -> b d (x w1) (y w2) (z w3)").contiguous()
         # b,d,x,y,z
         x = rearrange(
             x,
@@ -331,14 +328,14 @@ class MaxViT3DBlock(nn.Module):
             w1=self.w1,
             w2=self.w2,
             w3=self.w3,
-        )  # grid-like attention
+        ).contiguous()  # grid-like attention
         # b,x/w1,y/w2,z/w3,w1,w2,w3,d
         x = self.layernorm3(x)
         x = x + self.gridAttn(x)
         x = self.layernorm4(x)
         x = x + self.FFN2(x)
         # b,x/w1,y/w2,z/w3,w1,w2,w3,d
-        x = rearrange(x, "b x y z w1 w2 w3 d -> b d (w1 x) (w2 y) (w3 z)")
+        x = rearrange(x, "b x y z w1 w2 w3 d -> b d (w1 x) (w2 y) (w3 z)").contiguous()
         # b,d,x,y,z
 
         return x

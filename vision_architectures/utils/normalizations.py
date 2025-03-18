@@ -11,17 +11,17 @@ from torch import nn
 # %% ../../nbs/utils/03_normalizations.ipynb 5
 class LayerNorm2D(nn.LayerNorm):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        input = rearrange(input, "b c y x -> b y x c")
+        input = rearrange(input, "b c y x -> b y x c").contiguous()
         input = super().forward(input)
-        input = rearrange(input, "b y x c -> b c y x")
+        input = rearrange(input, "b y x c -> b c y x").contiguous()
         return input
 
 # %% ../../nbs/utils/03_normalizations.ipynb 7
 class LayerNorm3D(nn.LayerNorm):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        input = rearrange(input, "b c z y x -> b z y x c")
+        input = rearrange(input, "b c z y x -> b z y x c").contiguous()
         input = super().forward(input)
-        input = rearrange(input, "b z y x c -> b c z y x")
+        input = rearrange(input, "b z y x c -> b c z y x").contiguous()
         return input
 
 # %% ../../nbs/utils/03_normalizations.ipynb 9

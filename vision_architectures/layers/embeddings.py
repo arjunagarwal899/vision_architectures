@@ -128,7 +128,7 @@ class RelativePositionEmbeddings3D(nn.Module):
 
         # Pair-wise relative position index for each token inside the window
         coords = get_coords_grid(grid_size)
-        coords_flatten = rearrange(coords, "three d h w -> three (d h w)", three=3)
+        coords_flatten = rearrange(coords, "three d h w -> three (d h w)", three=3).contiguous()
         relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]
         relative_coords = relative_coords.permute(1, 2, 0).contiguous()
         relative_coords[:, :, 0] += grid_size[0] - 1
@@ -152,7 +152,7 @@ class RelativePositionEmbeddings3D(nn.Module):
         relative_position_embeddings = rearrange(
             relative_position_embeddings,
             "1 num_patches1 num_patches2 num_heads -> 1 num_heads num_patches1 num_patches2",
-        )
+        ).contiguous()
         # (1, num_heads, num_patches, num_patches)
         return relative_position_embeddings
 
@@ -199,9 +199,11 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
 
         # Pair-wise relative position index for each token inside the window
         coords = get_coords_grid(grid_size)
-        coords_flatten = rearrange(coords, "three d h w -> three (d h w)", three=3)
+        coords_flatten = rearrange(coords, "three d h w -> three (d h w)", three=3).contiguous()
         relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]
-        relative_coords = relative_coords.permute(1, 2, 0).contiguous()
+        relative_coords = rearrange(
+            relative_coords, "three num_patches1 num_patches2 -> num_patches1 num_patches2 three"
+        ).contiguous()
         relative_coords[:, :, 0] += grid_size[0] - 1
         relative_coords[:, :, 1] += grid_size[1] - 1
         relative_coords[:, :, 2] += grid_size[2] - 1
@@ -234,11 +236,9 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
             num_patches1=self.config.num_patches,
             num_patches2=self.config.num_patches,
             num_heads=self.config.num_heads,
-        )
+        ).contiguous()
         # (num_heads, num_patches, num_patches)
         relative_position_embeddings = 16 * torch.sigmoid(relative_position_embeddings)
-        # (num_heads, num_patches, num_patches)
-        relative_position_embeddings = relative_position_embeddings.contiguous()
         # (num_heads, num_patches, num_patches)
         return relative_position_embeddings
 
@@ -264,7 +264,7 @@ def get_absolute_position_embeddings_3d(
         for i in range(3):
             grid[i] = grid[i] + crop_offset[i]
 
-    grid = rearrange(grid, "x d h w -> x 1 d h w")
+    grid = rearrange(grid, "x d h w -> x 1 d h w").contiguous()
     # (3, 1, d, h, w)
 
     omega = torch.arange(dim // 6, dtype=torch.float32)
@@ -294,7 +294,7 @@ def get_absolute_position_embeddings_3d(
         d=grid_size[0],
         h=grid_size[1],
         w=grid_size[2],
-    )
+    ).contiguous()
     # (1, dim, d, h, w)
 
     return position_embeddings
@@ -415,7 +415,7 @@ def get_absolute_position_embeddings_1d(dim: int, length: int) -> torch.Tensor:
     # (length, dim)
 
     # Reshape to expected output format
-    position_embeddings = rearrange(position_embeddings, "length dim -> 1 length dim")
+    position_embeddings = rearrange(position_embeddings, "length dim -> 1 length dim").contiguous()
     # (1, length, dim)
 
     return position_embeddings
@@ -504,11 +504,11 @@ class PatchEmbeddings3D(nn.Module):
 
         embeddings = self.patch_embeddings(pixel_values)
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
-        embeddings = rearrange(embeddings, "b d z y x -> b z y x d")
+        embeddings = rearrange(embeddings, "b d z y x -> b z y x d").contiguous()
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
         embeddings = self.normalization(embeddings)
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
-        embeddings = rearrange(embeddings, "b z y x d -> b d z y x")
+        embeddings = rearrange(embeddings, "b z y x d -> b d z y x").contiguous()
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         return embeddings
