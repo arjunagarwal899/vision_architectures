@@ -119,7 +119,7 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         assert self.training, "revive_dead_vectors should only be called during training"
         revive_vector_mask = self.stale_counter >= self.config.revive_dead_vectors_after_n_steps
         if not revive_vector_mask.any():
-            return revive_vector_mask, None
+            return
 
         revive_vectors_shape = self.vectors.weight[revive_vector_mask].shape
         num_revive_vectors = revive_vectors_shape[0]
