@@ -243,7 +243,7 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
             dist.all_reduce(usage_counter_increment, op=dist.ReduceOp.SUM)
 
         # Don't allow counters to exceed maximum possible values
-        approximate_max_value = int(torch.iinfo(torch.long).max * 0.9)
+        approximate_max_value = int(torch.iinfo(torch.long).max * 0.5)
         self.usage_counter.clamp_(max=approximate_max_value)
         self.stale_counter.clamp_(max=approximate_max_value)
 
