@@ -4,11 +4,15 @@
 __all__ = ['get_act_layer']
 
 # %% ../../nbs/utils/02_activations.ipynb 2
+from collections.abc import Callable
+
 from torch import nn
 
 # %% ../../nbs/utils/02_activations.ipynb 4
-def get_act_layer(activation_name: str, *args, **kwargs):
-    if activation_name == "relu":
+def get_act_layer(activation_name: str | Callable | None, *args, **kwargs):
+    if activation_name is None:
+        act_layer = nn.Identity()
+    elif activation_name == "relu":
         act_layer = nn.ReLU(*args, **kwargs)
     elif activation_name == "relu6":
         act_layer = nn.ReLU6(*args, **kwargs)
@@ -24,6 +28,8 @@ def get_act_layer(activation_name: str, *args, **kwargs):
         act_layer = nn.GELU(*args, **kwargs)
     elif activation_name == "silu":
         act_layer = nn.SiLU(*args, **kwargs)
+    elif isinstance(activation_name, callable):
+        act_layer = activation_name(*args, **kwargs)
     else:
         raise ValueError(f"Activation {activation_name} not implemented")
 

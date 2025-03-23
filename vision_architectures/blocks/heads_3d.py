@@ -4,8 +4,9 @@
 __all__ = ['ClassificationHead3D', 'SegmentationHead3D']
 
 # %% ../../nbs/blocks/01_heads_3d.ipynb 2
-from segmentation_models_pytorch.base.modules import Activation
 from torch import nn
+
+from ..utils.activations import get_act_layer
 
 # %% ../../nbs/blocks/01_heads_3d.ipynb 5
 # Inspiration:
@@ -18,7 +19,7 @@ class ClassificationHead3D(nn.Sequential):
         flatten = nn.Flatten()
         dropout = nn.Dropout(p=dropout, inplace=True) if dropout else nn.Identity()
         linear = nn.Linear(in_channels, classes, bias=True)
-        activation = Activation(activation)
+        activation = get_act_layer(activation)
         super().__init__(pool, flatten, dropout, linear, activation)
 
 # %% ../../nbs/blocks/01_heads_3d.ipynb 7
@@ -28,5 +29,5 @@ class SegmentationHead3D(nn.Sequential):
     def __init__(self, in_channels, out_channels, kernel_size=3, activation=None, upsampling=1):
         conv3d = nn.Conv3d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
         upsampling = nn.Upsample(scale_factor=upsampling, mode="trilinear") if upsampling > 1 else nn.Identity()
-        activation = Activation(activation)
+        activation = get_act_layer(activation)
         super().__init__(conv3d, upsampling, activation)
