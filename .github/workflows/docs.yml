@@ -19,10 +19,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install sphinx sphinx-rtd-theme sphinxcontrib-napoleon sphinx-autodoc-typehints
+          pip install sphinx pydata-sphinx-theme sphinxcontrib-napoleon sphinx-autodoc-typehints
       - name: Build documentation
         run: |
             cd docs
+            python source/make_rst.py
             make html
             if [ ! -f "build/html/index.html" ]; then
             echo "Documentation build failed - index.html not found"

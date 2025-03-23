@@ -53,4 +53,3 @@ def create_module_docs():
 
 if __name__ == "__main__":
     create_module_docs()
-    create_module_docs()
