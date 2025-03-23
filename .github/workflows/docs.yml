@@ -4,14 +4,15 @@ on:
   push:
     branches:
       - main
-
+permissions:
+    contents: write
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
       - name: Install dependencies
@@ -21,10 +22,19 @@ jobs:
           pip install sphinx sphinx-rtd-theme sphinxcontrib-napoleon sphinx-autodoc-typehints
       - name: Build documentation
         run: |
-          cd docs
-          make html
+            cd docs
+            make html
+            if [ ! -f "build/html/index.html" ]; then
+            echo "Documentation build failed - index.html not found"
+            exit 1
+            fi
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build/html
+          publish_dir: ./docs/build/
+          force_orphan: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Deploy documentation: ${{ github.event.head_commit.message }}'
+          enable_jekyll: false
