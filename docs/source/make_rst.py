@@ -1,5 +1,8 @@
 import os
 import re
+from importlib import import_module
+
+from pydantic import BaseModel
 
 
 def title_from_module_name(module_name):
@@ -101,6 +104,14 @@ def create_module_docs():
                             f.write(".. toctree::\n")
                             f.write("   :maxdepth: 1\n\n")
 
+                # Identify pydantic objects in this module
+                pydantic_objects = []
+                module = import_module(module_path)
+                for name in module.__all__:
+                    attr = getattr(module, name)
+                    if isinstance(attr, type) and issubclass(attr, BaseModel):
+                        pydantic_objects.append(name)
+
                 # Create .rst file for the module
                 module_filename = os.path.splitext(file)[0]
                 if module_dir:
@@ -118,6 +129,8 @@ def create_module_docs():
                     f.write("   :members:\n")
                     f.write("   :undoc-members:\n")
                     f.write("   :show-inheritance:\n")
+                    for pydantic_object in pydantic_objects:
+                        f.write(f".. pydantic:: {module_path}.{pydantic_object}\n")
 
                 # Add module to the appropriate index
                 if module_dir:
