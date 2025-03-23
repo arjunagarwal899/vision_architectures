@@ -66,9 +66,11 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
 
     @torch.no_grad()
     def calculate_perplexity(self, indices: torch.Tensor):
-        encodings = torch.zeros(indices.shape[0], self.config.num_vectors, device=indices.device)
-        encodings.scatter_(1, indices.unsqueeze(1), 1)
-        avg_probs = encodings.float().mean(0)
+        # Get mapping of which BS vector chose which codebook vector
+        encodings = self._one_hot_indices(indices)
+        # Calculate average number of times each codebook vector was chosen
+        avg_probs = encodings.float().mean(dim=0)
+        # Calculate perplexity i.e. utililzation of codebook
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
         return perplexity
 
@@ -191,10 +193,17 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
 
         return z, codebook_loss, commitment_loss, perplexity
 
+    def _initialize_generator(self):
+        assert not self.generator_initalized, "Generator has already been initialized"
+        seed = torch.randint(0, 2**32, (1,))
+        if dist.is_initialized():
+            dist.all_reduce(seed, op=dist.ReduceOp.MIN)
+        self.generator.manual_seed(seed.item())
+        self.generator_initalized = True
+
     def _perform_ema(self, x: torch.Tensor, indices: torch.Tensor):
         # Create one-hot encodings for the selected indices
-        encodings = torch.zeros(x.shape[0], self.config.num_vectors, device=x.device)
-        encodings.scatter_(1, indices.unsqueeze(1), 1)
+        encodings = self._one_hot_indices(indices)
 
         # Calculate new cluster sizes with EMA
         batch_cluster_size = encodings.sum(0)  # Sum over batch dimension
@@ -224,13 +233,10 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         normalized_vectors = self.ema_vectors / cluster_size.unsqueeze(1)
         self.vectors.weight.data = normalized_vectors
 
-    def _initialize_generator(self):
-        assert not self.generator_initalized, "Generator has already been initialized"
-        seed = torch.randint(0, 2**32, (1,))
-        if dist.is_initialized():
-            dist.all_reduce(seed, op=dist.ReduceOp.MIN)
-        self.generator.manual_seed(seed.item())
-        self.generator_initalized = True
+    def _one_hot_indices(self, indices: torch.Tensor):
+        encodings = torch.zeros(indices.shape[0], self.config.num_vectors, device=indices.device)
+        encodings.scatter_(1, indices.unsqueeze(1), 1)
+        return encodings
 
     def _update_counters(self, indices):
         # Create a tensor which counts the number of times a vector has been used
@@ -261,12 +267,11 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
     def _estimate_codebook_distance(self, max_sample=500):
         """Estimate mean distance between codebook vectors"""
         with torch.no_grad():
+            vectors_weight = self.vectors.weight
             if self.vectors.weight.shape[0] > max_sample:
                 # Sample a subset for efficiency
                 idx = torch.randperm(self.vectors.weight.shape[0], generator=self.generator)[:max_sample]
                 vectors_weight = self.vectors.weight[idx]
-            else:
-                vectors_weight = self.vectors.weight
 
             distances = torch.cdist(vectors_weight, vectors_weight)
             mask = ~torch.eye(distances.shape[0], dtype=torch.bool, device=distances.device)  # Exclude self-distances
