@@ -1,0 +1,133 @@
+/* Custom styles for vision_architectures documentation */
+
+/* Improve heading hierarchy appearance */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.3em;
+}
+
+h2 {
+    color: #2980b9;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+}
+
+h3 {
+    color: #3498db;
+}
+
+/* Improve code block appearance */
+pre {
+    background: #f8f8f8;
+    border: 1px solid #e1e4e5;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 90%;
+    overflow-x: auto;
+}
+
+code {
+    background: #f8f8f8;
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-size: 90%;
+}
+
+/* Improve table styles */
+table.docutils {
+    border-collapse: collapse;
+    margin-bottom: 1.5em;
+    width: 100%;
+}
+
+table.docutils td, table.docutils th {
+    padding: 8px;
+    border: 1px solid #e1e4e5;
+}
+
+table.docutils th {
+    background-color: #f3f6f6;
+    font-weight: bold;
+}
+
+/* Improve parameter lists in API reference */
+dl.class, dl.function, dl.method {
+    margin-bottom: 2em;
+    padding-bottom: 1em;
+}
+
+dl.field-list {
+    margin-bottom: 1em;
+}
+
+dt.field-odd, dt.field-even {
+    font-weight: bold;
+    background-color: #f8f8f8;
+    padding: 3px 7px;
+    border-radius: 3px;
+}
+
+/* Better admonitions */
+div.admonition {
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-left: 6px solid #3498db;
+    background-color: #f8f9fa;
+}
+
+div.admonition.warning, div.admonition.caution {
+    border-left-color: #f39c12;
+    background-color: #fff9e6;
+}
+
+div.admonition.danger, div.admonition.error {
+    border-left-color: #e74c3c;
+    background-color: #fae9e7;
+}
+
+div.admonition.tip, div.admonition.hint {
+    border-left-color: #27ae60;
+    background-color: #e8f8f5;
+}
+
+div.admonition p.admonition-title {
+    font-weight: bold;
+    margin-top: 0;
+}
+
+/* Make section anchors more visible on hover */
+a.headerlink {
+    visibility: hidden;
+    margin-left: 0.5em;
+}
+
+h1:hover a.headerlink,
+h2:hover a.headerlink,
+h3:hover a.headerlink,
+h4:hover a.headerlink,
+h5:hover a.headerlink,
+h6:hover a.headerlink {
+    visibility: visible;
+    color: #3498db;
+}
+
+/* Footer customization */
+footer {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #e1e4e5;
+}
+
+/* Hide "On GitHub" section in the RTD theme */
+.injected .rst-versions .rst-current-version {
+    display: none;
+}
