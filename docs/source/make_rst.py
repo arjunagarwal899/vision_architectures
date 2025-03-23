@@ -38,17 +38,19 @@ def create_module_docs():
     Create .rst files for all modules in the package with proper hierarchy.
     """
     package_name = "vision_architectures"
-    package_dir = f"../../{package_name}"
+    package_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", package_name))
+    save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "modules"))
 
     # Create directories to match the package structure
-    os.makedirs("modules", exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
 
     # Create index.rst for the main page
-    with open("index.rst", "w") as f:
+    with open(os.path.join(save_dir, "index.rst"), "w") as f:
         f.write(f"{package_name.replace('_', ' ').title()} Documentation\n")
         f.write("=" * len(f"{package_name.replace('_', ' ').title()} Documentation") + "\n\n")
         f.write(
-            "Welcome to the documentation for the Vision Architectures library. This library provides implementations of various vision model architectures with a focus on vision models.\n\n"
+            "Welcome to the documentation for the Vision Architectures library. This library provides implementations "
+            "of various vision model architectures with a focus on vision models.\n\n"
         )
         f.write("Contents\n")
         f.write("--------\n\n")
@@ -57,8 +59,8 @@ def create_module_docs():
         f.write("   modules/index\n")
 
     # Create modules/index.rst for the main modules page
-    os.makedirs("modules", exist_ok=True)
-    with open("modules/index.rst", "w") as f:
+    os.makedirs(save_dir, exist_ok=True)
+    with open(os.path.join(save_dir, "index.rst"), "w") as f:
         f.write("API Reference\n")
         f.write("=============\n\n")
         f.write(
@@ -86,10 +88,10 @@ def create_module_docs():
 
                 # Create directory for module category if it doesn't exist
                 if module_dir:
-                    os.makedirs(f"modules/{module_dir.replace('.', '/')}", exist_ok=True)
+                    os.makedirs(os.path.join(save_dir, module_dir.replace(".", "/")), exist_ok=True)
 
                     # Create index.rst for the module category if it doesn't exist
-                    category_index_path = f"modules/{module_dir.replace('.', '/')}/index.rst"
+                    category_index_path = os.path.join(save_dir, module_dir.replace(".", "/"), "index.rst")
                     if not os.path.exists(category_index_path):
                         with open(category_index_path, "w") as f:
                             category_title = title_from_module_name(module_dir)
@@ -102,10 +104,10 @@ def create_module_docs():
                 # Create .rst file for the module
                 module_filename = os.path.splitext(file)[0]
                 if module_dir:
-                    rst_dir = f"modules/{module_dir.replace('.', '/')}"
+                    rst_dir = os.path.join(save_dir, module_dir.replace(".", "/"))
                     rst_file = f"{rst_dir}/{module_filename}.rst"
                 else:
-                    rst_dir = "modules"
+                    rst_dir = save_dir
                     rst_file = f"{rst_dir}/{module_filename}.rst"
 
                 with open(rst_file, "w") as f:
@@ -119,11 +121,11 @@ def create_module_docs():
 
                 # Add module to the appropriate index
                 if module_dir:
-                    with open(f"modules/{module_dir.replace('.', '/')}/index.rst", "a") as f:
+                    with open(os.path.join(save_dir, module_dir.replace(".", "/"), "index.rst"), "a") as f:
                         f.write(f"   {module_filename}\n")
 
     # Update the modules/index.rst with the categories
-    with open("modules/index.rst", "a") as f:
+    with open(os.path.join(save_dir, "index.rst"), "a") as f:
         for category in sorted(module_categories):
             category_path = category.replace(".", "/")
             f.write(f"   {category_path}/index\n")
