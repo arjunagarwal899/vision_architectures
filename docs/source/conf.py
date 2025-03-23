@@ -23,13 +23,14 @@ release = cfg["version"]
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
-    "sphinx-pydantic",
+    "sphinxcontrib.autodoc_pydantic",
 ]
 
 # Comprehensive autodoc configuration

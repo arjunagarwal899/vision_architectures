@@ -1,7 +1,7 @@
 .. vision_architectures documentation master file
 
 Vision Architectures Documentation
-=================================
+==================================
 
 Vision Architectures is a comprehensive library that implements various deep learning architectures for computer vision tasks, with a particular focus on 3D vision models. The library includes implementations of state-of-the-art architectures such as Vision Transformers (ViT), Swin Transformers, and their 3D variants.
 
