@@ -69,7 +69,7 @@ napoleon_attr_annotations = True
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../../src/"))
+sys.path.insert(0, os.path.abspath("../../"))
 
 exclude_patterns = []
 
