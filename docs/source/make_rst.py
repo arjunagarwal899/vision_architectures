@@ -1,5 +1,4 @@
 import os
-import re
 
 
 def title_from_module_name(module_name):
@@ -8,27 +7,44 @@ def title_from_module_name(module_name):
     if "." in module_name:
         module_name = module_name.split(".")[-1]
 
-    # Replace underscores with spaces
-    title = module_name.replace("_", " ")
-
-    # Capitalize each word
-    title = " ".join(word.capitalize() for word in title.split())
-
-    # Special case handling for common abbreviations
-    abbreviations = {
-        "Cnn": "CNN",
-        "Mlp": "MLP",
-        "Fpn": "FPN",
-        "Vit": "ViT",
-        "Mim": "MIM",
-        "Api": "API",
-        "Io": "I/O",
-        "3d": "3D",
-        "2d": "2D",
+    mapping = {
+        "activation_checkpointing": "ActivationCheckpointing",
+        "activations": "Activations",
+        "attention": "Attention",
+        "cait_3d": "CAIT3D",
+        "codebook": "Codebook",
+        "croppad": "CropPad",
+        "custom_base_model": "CustomBaseModel",
+        "detr_3d": "DETR3D",
+        "embeddings": "Embeddings",
+        "fpn_2d": "FPN2D",
+        "fpn_3d": "FPN3D",
+        "heads_3d": "Heads3D",
+        "maxvit_3d": "MaxViT3D",
+        "noise": "Noise",
+        "normalizations": "Normalizations",
+        "perceiver_3d": "Perceiver3D",
+        "resize": "Resize",
+        "safetensors_reader": "SafeTensorsReader",
+        "sigmoid": "Sigmoid",
+        "spatial": "Spatial",
+        "swin_3d": "Swin3D",
+        "swinv2_3d": "SwinV23D",
+        "symswin_3d": "SymSwin3D",
+        "unetr_3d_decoder": "UNetR3DDecoder",
+        "upernet_2d": "UperNet2D",
+        "upernet_3d": "UperNet3D",
+        "vit_3d": "ViT3D",
+        #
+        "nets": "Nets",
+        "blocks": "Blocks",
+        "image_readers": "Image Readers",
+        "utils": "Utils",
+        "schedulers": "Schedulers",
+        "layers": "Layers",
+        "transforms": "Transforms",
     }
-
-    for abbr_lower, abbr_upper in abbreviations.items():
-        title = re.sub(r"\b" + abbr_lower + r"\b", abbr_upper, title)
+    title = mapping.get(module_name, f"{module_name} [Add to mapping]")
 
     return title
 
