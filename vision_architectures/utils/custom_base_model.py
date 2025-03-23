@@ -30,7 +30,7 @@ class CustomBaseModel(BaseModel):
 
     @model_validator(mode="after")
     def validate(self):
-        """Base class method for validating the model after creation."""
+        """Base method for validating the model after creation."""
         return self
 
     def __contains__(self, key):
