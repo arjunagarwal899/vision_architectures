@@ -29,6 +29,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
+    "sphinx-pydantic",
 ]
 
 # Comprehensive autodoc configuration
