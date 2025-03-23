@@ -11,7 +11,7 @@ def title_from_module_name(module_name):
         "activation_checkpointing": "ActivationCheckpointing",
         "activations": "Activations",
         "attention": "Attention",
-        "cait_3d": "CAIT3D",
+        "cait_3d": "CaiT3D",
         "codebook": "Codebook",
         "croppad": "CropPad",
         "custom_base_model": "CustomBaseModel",
