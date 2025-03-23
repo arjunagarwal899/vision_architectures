@@ -12,30 +12,11 @@ config.read("settings.ini", encoding="utf-8")
 cfg = config["DEFAULT"]
 
 cfg_keys = "version description keywords author author_email".split()
-expected = (
-    cfg_keys
-    + "lib_name user branch license status min_python audience language".split()
-)
+expected = cfg_keys + "lib_name user branch license status min_python audience language".split()
 for o in expected:
     assert o in cfg, f"missing expected setting: {o}"
 setup_cfg = {o: cfg[o] for o in cfg_keys}
 
-licenses = {
-    "apache2": (
-        "Apache Software License 2.0",
-        "OSI Approved :: Apache Software License",
-    ),
-    "mit": ("MIT License", "OSI Approved :: MIT License"),
-    "gpl2": (
-        "GNU General Public License v2",
-        "OSI Approved :: GNU General Public License v2 (GPLv2)",
-    ),
-    "gpl3": (
-        "GNU General Public License v3",
-        "OSI Approved :: GNU General Public License v3 (GPLv3)",
-    ),
-    "bsd3": ("BSD License", "OSI Approved :: BSD License"),
-}
 statuses = [
     "1 - Planning",
     "2 - Pre-Alpha",
@@ -45,15 +26,18 @@ statuses = [
     "6 - Mature",
     "7 - Inactive",
 ]
-py_versions = "3.6 3.7 3.8 3.9 3.10".split()
+py_versions = ["3.10"]
 
 with open("requirements.txt") as f:
     requirements = shlex.split(f.read())
-if cfg.get("pip_requirements"):
-    requirements += shlex.split(cfg.get("pip_requirements", ""))
+with open("requirements_dev.txt") as f:
+    dev_requirements = shlex.split(f.read())
+
 min_python = cfg["min_python"]
-lic = licenses.get(cfg["license"].lower(), (cfg["license"], None))
-dev_requirements = (cfg.get("dev_requirements") or "").split()
+lic = (
+    "GNU General Public License v3",
+    "OSI Approved :: GNU General Public License v3 (GPLv3)",
+)
 
 setuptools.setup(
     name=cfg["lib_name"],
@@ -63,10 +47,7 @@ setuptools.setup(
         "Intended Audience :: " + cfg["audience"].title(),
         "Natural Language :: " + cfg["language"].title(),
     ]
-    + [
-        "Programming Language :: Python :: " + o
-        for o in py_versions[py_versions.index(min_python) :]
-    ]
+    + ["Programming Language :: Python :: " + o for o in py_versions[py_versions.index(min_python) :]]
     + (["License :: " + lic[1]] if lic[1] else []),
     url=cfg["git_url"],
     packages=setuptools.find_packages(),
