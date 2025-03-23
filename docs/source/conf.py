@@ -70,3 +70,11 @@ exclude_patterns = []
 
 html_theme = "alabaster"
 html_static_path = ["_static"]
+
+
+def setup(app):
+    app.add_css_file("custom.css")  # Optional custom CSS
+    import os
+
+    if os.path.exists("_static/custom.css"):
+        app.connect("build-finished", lambda app, exc: os.system("cp .nojekyll _build/html/"))
