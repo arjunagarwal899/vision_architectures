@@ -5,24 +5,68 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
+from configparser import ConfigParser
 
-project = 'vision_architectures'
-copyright = '2025, Arjun Agarwal'
-author = 'Arjun Agarwal'
-release = '0.5'
+config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "settings.ini"))
+config = ConfigParser(delimiters=["="])
+config.read(config_path, encoding="utf-8")
+cfg = config["DEFAULT"]
+
+project = cfg["repo"]
+copyright = cfg["copyright"]
+author = cfg["author"]
+release = cfg["version"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = []
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
+]
 
-templates_path = ['_templates']
+# Set the theme
+html_theme = "sphinx_rtd_theme"  # TODO: Choose a good theme
+
+# Add any paths that contain templates
+templates_path = ["_templates"]
+
+# The suffix of source filenames
+source_suffix = ".rst"
+
+# The master toctree document
+master_doc = "index"
+
+# Configure Napoleon (for Google/NumPy style docstrings)
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
+napoleon_include_init_with_doc = False
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = False
+napoleon_use_admonition_for_notes = False
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = False
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_preprocess_types = False
+napoleon_type_aliases = None
+napoleon_attr_annotations = True
+
+# Add the path to your Python code
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath("../../src/"))
+
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
-html_static_path = ['_static']
+html_theme = "alabaster"
+html_static_path = ["_static"]

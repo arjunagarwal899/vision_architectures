@@ -1,0 +1,7 @@
+vision_architectures.nets.upernet_2d module
+============================================
+
+.. automodule:: vision_architectures.nets.upernet_2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
