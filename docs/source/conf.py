@@ -31,6 +31,15 @@ extensions = [
     "sphinx.ext.todo",
 ]
 
+# Comprehensive autodoc configuration
+autodoc_default_options = {
+    "members": True,
+    "member-order": "bysource",  # Used for preserving source order
+    "special-members": "__init__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
+}
+
 # Add any paths that contain templates
 templates_path = ["_templates"]
 

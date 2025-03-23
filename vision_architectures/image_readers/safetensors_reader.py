@@ -8,11 +8,9 @@ from typing import Any
 
 import torch
 from monai.data import ImageReader, MetaTensor, is_supported_format
-from monai.utils import require_pkg
 from safetensors import safe_open
 
 # %% ../../nbs/image_readers/01_safetensors_reader.ipynb 4
-@require_pkg("safetensors")
 class SafetensorsReader(ImageReader):
     def __init__(
         self,

@@ -6,4 +6,5 @@ nbdev
 numpy
 pre-commit
 pydantic
+safetensors
 torch
