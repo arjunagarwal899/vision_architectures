@@ -28,7 +28,6 @@ release = cfg["version"]
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx.ext.intersphinx",
@@ -89,7 +88,6 @@ project_display_name = project.replace("_", " ").title()
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_title = f"{project_display_name} (main)"
-html_show_sourcelink = True
 html_context = {
     "github_user": "arjunagarwal899",
     "github_repo": "vision_architectures",
