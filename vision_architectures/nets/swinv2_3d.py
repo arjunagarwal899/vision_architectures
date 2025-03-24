@@ -87,11 +87,11 @@ class SwinV23DStageConfig(Attention3DWithMLPConfig):
         return compression_ratio
 
     def get_out_patch_size(self, in_patch_size: tuple[int, int, int]):
-        patch_size = tuple(in_patch_size[i] * self.spatial_compression_ratio[i] for i in range(3))
+        patch_size = tuple(int(in_patch_size[i] * self.spatial_compression_ratio[i]) for i in range(3))
         return patch_size
 
     def get_in_patch_size(self, out_patch_size: tuple[int, int, int]):
-        patch_size = tuple(out_patch_size[i] / self.spatial_compression_ratio[i] for i in range(3))
+        patch_size = tuple(int(out_patch_size[i] / self.spatial_compression_ratio[i]) for i in range(3))
         return patch_size
 
 
