@@ -5,10 +5,14 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+
+import importlib
+import inspect
 import os
 from configparser import ConfigParser
 
-config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "settings.ini"))
+repo_root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+config_path = os.path.join(repo_root_path, "settings.ini")
 config = ConfigParser(delimiters=["="])
 config.read(config_path, encoding="utf-8")
 cfg = config["DEFAULT"]
@@ -85,7 +89,7 @@ project_display_name = project.replace("_", " ").title()
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_title = f"{project_display_name} (main)"
-html_show_sourcelink = False
+html_show_sourcelink = True
 html_context = {
     "github_user": "arjunagarwal899",
     "github_repo": "vision_architectures",
@@ -97,12 +101,40 @@ html_context = {
 # Function to generate GitHub links
 def linkcode_resolve(domain, info):
     if domain != "py":
-        return None
-    if not info.get("module"):
-        return None
+        raise ValueError(
+            f"expected domain to be 'py', got {domain}."
+            "Please adjust linkcode_resolve to either handle this domain or ignore it."
+        )
 
-    filename = info["module"].replace(".", "/")
-    return f"https://github.com/arjunagarwal899/vision_architectures/blob/main/{filename}.py"
+    mod = importlib.import_module(info["module"])
+    if "." in info["fullname"]:
+        objname, attrname = info["fullname"].split(".")
+        obj = getattr(mod, objname)
+        try:
+            # object is a method of a class
+            obj = getattr(obj, attrname)
+        except AttributeError:
+            # object is an attribute of a class
+            return None
+    else:
+        obj = getattr(mod, info["fullname"])
+
+    try:
+        file = inspect.getsourcefile(obj)
+        source, lineno = inspect.getsourcelines(obj)
+    except TypeError:
+        # e.g. object is a typing.Union
+        return None
+    file = os.path.relpath(file, repo_root_path)
+    if not file.startswith("vision_architectures"):
+        # e.g. object is a typing.NewType
+        return None
+    start, end = lineno, lineno + len(source) - 1
+    url = (
+        f"https://github.com/arjunagarwal899/vision_architectures/blob/{os.environ.get('GITHUB_SHA', 'main')}"
+        f"/{file}#L{start}-L{end}"
+    )
+    return url
 
 
 # Add custom CSS and nojekyll file
