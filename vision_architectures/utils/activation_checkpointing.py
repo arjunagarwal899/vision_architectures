@@ -22,28 +22,6 @@ class ActivationCheckpointing:
     - **Level 3**: Medium-sized modules are checkpointed e.g. transformer layers, decoder blocks
     - **Level 4**: Large modules are checkpointed e.g. groups of transformer layers, decoder stages
     - **Level 5**: Very large modules are checkpointed e.g. entire encoders, decoders etc.
-
-    **Example::**
-
-    .. code-block:: python
-
-        class MyModel(nn.Module):
-            def __init__(self, training_checkpointing_level: int = 0):
-                super().__init__()
-                my_network = nn.Sequential(
-                    nn.Linear(784, 256),
-                    nn.ReLU(),
-                    nn.Linear(256, 10)
-                )
-
-                self.activation_checkpointing_level2 = ActivationCheckpointing(2, training_checkpointing_level)
-
-            def forward(self, x):
-                y = self.activation_checkpointing_level2(self.my_network, x)
-                return y
-
-    In this example, a ``training_checkpointing_level`` of greater than or equal to 2 will checkpoint ``my_network``
-    during training. If it's less than 2, the network will not be checkpointed.
     """
 
     def __init__(self, fn_checkpoint_level: int, training_checkpoint_level: int):
@@ -52,6 +30,28 @@ class ActivationCheckpointing:
         Args:
             fn_checkpoint_level: Level at which the module / function should be checkpointed
             training_checkpoint_level: Checkpointing level at which the model is being trained
+
+        Example:
+
+        .. code-block:: python
+
+            class MyModel(nn.Module):
+                def __init__(self, training_checkpointing_level: int = 0):
+                    super().__init__()
+                    my_network = nn.Sequential(
+                        nn.Linear(784, 256),
+                        nn.ReLU(),
+                        nn.Linear(256, 10)
+                    )
+
+                    self.activation_checkpointing_level2 = ActivationCheckpointing(2, training_checkpointing_level)
+
+                def forward(self, x):
+                    y = self.activation_checkpointing_level2(self.my_network, x)
+                    return y
+
+        In this example, a ``training_checkpointing_level`` of greater than or equal to 2 will checkpoint ``my_network``
+        during training. If it's less than 2, the network will not be checkpointed.
         """
         super().__init__()
 
