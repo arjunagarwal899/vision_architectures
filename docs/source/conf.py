@@ -30,6 +30,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
+    "sphinx.ext.linkcode",
     "sphinxcontrib.autodoc_pydantic",
 ]
 
@@ -84,10 +85,29 @@ project_display_name = project.replace("_", " ").title()
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_title = f"{project_display_name} (main)"
+html_show_sourcelink = False
+html_context = {
+    "github_user": "arjunagarwal899",
+    "github_repo": "vision_architectures",
+    "github_version": "main",
+    "doc_path": "docs/source",
+}
 
 
+# Function to generate GitHub links
+def linkcode_resolve(domain, info):
+    if domain != "py":
+        return None
+    if not info.get("module"):
+        return None
+
+    filename = info["module"].replace(".", "/")
+    return f"https://github.com/arjunagarwal899/vision_architectures/blob/main/{filename}.py"
+
+
+# Add custom CSS and nojekyll file
 def setup(app):
-    app.add_css_file("custom.css")  # Optional custom CSS
+    app.add_css_file("custom.css")
     import os
 
     if os.path.exists("_static/custom.css"):
