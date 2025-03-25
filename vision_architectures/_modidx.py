@@ -1052,4 +1052,6 @@ d = { 'settings': { 'branch': 'main',
                                                       'vision_architectures.utils.residuals.StochasticDepthResidual.extra_repr': ( 'utils/residuals.html#stochasticdepthresidual.extra_repr',
                                                                                                                                    'vision_architectures/utils/residuals.py'),
                                                       'vision_architectures.utils.residuals.StochasticDepthResidual.forward': ( 'utils/residuals.html#stochasticdepthresidual.forward',
-                                                                                                                                'vision_architectures/utils/residuals.py')}}}
+                                                                                                                                'vision_architectures/utils/residuals.py'),
+                                                      'vision_architectures.utils.residuals.add_stochastic_depth_dropout': ( 'utils/residuals.html#add_stochastic_depth_dropout',
+                                                                                                                             'vision_architectures/utils/residuals.py')}}}
