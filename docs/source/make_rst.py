@@ -23,6 +23,7 @@ def title_from_module_name(module_name):
         "fpn_3d": "FPN3D",
         "heads_3d": "Heads3D",
         "maxvit_3d": "MaxViT3D",
+        "mbconv_3d": "MBConv3D",
         "noise": "Noise",
         "normalizations": "Normalizations",
         "perceiver_3d": "Perceiver3D",
