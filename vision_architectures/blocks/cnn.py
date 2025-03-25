@@ -20,7 +20,8 @@ class CNNBlock3DConfig(CustomBaseModel):
     in_channels: int
     out_channels: int
     kernel_size: int
-    padding: int = 0
+    padding: int | tuple[int, ...] | str = "same"
+    stride: int = 1
     conv_kwargs: dict[str, Any] = {}
 
     sequence: Literal["ADN", "AND", "DAN", "DNA", "NAD", "NDA"] = "NDA"
@@ -42,13 +43,14 @@ class CNNBlock3D(nn.Module):
         sequence = self.config.sequence
 
         bias = True
-        if normalization.startswith("batchnorm") and sequence.startswith("N"):
+        if normalization is not None and normalization.startswith("batchnorm") and sequence.startswith("N"):
             bias = False
         self.cnn = nn.Conv3d(
             in_channels=self.config.in_channels,
             out_channels=self.config.out_channels,
             kernel_size=self.config.kernel_size,
             padding=self.config.padding,
+            stride=self.config.stride,
             bias=bias,
             **self.config.conv_kwargs,
         )
@@ -63,7 +65,7 @@ class CNNBlock3D(nn.Module):
         # x: (b, [in_channels], z, y, x, [in_channels])
 
         if not channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x")
+            x = rearrange(x, "b z y x d -> b d z y x").contiguous()
 
         # Now x is (b, in_channels, z, y, x)
 
@@ -78,6 +80,9 @@ class CNNBlock3D(nn.Module):
             elif layer == "N":
                 x = self.norm_layer(x)
             # (b, out_channels, z, y, x)
+
+        if not channels_first:
+            x = rearrange(x, "b d z y x -> b z y x d").contiguous()
 
         return x
 

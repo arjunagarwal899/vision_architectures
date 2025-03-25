@@ -54,7 +54,7 @@ class SEBlock3D(nn.Module):
         # x: (b, [dim], z, y, x, [dim])
 
         if not channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x")
+            x = rearrange(x, "b z y x d -> b d z y x").contiguous()
         # Now x is (b, dim, z, y, x)
 
         p = self.squeeze(x)
@@ -65,7 +65,7 @@ class SEBlock3D(nn.Module):
         # (b, dim, z, y, x)
 
         if not channels_first:
-            x = rearrange(x, "b d z y x d -> b z y x d")
+            x = rearrange(x, "b d z y x d -> b z y x d").contiguous()
             # (b, z, y, x, dim)
 
         return x

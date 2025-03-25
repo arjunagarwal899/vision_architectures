@@ -37,7 +37,9 @@ class CustomBaseModel(BaseModel):
         return key in self.model_fields
 
     def __or__(self, other: dict):
-        if not isinstance(other, dict):
+        if not isinstance(other, (dict, CustomBaseModel)):
             raise TypeError(f"Cannot merge object of type {type(other)} with {self.__class__.__name__}")
+        if isinstance(other, CustomBaseModel):
+            other = other.model_dump()
         updated = self.model_copy(update=other, deep=True)  # Pydantic v2 way of updating fields
         return updated

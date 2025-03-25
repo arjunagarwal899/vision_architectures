@@ -11,18 +11,22 @@ from torch import nn
 from .cnn import CNNBlock3D, CNNBlock3DConfig
 from .se import SEBlock3D
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.custom_base_model import CustomBaseModel, model_validator
+from ..utils.custom_base_model import model_validator
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 4
-class MBConv3DConfig(CustomBaseModel):
+class MBConv3DConfig(CNNBlock3DConfig):
     dim: int
+    out_dim: int | None = None
     expansion_ratio: float = 6.0
     se_reduction_ratio: float = 4.0
+
     kernel_size: int = 3
-    padding: int = 1
     activation: str = "relu"
     normalization: str = "batchnorm3d"
+
+    in_channels: None = None  # use dim instead
+    out_channels: None = None  # use expansion_ratio instead
 
     @property
     def hidden_dim(self):
@@ -33,6 +37,8 @@ class MBConv3DConfig(CustomBaseModel):
         super().validate()
         min_expansion_ratio = (self.dim + 1) / self.dim
         assert self.expansion_ratio > min_expansion_ratio, f"expansion_ratio must be greater than {min_expansion_ratio}"
+        if self.out_dim is None:
+            self.out_dim = self.dim
         return self
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 7
@@ -44,43 +50,35 @@ class MBConv3D(nn.Module):
 
         dim = self.config.dim
         hidden_dim = self.config.hidden_dim
-        kernel_size = self.config.kernel_size
-        padding = self.config.padding
+        out_dim = self.config.out_dim
         se_reduction_ratio = self.config.se_reduction_ratio
-        activation = self.config.activation
-        normalization = self.config.normalization
 
         self.expand = CNNBlock3D(
-            CNNBlock3DConfig(
-                in_channels=dim,
-                out_channels=hidden_dim,
-                kernel_size=1,
-                padding=0,
-                activation=activation,
-                normalization=normalization,
-            )
+            self.config,
+            checkpointing_level,
+            in_channels=dim,
+            out_channels=hidden_dim,
+            kernel_size=1,
+            stride=1,
+            padding=0,
         )
         self.depthwise_conv = CNNBlock3D(
-            CNNBlock3DConfig(
-                in_channels=hidden_dim,
-                out_channels=hidden_dim,
-                kernel_size=kernel_size,
-                padding=padding,
-                conv_kwargs=dict(groups=hidden_dim),
-                activation=activation,
-                normalization=normalization,
-            )
+            self.config,
+            checkpointing_level,
+            in_channels=hidden_dim,
+            out_channels=hidden_dim,
+            conv_kwargs=self.config.conv_kwargs | dict(groups=hidden_dim),
         )
         self.se = SEBlock3D(dim=hidden_dim, r=se_reduction_ratio)
         self.pointwise_conv = CNNBlock3D(
-            CNNBlock3DConfig(
-                in_channels=hidden_dim,
-                out_channels=dim,
-                kernel_size=1,
-                padding=0,
-                activation=None,
-                normalization=normalization,
-            )
+            self.config,
+            checkpointing_level,
+            in_channels=hidden_dim,
+            out_channels=out_dim,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            activation=None,
         )
 
         self.residual = Residual()
@@ -91,7 +89,7 @@ class MBConv3D(nn.Module):
         # x: (b, [dim], z, y, x, [dim])
 
         if not channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x")
+            x = rearrange(x, "b z y x d -> b d z y x").contiguous()
 
         # Now x is (b, dim, z, y, x)
 
@@ -114,10 +112,11 @@ class MBConv3D(nn.Module):
         # (b, dim, z, y, x)
 
         # Residual
-        x = self.residual(x, res_connection)
+        if x.shape == res_connection.shape:
+            x = self.residual(x, res_connection)
 
         if not channels_first:
-            x = rearrange(x, "b d z y x -> b z y x d")
+            x = rearrange(x, "b d z y x -> b z y x d").contiguous()
             # (b, z, y, x, dim)
 
         return x

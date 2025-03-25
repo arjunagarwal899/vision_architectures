@@ -178,7 +178,7 @@ class SwinV23DLayer(nn.Module):
 
         all_inputs = config | kwargs
         self.window_size = all_inputs.get("window_size")
-        use_relative_position_bias = all_inputs.get("use_relative_position_bias")
+        use_relative_position_bias = all_inputs.get("use_relative_position_bias", True)
 
         self.embeddings_config = RelativePositionEmbeddings3DConfig.model_validate(
             config | kwargs | {"grid_size": self.window_size}
@@ -202,9 +202,23 @@ class SwinV23DLayer(nn.Module):
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
+    @staticmethod
+    def _get_rearrange_patterns():
+        forward_pattern = (
+            "b (num_windows_z window_size_z) (num_windows_y window_size_y) (num_windows_x window_size_x) dim -> "
+            "(b num_windows_z num_windows_y num_windows_x) window_size_z window_size_y window_size_x dim "
+        )
+        reverse_pattern = (
+            "(b num_windows_z num_windows_y num_windows_x) window_size_z window_size_y window_size_x dim -> "
+            "b (num_windows_z window_size_z) (num_windows_y window_size_y) (num_windows_x window_size_x) dim"
+        )
+        return forward_pattern, reverse_pattern
+
     def _forward(self, hidden_states: torch.Tensor):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
         _, num_patches_z, num_patches_y, num_patches_x, _ = hidden_states.shape
+
+        forward_pattern, reverse_pattern = self._get_rearrange_patterns()
 
         # Perform windowing
         window_size_z, window_size_y, window_size_x = self.window_size
@@ -215,8 +229,7 @@ class SwinV23DLayer(nn.Module):
         )
         hidden_states = rearrange(
             hidden_states,
-            "b (num_windows_z window_size_z) (num_windows_y window_size_y) (num_windows_x window_size_x) dim -> "
-            "(b num_windows_z num_windows_y num_windows_x) window_size_z window_size_y window_size_x dim ",
+            forward_pattern,
             num_windows_z=num_windows_z,
             num_windows_y=num_windows_y,
             num_windows_x=num_windows_x,
@@ -230,8 +243,7 @@ class SwinV23DLayer(nn.Module):
         # Undo windowing
         output = rearrange(
             hidden_states,
-            "(b num_windows_z num_windows_y num_windows_x) window_size_z window_size_y window_size_x dim -> "
-            "b (num_windows_z window_size_z) (num_windows_y window_size_y) (num_windows_x window_size_x) dim",
+            reverse_pattern,
             num_windows_z=num_windows_z,
             num_windows_y=num_windows_y,
             num_windows_x=num_windows_x,
