@@ -51,7 +51,9 @@ class DyT(nn.Module):
 
 # %% ../../nbs/utils/03_normalizations.ipynb 12
 def get_norm_layer(normalization_name: str, *args, **kwargs):
-    if normalization_name == "layernorm":
+    if normalization_name is None:
+        norm_layer = nn.Identity()
+    elif normalization_name == "layernorm":
         norm_layer = nn.LayerNorm(*args, **kwargs)
     elif normalization_name == "layernorm2d":
         norm_layer = LayerNorm2D(*args, **kwargs)

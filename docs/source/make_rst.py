@@ -12,6 +12,7 @@ def title_from_module_name(module_name):
         "activations": "Activations",
         "attention": "Attention",
         "cait_3d": "CaiT3D",
+        "cnn": "CNN",
         "codebook": "Codebook",
         "croppad": "CropPad",
         "custom_base_model": "CustomBaseModel",
@@ -27,7 +28,6 @@ def title_from_module_name(module_name):
         "perceiver_3d": "Perceiver3D",
         "resize": "Resize",
         "safetensors_reader": "SafeTensorsReader",
-        "se": "SqueezeExcitation",
         "sigmoid": "Sigmoid",
         "spatial": "Spatial",
         "swin_3d": "Swin3D",
@@ -39,6 +39,7 @@ def title_from_module_name(module_name):
         "upernet_3d": "UperNet3D",
         "vit_3d": "ViT3D",
         #
+        "se": "Squeeze and Excitation",
         "nets": "Nets",
         "blocks": "Blocks",
         "image_readers": "Image Readers",

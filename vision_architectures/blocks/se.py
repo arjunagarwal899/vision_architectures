@@ -18,7 +18,7 @@ class SEBlock3DConfig(CustomBaseModel):
     dim: int
     r: float
     normalization: str = "batchnorm3d"
-    activation: str = "relu"
+    activation: str = "silu"
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 6
 class SEBlock3D(nn.Module):
@@ -36,10 +36,14 @@ class SEBlock3D(nn.Module):
 
         self.squeeze = nn.AdaptiveAvgPool3d((1, 1, 1))
         self.excitation = nn.Sequential(
-            nn.Conv3d(dim, excitation_dim, kernel_size=1),
+            nn.Conv3d(
+                dim, excitation_dim, kernel_size=1, bias=False if normalization.startswith("batchnorm") else True
+            ),
             get_norm_layer(normalization, excitation_dim),
             get_act_layer(activation),
-            nn.Conv3d(excitation_dim, dim, kernel_size=1),
+            nn.Conv3d(
+                excitation_dim, dim, kernel_size=1, bias=False if normalization.startswith("batchnorm") else True
+            ),
             get_norm_layer(normalization, dim),
             nn.Sigmoid(),
         )
