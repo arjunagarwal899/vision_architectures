@@ -26,6 +26,7 @@ def title_from_module_name(module_name):
         "noise": "Noise",
         "normalizations": "Normalizations",
         "perceiver_3d": "Perceiver3D",
+        "residuals": "Residual Connections",
         "resize": "Resize",
         "safetensors_reader": "SafeTensorsReader",
         "sigmoid": "Sigmoid",
