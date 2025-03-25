@@ -24,9 +24,9 @@ class MaxViT3DStem0Config(CustomBaseModel):
 
 
 class MaxViT3DBlockConfig(MBConv3DConfig, Attention3DWithMLPConfig):
-    is_last: bool = False
     window_size: tuple[int, int, int]
-    out_dim_ratio: int = 2  # Used only if is_last is True
+    modify_dims: bool = False  # Used in the last block of stems
+    out_dim_ratio: int = 2  # Used only if modify_dims is True
 
 
 class MaxViT3DStemConfig(MaxViT3DBlockConfig):
@@ -135,7 +135,7 @@ class MaxViT3DBlock(nn.Module):
 
         mbconv_kwargs = {}
         out_dim = self.config.dim
-        if self.config.is_last:
+        if self.config.modify_dims:
             out_dim = self.config.dim * self.config.out_dim_ratio
             mbconv_kwargs["stride"] = 2
             mbconv_kwargs["padding"] = 1
@@ -175,7 +175,9 @@ class MaxViT3DBlock(nn.Module):
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 15
 class MaxViT3DStem(nn.Module):
-    def __init__(self, config: MaxViT3DStemConfig = {}, checkpointing_level: int = 0, **kwargs):
+    def __init__(
+        self, config: MaxViT3DStemConfig = {}, checkpointing_level: int = 0, dont_downsample: bool = False, **kwargs
+    ):
         super().__init__()
 
         self.config = MaxViT3DStemConfig.model_validate(config | kwargs)
@@ -184,7 +186,7 @@ class MaxViT3DStem(nn.Module):
             MaxViT3DBlock(
                 self.config.model_dump(),
                 checkpointing_level=checkpointing_level,
-                is_last=True if i == self.config.depth - 1 else False,
+                modify_dims=True if i == self.config.depth - 1 and not dont_downsample else False,
             )
             for i in range(self.config.depth)
         )
@@ -200,7 +202,7 @@ class MaxViT3DStem(nn.Module):
     def forward(self, x: torch.Tensor, channels_first: bool = True):
         return self.checkpointing_level4(self._forward, x, channels_first)
 
-# %% ../../nbs/nets/07_maxvit_3d.ipynb 17
+# %% ../../nbs/nets/07_maxvit_3d.ipynb 18
 class MaxViT3DEncoder(nn.Module):
     def __init__(self, config: MaxViT3DEncoderConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
@@ -209,8 +211,10 @@ class MaxViT3DEncoder(nn.Module):
 
         self.stems = nn.ModuleList([])
         self.stems.append(MaxViT3DStem0(self.config.stem0, checkpointing_level))
-        for stem_config in self.config.stems:
-            self.stems.append(MaxViT3DStem(stem_config, checkpointing_level))
+        for i, stem_config in enumerate(self.config.stems):
+            self.stems.append(
+                MaxViT3DStem(stem_config, checkpointing_level, dont_downsample=i == len(self.config.stems) - 1)
+            )
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
