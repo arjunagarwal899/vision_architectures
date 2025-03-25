@@ -27,6 +27,7 @@ def title_from_module_name(module_name):
         "perceiver_3d": "Perceiver3D",
         "resize": "Resize",
         "safetensors_reader": "SafeTensorsReader",
+        "se": "SqueezeExcitation",
         "sigmoid": "Sigmoid",
         "spatial": "Spatial",
         "swin_3d": "Swin3D",
