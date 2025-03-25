@@ -42,3 +42,6 @@ class StochasticDepthResidual(Residual):
         survival_mask = torch.rand(mask_shape, device=new_value.device) < self.survival_prob
         new_value = (new_value * survival_mask) / self.survival_prob
         return super().forward(old_value, new_value)
+
+    def extra_repr(self) -> str:
+        return f"survival_prob={self.survival_prob}, dropout_type='{self.dropout_type}'"

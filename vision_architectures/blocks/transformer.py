@@ -17,6 +17,7 @@ from ..layers.embeddings import RelativePositionEmbeddings
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel
+from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/02_transformer.ipynb 4
 class Attention1DMLPConfig(CustomBaseModel):
@@ -133,6 +134,8 @@ class Attention1DWithMLP(nn.Module):
         self.mlp = Attention1DMLP(self.config, checkpointing_level=checkpointing_level)
         self.layernorm2 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
 
+        self.residual = Residual()
+
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
     def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
@@ -153,7 +156,7 @@ class Attention1DWithMLP(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, T, dim)
 
-        hidden_states = hidden_states + res_connection1
+        hidden_states = self.residual(res_connection1, hidden_states)
         res_connection2 = hidden_states
         # (b, T, dim)
 
@@ -168,7 +171,7 @@ class Attention1DWithMLP(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, T, dim)
 
-        hidden_states = hidden_states + res_connection2
+        hidden_states = self.residual(res_connection2, hidden_states)
         # (b, T, dim)
 
         return hidden_states
@@ -203,6 +206,8 @@ class Attention3DWithMLP(nn.Module):
         self.mlp = Attention3DMLP(self.config, checkpointing_level=checkpointing_level)
         self.layernorm2 = nn.LayerNorm(dim_qk, eps=layer_norm_eps)
 
+        self.residual = Residual()
+
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
     def _forward(
@@ -236,7 +241,7 @@ class Attention3DWithMLP(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = hidden_states + res_connection1
+        hidden_states = self.residual(res_connection1, hidden_states)
         res_connection2 = hidden_states
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
@@ -251,7 +256,7 @@ class Attention3DWithMLP(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = hidden_states + res_connection2
+        hidden_states = self.residual(res_connection2, hidden_states)
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
         if channels_first:
@@ -313,6 +318,8 @@ class TransformerDecoderBlock1D(nn.Module):
         self.mlp = Attention1DMLP(dim=dim, mlp_ratio=mlp_ratio, mlp_drop_prob=mlp_drop_prob)
         self.layernorm3 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
+        self.residual = Residual()
+
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
     def _forward(self, q: torch.Tensor, kv: torch.Tensor):
@@ -335,7 +342,7 @@ class TransformerDecoderBlock1D(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, num_tokens_in_q, dim)
 
-        hidden_states = hidden_states + res_connection1
+        hidden_states = self.residual(res_connection1, hidden_states)
         res_connection2 = hidden_states
         # (b, num_tokens_in_q, dim)
 
@@ -350,7 +357,7 @@ class TransformerDecoderBlock1D(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, num_tokens_in_q, dim)
 
-        hidden_states = hidden_states + res_connection2
+        hidden_states = self.residual(res_connection2, hidden_states)
         res_connection3 = hidden_states
         # (b, num_tokens_in_q, dim)
 
@@ -365,7 +372,7 @@ class TransformerDecoderBlock1D(nn.Module):
             hidden_states = self.layernorm3(hidden_states)
             # (b, num_tokens_in_q, dim)
 
-        hidden_states = hidden_states + res_connection3
+        hidden_states = self.residual(res_connection3, hidden_states)
         # (b, num_tokens_in_q, dim)
 
         return hidden_states
@@ -405,6 +412,8 @@ class TransformerDecoderBlock3D(nn.Module):
         self.mlp = Attention3DMLP(dim=dim, mlp_ratio=mlp_ratio, mlp_drop_prob=mlp_drop_prob)
         self.layernorm3 = nn.LayerNorm(dim, eps=layer_norm_eps)
 
+        self.residual = Residual()
+
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
     def _forward(self, q: torch.Tensor, kv: torch.Tensor, channels_first: bool = True):
@@ -430,7 +439,7 @@ class TransformerDecoderBlock3D(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = hidden_states + res_connection1
+        hidden_states = self.residual(res_connection1, hidden_states)
         res_connection2 = hidden_states
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
@@ -445,7 +454,7 @@ class TransformerDecoderBlock3D(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = hidden_states + res_connection2
+        hidden_states = self.residual(res_connection2, hidden_states)
         res_connection3 = hidden_states
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
@@ -460,7 +469,7 @@ class TransformerDecoderBlock3D(nn.Module):
             hidden_states = self.layernorm3(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = hidden_states + res_connection3
+        hidden_states = self.residual(res_connection3, hidden_states)
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
         if channels_first:

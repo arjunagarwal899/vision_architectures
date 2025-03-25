@@ -1023,5 +1023,7 @@ d = { 'settings': { 'branch': 'main',
                                                                                                                         'vision_architectures/utils/residuals.py'),
                                                       'vision_architectures.utils.residuals.StochasticDepthResidual.__init__': ( 'utils/residuals.html#stochasticdepthresidual.__init__',
                                                                                                                                  'vision_architectures/utils/residuals.py'),
+                                                      'vision_architectures.utils.residuals.StochasticDepthResidual.extra_repr': ( 'utils/residuals.html#stochasticdepthresidual.extra_repr',
+                                                                                                                                   'vision_architectures/utils/residuals.py'),
                                                       'vision_architectures.utils.residuals.StochasticDepthResidual.forward': ( 'utils/residuals.html#stochasticdepthresidual.forward',
                                                                                                                                 'vision_architectures/utils/residuals.py')}}}
