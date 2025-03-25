@@ -12,7 +12,7 @@ from einops import rearrange, repeat
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from ..layers.attention import Attention3DWithMLP, Attention3DWithMLPConfig
+from ..blocks.transformer import Attention3DWithMLP, Attention3DWithMLPConfig
 from vision_architectures.layers.embeddings import (
     AbsolutePositionEmbeddings3D,
     RelativePositionEmbeddings3D,
