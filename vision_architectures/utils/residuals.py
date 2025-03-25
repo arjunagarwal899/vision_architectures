@@ -13,7 +13,7 @@ from torch import nn
 class Residual(nn.Module):
     """A simple residual connection.
 
-    This has been saved as an nn.Module so that it can always be converted to a stochastic version if requried.
+    This has been saved as an nn.Module so that it can always be converted to a stochastic version if required.
     """
 
     def forward(self, old_value: torch.Tensor, new_value: torch.Tensor):
