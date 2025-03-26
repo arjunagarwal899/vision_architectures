@@ -114,6 +114,51 @@ class MaxViT3DBlockAttention(SwinV23DLayer):
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 10
 class MaxViT3DGridAttention(SwinV23DLayer):
+    """Perform grid attention on the input tensor.
+
+    Note that the grid attention implementation differs from the paper where the image is being partitioned based on the
+    window size and not based on the number of windows. For example:
+
+    Let us say the input is
+
+    .. code-block:: text
+
+        A1 A2 A3 A4 A5 A6
+        B1 B2 B3 B4 B5 B6
+        C1 C2 C3 C4 C5 C6
+        D1 D2 D3 D4 D5 D6
+
+    Let us say the window size is 2x2. The grid attention will be performed on the following 6 windows:
+
+    .. code-block:: text
+
+        A1 A4  A2 A5  A3 A6
+        C1 C4  C2 C5  C3 C6
+
+        B1 B4  B2 B5  B3 B6
+        D1 D4  D2 D5  D3 D6
+
+    According to the paper, my understanding is that attention should have been applied on the following 4 windows:
+
+    .. code-block:: text
+
+        A1 A3 A5  A2 A4 A6
+        B1 B3 B5  B2 B4 B6
+
+        C1 C3 C5  C2 C4 C6
+        D1 D3 D5  D2 D4 D6
+
+    i.e. the first token of all 2x2 windows in block attention, the second token of all 2x2 windows in block attention
+    and so on.
+
+    This has been implemented different so as to limit the number of tokens to be attended to in a window, as if
+    utilized as per the paper, since 3D inputs are usually very large, the number of total windows in block attention
+    would be very large, leading to a very large number of tokens to attend to in each window in grid attention.
+
+    It would also cause problems when estimating the position embeddings as the grid size of the position embeddings
+    would vary very with every input size.
+    """
+
     @staticmethod
     def _get_rearrange_patterns():
         forward_pattern = (
