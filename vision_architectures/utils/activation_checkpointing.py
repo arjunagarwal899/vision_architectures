@@ -6,10 +6,11 @@ __all__ = ['ActivationCheckpointing']
 # %% ../../nbs/utils/01_activation_checkpointing.ipynb 2
 from collections.abc import Callable
 
+from torch import nn
 from torch.utils.checkpoint import checkpoint
 
 # %% ../../nbs/utils/01_activation_checkpointing.ipynb 4
-class ActivationCheckpointing:
+class ActivationCheckpointing(nn.Module):
     """This class is used to perform activation checkpointing during training. Users can set a level of checkpointing
     for each module / function in their architecture. While training, the module / function will be checkpointed if the
     training checkpoint level is greater than or equal to the checkpoint level set for the module / function.
@@ -54,6 +55,9 @@ class ActivationCheckpointing:
         """
         super().__init__()
 
+        self.fn_checkpoint_level = fn_checkpoint_level
+        self.training_checkpoint_level = training_checkpoint_level
+
         self.perform_checkpointing = fn_checkpoint_level <= training_checkpoint_level
 
     def __call__(self, fn: Callable, *fn_args, use_reentrant: bool = False, **fn_kwargs):
@@ -69,6 +73,9 @@ class ActivationCheckpointing:
         Returns:
             The checkpointed module / function if checkpointing is performed, else the module / function itself.
         """
-        if self.perform_checkpointing:
+        if self.training and self.perform_checkpointing:
             return checkpoint(lambda: fn(*fn_args, **fn_kwargs), use_reentrant=use_reentrant)
         return fn(*fn_args, **fn_kwargs)
+
+    def extra_repr(self):
+        return f"enabled={self.perform_checkpointing}, checkpointing_level={self.fn_checkpoint_level}"
