@@ -41,14 +41,15 @@ def title_from_module_name(module_name):
         "upernet_3d": "UperNet3D",
         "vit_3d": "ViT3D",
         #
-        "se": "Squeeze and Excitation",
-        "nets": "Nets",
         "blocks": "Blocks",
         "image_readers": "Image Readers",
-        "utils": "Utils",
-        "schedulers": "Schedulers",
         "layers": "Layers",
+        "nets": "Nets",
+        "rearrange": "Rearrange",
+        "schedulers": "Schedulers",
+        "se": "Squeeze and Excitation",
         "transforms": "Transforms",
+        "utils": "Utils",
     }
     title = mapping.get(module_name, f"{module_name} [Add to mapping]")
 
