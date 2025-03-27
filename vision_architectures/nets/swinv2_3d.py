@@ -479,8 +479,13 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
-        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True, return_intermediates: bool = False):
+        # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
+        if channels_first:
+            hidden_states = rearrange(hidden_states, "b d z y x -> b z y x d").contiguous()
+
+        # Now hidden_states is (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         stage_outputs, layer_outputs = [], []
         for stage_module in self.stages:
@@ -489,6 +494,10 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
 
             stage_outputs.append(hidden_states)
             layer_outputs.extend(_layer_outputs)
+
+        if channels_first:
+            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x").contiguous()
+            # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         if return_intermediates:
             return hidden_states, stage_outputs, layer_outputs
