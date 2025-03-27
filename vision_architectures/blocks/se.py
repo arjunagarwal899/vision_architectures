@@ -5,13 +5,13 @@ __all__ = ['SEBlock3DConfig', 'SEBlock3D']
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 2
 import torch
-from einops import rearrange
 from torch import nn
 
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel
 from ..utils.normalizations import get_norm_layer
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 4
 class SEBlock3DConfig(CustomBaseModel):
@@ -53,8 +53,7 @@ class SEBlock3D(nn.Module):
     def _forward(self, x: torch.Tensor, channels_first: bool = True):
         # x: (b, [dim], z, y, x, [dim])
 
-        if not channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x").contiguous()
+        x = rearrange_channels(x, channels_first, True)
         # Now x is (b, dim, z, y, x)
 
         p = self.squeeze(x)
@@ -64,9 +63,8 @@ class SEBlock3D(nn.Module):
         x = x * p
         # (b, dim, z, y, x)
 
-        if not channels_first:
-            x = rearrange(x, "b d z y x d -> b z y x d").contiguous()
-            # (b, z, y, x, dim)
+        x = rearrange_channels(x, True, channels_first)
+        # (b, [dim], z, y, x, [dim])
 
         return x
 

@@ -7,13 +7,13 @@ __all__ = ['CNNBlock3DConfig', 'CNNBlock3D']
 from typing import Any, Literal
 
 import torch
-from einops import rearrange
 from torch import nn
 
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel
 from ..utils.normalizations import get_norm_layer
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/blocks/04_cnn.ipynb 4
 class CNNBlock3DConfig(CustomBaseModel):
@@ -64,9 +64,7 @@ class CNNBlock3D(nn.Module):
     def _forward(self, x: torch.Tensor, channels_first: bool = True):
         # x: (b, [in_channels], z, y, x, [in_channels])
 
-        if not channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x").contiguous()
-
+        x = rearrange_channels(x, channels_first, True)
         # Now x is (b, in_channels, z, y, x)
 
         x = self.cnn(x)
@@ -81,8 +79,8 @@ class CNNBlock3D(nn.Module):
                 x = self.norm_layer(x)
             # (b, out_channels, z, y, x)
 
-        if not channels_first:
-            x = rearrange(x, "b d z y x -> b z y x d").contiguous()
+        x = rearrange_channels(x, True, channels_first)
+        # (b, [out_channels], z, y, x, [out_channels])
 
         return x
 

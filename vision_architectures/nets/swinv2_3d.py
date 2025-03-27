@@ -214,7 +214,7 @@ class SwinV23DLayer(nn.Module):
         )
         return forward_pattern, reverse_pattern
 
-    def _forward(self, hidden_states: torch.Tensor):
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
         _, num_patches_z, num_patches_y, num_patches_x, _ = hidden_states.shape
 

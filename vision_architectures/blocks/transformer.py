@@ -9,7 +9,6 @@ __all__ = ['Attention1DMLPConfig', 'Attention3DMLPConfig', 'Attention1DWithMLPCo
 from typing import Literal
 
 import torch
-from einops import rearrange
 from torch import nn
 
 from ..layers.attention import Attention1D, Attention1DConfig, Attention3D, Attention3DConfig
@@ -17,7 +16,7 @@ from ..layers.embeddings import RelativePositionEmbeddings
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel
-from ..utils.rearrange import make_channels_first, make_channels_last
+from ..utils.rearrange import rearrange_channels
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/02_transformer.ipynb 4
@@ -94,15 +93,9 @@ class Attention3DMLP(Attention1DMLP):
 
     def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
         # hidden_states: (b, dim, z, y, x) or (b, z, y, x, dim)
-
-        if channels_first:
-            hidden_states = make_channels_last(hidden_states)
-
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
         hidden_states = super()._forward(hidden_states)
-
-        if channels_first:
-            hidden_states = make_channels_first(hidden_states)
-
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
         return hidden_states
 
     def forward(self, *args, **kwargs):
@@ -220,11 +213,10 @@ class Attention3DWithMLP(nn.Module):
     ):
         # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
-        if channels_first:
-            query = rearrange(query, "b d z y x -> b z y x d").contiguous()
-            key = rearrange(key, "b d z y x -> b z y x d").contiguous()
-            value = rearrange(value, "b d z y x -> b z y x d").contiguous()
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+        query = rearrange_channels(query, channels_first, False)
+        key = rearrange_channels(key, channels_first, False)
+        value = rearrange_channels(value, channels_first, False)
+        # (b, tokens_z, tokens_y, tokens_x, dim)
 
         res_connection1 = query
         # (b, tokens_z, tokens_y, tokens_x, dim)
@@ -260,9 +252,8 @@ class Attention3DWithMLP(nn.Module):
         hidden_states = self.residual(res_connection2, hidden_states)
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        if channels_first:
-            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x").contiguous()
-            # (b, dim, tokens_z, tokens_y, tokens_x)
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         return hidden_states
 
@@ -271,15 +262,15 @@ class Attention3DWithMLP(nn.Module):
 
 # %% ../../nbs/blocks/02_transformer.ipynb 14
 class TransformerEncoderBlock1D(Attention1DWithMLP):
-    def forward(self, qkv: torch.Tensor):
+    def forward(self, qkv: torch.Tensor, *args, **kwargs):
         # qkv: (b, num_tokens, dim)
-        return super().forward(qkv, qkv, qkv)
+        return super().forward(qkv, qkv, qkv, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 16
 class TransformerEncoderBlock3D(Attention3DWithMLP):
-    def forward(self, qkv: torch.Tensor, channels_first: bool = True):
+    def forward(self, qkv: torch.Tensor, *args, **kwargs):
         # qkv: (b, num_tokens, dim)
-        return super().forward(qkv, qkv, qkv, channels_first)
+        return super().forward(qkv, qkv, qkv, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 18
 class TransformerDecoderBlock1D(nn.Module):
@@ -414,10 +405,9 @@ class TransformerDecoderBlock3D(nn.Module):
     def _forward(self, q: torch.Tensor, kv: torch.Tensor, channels_first: bool = True):
         # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
-        if channels_first:
-            q = rearrange(q, "b d z y x -> b z y x d").contiguous()
-            kv = rearrange(kv, "b d z y x -> b z y x d").contiguous()
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+        q = rearrange_channels(q, channels_first, False)
+        kv = rearrange_channels(kv, channels_first, False)
+        # (b, tokens_z, tokens_y, tokens_x, dim)
 
         res_connection1 = q
         # (b, tokens_z, tokens_y, tokens_x, dim)
@@ -467,9 +457,8 @@ class TransformerDecoderBlock3D(nn.Module):
         hidden_states = self.residual(res_connection3, hidden_states)
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        if channels_first:
-            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x").contiguous()
-            # (b, dim, tokens_z, tokens_y, tokens_x)
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         return hidden_states
 

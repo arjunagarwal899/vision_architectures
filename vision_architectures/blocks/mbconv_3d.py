@@ -5,13 +5,13 @@ __all__ = ['MBConv3DConfig', 'MBConv3D']
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 2
 import torch
-from einops import rearrange
 from torch import nn
 
 from .cnn import CNNBlock3D, CNNBlock3DConfig
 from .se import SEBlock3D
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import model_validator
+from ..utils.rearrange import rearrange_channels
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 4
@@ -88,9 +88,7 @@ class MBConv3D(nn.Module):
     def _forward(self, x: torch.Tensor, channels_first: bool = True):
         # x: (b, [dim], z, y, x, [dim])
 
-        if not channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x").contiguous()
-
+        x = rearrange_channels(x, channels_first, True)
         # Now x is (b, dim, z, y, x)
 
         res_connection = x
@@ -115,9 +113,8 @@ class MBConv3D(nn.Module):
         if x.shape == res_connection.shape:
             x = self.residual(x, res_connection)
 
-        if not channels_first:
-            x = rearrange(x, "b d z y x -> b z y x d").contiguous()
-            # (b, z, y, x, dim)
+        x = rearrange_channels(x, True, channels_first)
+        # (b, [dim], z, y, x, [dim])
 
         return x
 

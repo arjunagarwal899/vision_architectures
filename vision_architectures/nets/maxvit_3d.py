@@ -6,7 +6,6 @@ __all__ = ['MaxViT3DStem0Config', 'MaxViT3DBlockConfig', 'MaxViT3DStemConfig', '
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 2
 import torch
-from einops import rearrange
 from torch import nn
 
 from ..blocks.cnn import CNNBlock3D, CNNBlock3DConfig
@@ -15,6 +14,7 @@ from ..blocks.transformer import Attention3DWithMLPConfig
 from .swinv2_3d import SwinV23DLayer
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, model_validator
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 4
 class MaxViT3DStem0Config(CustomBaseModel):
@@ -90,18 +90,15 @@ class MaxViT3DStem0(nn.Module):
     def _forward(self, x: torch.Tensor, channels_first: bool = True):
         # x: (b, [in_channels], z, y, x, [in_channels])
 
-        if not channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x")
-
+        x = rearrange_channels(x, channels_first, True)
         # Now x is (b, in_channels, z, y, x)
 
         for layer in self.layers:
             x = layer(x)
             # (b, dim, z1, y1, x1)
 
-        if not channels_first:
-            x = rearrange(x, "b d z y x -> b z y x d")
-            # (b, z1, y1, x1, dim)
+        x = rearrange_channels(x, True, channels_first)
+        # (b, [dim], z1, y1, x1, [dim])
 
         return x
 
@@ -199,19 +196,19 @@ class MaxViT3DBlock(nn.Module):
     def _forward(self, x: torch.Tensor, channels_first: bool = True):
         # x: (b, [dim], z, y, x, [dim])
 
-        x = self.mbconv(x, channels_first)
+        x = self.mbconv(x, channels_first)  # this runs in channels_first format internally
         # (b, [dim], z1, y1, x1, [dim])
 
-        if channels_first:
-            x = rearrange(x, "b d z y x -> b z y x d")
+        x = rearrange_channels(x, channels_first, False)
+        # (b, z1, y1, x1, dim)
 
-        x = self.block_attention(x)
-        # (b, dim, z1, y1, x1)
-        x = self.grid_attention(x)
-        # (b, dim, z1, y1, x1)
+        x = self.block_attention(x, channels_first=False)
+        # (b, z1, y1, x1, dim)
+        x = self.grid_attention(x, channels_first=False)
+        # (b, z1, y1, x1, dim)
 
-        if channels_first:
-            x = rearrange(x, "b z y x d -> b d z y x")
+        x = rearrange_channels(x, False, channels_first)
+        # (b, [dim], z1, y1, x1, [dim])
 
         return x
 
