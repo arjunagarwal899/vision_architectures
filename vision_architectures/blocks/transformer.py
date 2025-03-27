@@ -17,6 +17,7 @@ from ..layers.embeddings import RelativePositionEmbeddings
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel
+from ..utils.rearrange import make_channels_first, make_channels_last
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/02_transformer.ipynb 4
@@ -95,12 +96,12 @@ class Attention3DMLP(Attention1DMLP):
         # hidden_states: (b, dim, z, y, x) or (b, z, y, x, dim)
 
         if channels_first:
-            hidden_states = rearrange(hidden_states, "b d z y x -> b z y x d").contiguous()
+            hidden_states = make_channels_last(hidden_states)
 
         hidden_states = super()._forward(hidden_states)
 
         if channels_first:
-            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x").contiguous()
+            hidden_states = make_channels_first(hidden_states)
 
         return hidden_states
 
