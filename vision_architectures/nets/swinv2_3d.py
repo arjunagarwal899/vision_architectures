@@ -268,13 +268,13 @@ class SwinV23DLayer(nn.Module):
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 13
 class SwinV23DBlock(nn.Module):
-    def __init__(self, stage_config, checkpointing_level: int = 0):
+    def __init__(self, config: SwinV23DStageConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
 
-        self.stage_config = SwinV23DStageConfig.model_validate(stage_config)
+        self.config = SwinV23DStageConfig.model_validate(config | kwargs)
 
-        self.w_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
-        self.sw_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
+        self.w_layer = SwinV23DLayer(self.config.model_dump(), checkpointing_level=checkpointing_level)
+        self.sw_layer = SwinV23DLayer(self.config.model_dump(), checkpointing_level=checkpointing_level)
 
     def forward(self, hidden_states: torch.Tensor, channels_first: bool = True, return_intermediates: bool = False):
         """Please note that the ``layer_outputs`` returned if ``return_intermediates=True`` will always be in
@@ -293,7 +293,7 @@ class SwinV23DBlock(nn.Module):
         layer_outputs.append(hidden_states)
 
         # Shift windows
-        window_size_z, window_size_y, window_size_x = self.stage_config.window_size
+        window_size_z, window_size_y, window_size_x = self.config.window_size
         shifts = (window_size_z // 2, window_size_y // 2, window_size_x // 2)
         hidden_states = torch.roll(hidden_states, shifts=shifts, dims=(1, 2, 3))
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
