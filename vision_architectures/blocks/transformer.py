@@ -83,8 +83,8 @@ class Attention1DMLP(nn.Module):
         hidden_states = self.checkpointing_level1(second_half, hidden_states)
         return hidden_states
 
-    def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level2(self._forward, hidden_states)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 8
 class Attention3DMLP(Attention1DMLP):
@@ -104,8 +104,8 @@ class Attention3DMLP(Attention1DMLP):
 
         return hidden_states
 
-    def forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
-        return self.checkpointing_level1(self._forward, hidden_states, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 10
 class Attention1DWithMLP(nn.Module):
@@ -176,8 +176,8 @@ class Attention1DWithMLP(nn.Module):
 
         return hidden_states
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
-        return self.checkpointing_level3(self._forward, query, key, value)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 12
 class Attention3DWithMLP(nn.Module):
@@ -265,14 +265,8 @@ class Attention3DWithMLP(nn.Module):
 
         return hidden_states
 
-    def forward(
-        self,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        channels_first: bool = True,
-    ):
-        return self.checkpointing_level3(self._forward, query, key, value, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 14
 class TransformerEncoderBlock1D(Attention1DWithMLP):
@@ -377,8 +371,8 @@ class TransformerDecoderBlock1D(nn.Module):
 
         return hidden_states
 
-    def forward(self, q: torch.Tensor, kv: torch.Tensor):
-        return self.checkpointing_level3(self._forward, q, kv)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 20
 class TransformerDecoderBlock3D(nn.Module):
@@ -478,5 +472,5 @@ class TransformerDecoderBlock3D(nn.Module):
 
         return hidden_states
 
-    def forward(self, q: torch.Tensor, kv: torch.Tensor):
-        return self.checkpointing_level3(self._forward, q, kv)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level3(self._forward, *args, **kwargs)

@@ -86,5 +86,5 @@ class CNNBlock3D(nn.Module):
 
         return x
 
-    def forward(self, x: torch.Tensor, channels_first: bool = True):
-        return self.checkpointing_level1(self._forward, x, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level1(self._forward, *args, **kwargs)

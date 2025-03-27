@@ -210,8 +210,8 @@ class Attention1D(nn.Module):
 
         return output
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
-        return self.checkpointing_level2(self._forward, query, key, value)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/layers/01_attention.ipynb 8
 class Attention3D(Attention1D):
@@ -264,11 +264,5 @@ class Attention3D(Attention1D):
 
         return output
 
-    def forward(
-        self,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        channels_first: bool = True,
-    ):
-        return self.checkpointing_level2(self._forward, query, key, value, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level2(self._forward, *args, **kwargs)

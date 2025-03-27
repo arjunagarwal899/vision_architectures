@@ -525,5 +525,5 @@ class PatchEmbeddings3D(nn.Module):
 
         return embeddings
 
-    def forward(self, pixel_values: torch.Tensor):
-        return self.checkpointing_level1(self._forward, pixel_values)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level1(self._forward, *args, **kwargs)

@@ -105,8 +105,8 @@ class MaxViT3DStem0(nn.Module):
 
         return x
 
-    def forward(self, x: torch.Tensor, channels_first: bool = True):
-        return self.checkpointing_level2(self._forward, x, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 8
 class MaxViT3DBlockAttention(SwinV23DLayer):
@@ -215,8 +215,8 @@ class MaxViT3DBlock(nn.Module):
 
         return x
 
-    def forward(self, x: torch.Tensor, channels_first: bool = True):
-        return self.checkpointing_level3(self._forward, x, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 15
 class MaxViT3DStem(nn.Module):
@@ -244,8 +244,8 @@ class MaxViT3DStem(nn.Module):
             x = layer(x, channels_first)
         return x
 
-    def forward(self, x: torch.Tensor, channels_first: bool = True):
-        return self.checkpointing_level4(self._forward, x, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level4(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 18
 class MaxViT3DEncoder(nn.Module):
@@ -269,5 +269,5 @@ class MaxViT3DEncoder(nn.Module):
             x = stem(x, channels_first)
         return x
 
-    def forward(self, x: torch.Tensor, channels_first: bool = True):
-        return self.checkpointing_level5(self._forward, x, channels_first)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level5(self._forward, *args, **kwargs)

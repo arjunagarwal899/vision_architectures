@@ -254,8 +254,8 @@ class SwinV23DLayer(nn.Module):
 
         return output
 
-    def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level3(self._forward, hidden_states)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 13
 class SwinV23DBlock(nn.Module):
@@ -267,7 +267,7 @@ class SwinV23DBlock(nn.Module):
         self.w_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
         self.sw_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
 
-    def forward(self, hidden_states: torch.Tensor):
+    def forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         layer_outputs = []
@@ -295,7 +295,9 @@ class SwinV23DBlock(nn.Module):
 
         layer_outputs.append(hidden_states)
 
-        return hidden_states, layer_outputs
+        if return_intermediates:
+            return hidden_states, layer_outputs
+        return hidden_states
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 15
 class SwinV23DPatchMerging(nn.Module):
@@ -328,8 +330,8 @@ class SwinV23DPatchMerging(nn.Module):
         hidden_states = self.proj(hidden_states)
         return hidden_states
 
-    def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level1(self._forward, hidden_states)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 17
 class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and is not part of the paper.
@@ -363,8 +365,8 @@ class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and
 
         return hidden_states
 
-    def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level1(self._forward, hidden_states)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 19
 class SwinV23DStage(nn.Module):
@@ -399,7 +401,7 @@ class SwinV23DStage(nn.Module):
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor):
+    def _forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         if self.patch_merging:
@@ -408,7 +410,7 @@ class SwinV23DStage(nn.Module):
 
         layer_outputs = []
         for layer_module in self.blocks:
-            hidden_states, _layer_outputs = layer_module(hidden_states)
+            hidden_states, _layer_outputs = layer_module(hidden_states, return_intermediates=True)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, new_dim)
             layer_outputs.extend(_layer_outputs)
 
@@ -416,10 +418,12 @@ class SwinV23DStage(nn.Module):
             hidden_states = self.patch_splitting(hidden_states)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, new_dim)
 
-        return hidden_states, layer_outputs
+        if return_intermediates:
+            return hidden_states, layer_outputs
+        return hidden_states
 
-    def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level4(self._forward, hidden_states)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level4(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 23
 class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
@@ -438,21 +442,23 @@ class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor):
+    def _forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         stage_outputs, layer_outputs = [], []
         for stage_module in self.stages:
-            hidden_states, _layer_outputs = stage_module(hidden_states)
+            hidden_states, _layer_outputs = stage_module(hidden_states, return_intermediates=True)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
 
             stage_outputs.append(hidden_states)
             layer_outputs.extend(_layer_outputs)
 
-        return hidden_states, stage_outputs, layer_outputs
+        if return_intermediates:
+            return hidden_states, stage_outputs, layer_outputs
+        return hidden_states
 
-    def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level5(self._forward, hidden_states)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level5(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 26
 class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
@@ -473,21 +479,23 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor):
+    def _forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
         # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         stage_outputs, layer_outputs = [], []
         for stage_module in self.stages:
-            hidden_states, _layer_outputs = stage_module(hidden_states)
+            hidden_states, _layer_outputs = stage_module(hidden_states, return_intermediates=True)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
 
             stage_outputs.append(hidden_states)
             layer_outputs.extend(_layer_outputs)
 
-        return hidden_states, stage_outputs, layer_outputs
+        if return_intermediates:
+            return hidden_states, stage_outputs, layer_outputs
+        return hidden_states
 
-    def forward(self, hidden_states: torch.Tensor):
-        return self.checkpointing_level5(self._forward, hidden_states)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level5(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 29
 class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
@@ -514,6 +522,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
         crop_offsets: torch.Tensor = None,
         mask_patches: torch.Tensor = None,
         mask_token: torch.Tensor = None,
+        return_intermediates: bool = False,
     ):
         # pixel_values: (b, c, z, y, x)
         # spacings: (b, 3)
@@ -536,7 +545,7 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
         embeddings = rearrange(embeddings, "b e nz ny nx -> b nz ny nx e").contiguous()
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
-        encoded, stage_outputs, layer_outputs = self.encoder(embeddings)
+        encoded, stage_outputs, layer_outputs = self.encoder(embeddings, return_intermediates=True)
         # encoded: (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
         # stage_outputs, layer_outputs: list of (b, some_num_patches_z, some_num_patches_y, some_num_patches_x, dim)
 
@@ -551,7 +560,9 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
             layer_outputs[i] = rearrange(layer_outputs[i], "b nz ny nx d -> b d nz ny nx").contiguous()
             # (b, dim, some_num_patches_z, some_num_patches_y, some_num_patches_x)
 
-        return encoded, stage_outputs, layer_outputs
+        if return_intermediates:
+            return encoded, stage_outputs, layer_outputs
+        return encoded
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 32
 class SwinV23DReconstructionDecoder(nn.Module):

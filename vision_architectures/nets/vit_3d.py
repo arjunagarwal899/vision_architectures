@@ -66,7 +66,7 @@ class ViT3DEncoder(nn.Module, PyTorchModelHubMixin):
             [TransformerEncoderBlock1D(config.model_dump()) for _ in range(config.encoder_depth)]
         )
 
-    def forward(self, embeddings: torch.Tensor, return_all: bool = False):
+    def forward(self, embeddings: torch.Tensor, return_intermediates: bool = False):
         # hidden_states: (b, num_tokens, dim)
 
         layer_outputs = []
@@ -76,14 +76,9 @@ class ViT3DEncoder(nn.Module, PyTorchModelHubMixin):
 
             layer_outputs.append(embeddings)
 
-        return_value = embeddings
-        if return_all:
-            return_value = {
-                "embeddings": embeddings,
-                "layer_outputs": layer_outputs,
-            }
-
-        return return_value
+        if return_intermediates:
+            return embeddings, layer_outputs
+        return embeddings
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 11
 class ViT3DDecoder(nn.Module, PyTorchModelHubMixin):
@@ -94,7 +89,7 @@ class ViT3DDecoder(nn.Module, PyTorchModelHubMixin):
             [TransformerDecoderBlock1D(config.model_dump()) for _ in range(config.decoder_depth)]
         )
 
-    def forward(self, q: torch.Tensor, kv: torch.Tensor, return_all: bool = False):
+    def forward(self, q: torch.Tensor, kv: torch.Tensor, return_intermediates: bool = False):
         # q: (b, num_q_tokens, dim)
         # kv: (b, num_kv_tokens, dim)
 
@@ -107,14 +102,9 @@ class ViT3DDecoder(nn.Module, PyTorchModelHubMixin):
 
             layer_outputs.append(embeddings)
 
-        return_value = embeddings
-        if return_all:
-            return_value = {
-                "embeddings": embeddings,
-                "layer_outputs": layer_outputs,
-            }
-
-        return return_value
+        if return_intermediates:
+            return embeddings, layer_outputs
+        return embeddings
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 14
 class ViT3DModel(nn.Module, PyTorchModelHubMixin):
@@ -135,7 +125,7 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
         spacings: torch.Tensor,
         mask_patches: torch.Tensor = None,
         mask_token: torch.Tensor = None,
-        return_all: bool = False,
+        return_intermediates: bool = False,
     ):
         # pixel_values: (b, c, z, y, x)
         # spacings: (b, 3)
@@ -167,11 +157,7 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
             embeddings = torch.cat([class_tokens, embeddings], dim=1)
             # (b, num_tokens + num_class_tokens, dim)
 
-        encoder_output = self.encoder(embeddings, return_all=True)
-        encoded, layer_outputs = (
-            encoder_output["embeddings"],
-            encoder_output["layer_outputs"],
-        )
+        encoded, layer_outputs = self.encoder(embeddings, return_intermediates=True)
         # encoded: (b, num_tokens (+ num_class_tokens), dim)
         # layer_outputs: list of (b, num_tokens (+ 1), dim)
 
@@ -179,15 +165,9 @@ class ViT3DModel(nn.Module, PyTorchModelHubMixin):
             class_tokens = encoded[:, : self.num_class_tokens]
             encoded = encoded[:, self.num_class_tokens :]
 
-        return_value = class_tokens, encoded
-        if return_all:
-            return_value = {
-                "class_tokens": class_tokens,
-                "encoded": encoded,
-                "layer_outputs": layer_outputs,
-            }
-
-        return return_value
+        if return_intermediates:
+            return encoded, class_tokens, layer_outputs
+        return encoded, class_tokens
 
 # %% ../../nbs/nets/04_vit_3d.ipynb 17
 class ViT3DMIMDecoder(nn.Module):
@@ -275,7 +255,7 @@ class ViT3DSimMIM(ViT3DMIM, PyTorchModelHubMixin):
     def forward(self, pixel_values: torch.Tensor, spacings: torch.Tensor):
         mask_patches = self.mask_image(pixel_values)
 
-        _, encodings = self.vit(pixel_values, spacings, mask_patches, self.mask_token)
+        encodings, _ = self.vit(pixel_values, spacings, mask_patches, self.mask_token)
         decoded = self.decoder(encodings)
 
         loss = self.loss_fn(decoded, pixel_values, reduction="none")

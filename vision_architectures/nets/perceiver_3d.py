@@ -288,9 +288,9 @@ class Perceiver3DEncoderEncode(nn.Module):
     def _forward(
         self,
         x: torch.Tensor | list[torch.Tensor],
-        sliding_window: tuple[int, int, int] | None = None,
+        sliding_window: tuple[int, int, int] | None = None,  # Sliding window may be beneficial during inference time
         sliding_stride: tuple[int, int, int] | None = None,
-        return_all: bool = False,
+        return_intermediates: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # x: [(b, in_channels, z, y, x), ...]
 
@@ -333,22 +333,15 @@ class Perceiver3DEncoderEncode(nn.Module):
             embeddings.append(embedding)
         # (b, latent_grid_size, dim)
 
-        return_value = embeddings[-1]
-        if return_all:
-            return_value = {
-                "embeddings": return_value,
-                "all_embeddings": embeddings,
-            }
-        return return_value
+        encoded = embeddings[-1]
+        # (b, latent_grid_size, dim)
 
-    def forward(
-        self,
-        x: torch.Tensor | list[torch.Tensor],
-        sliding_window: int | None = None,  # Sliding window may be beneficial during inference time
-        sliding_stride: int | None = None,
-        return_all: bool = False,
-    ):
-        return self.checkpointing_level4(self._forward, x, sliding_window, sliding_stride, return_all)
+        if return_intermediates:
+            return encoded, embeddings
+        return encoded
+
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level4(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 19
 class Perceiver3DEncoderProcess(nn.Module):
@@ -388,7 +381,7 @@ class Perceiver3DEncoderProcess(nn.Module):
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    def _forward(self, qkv, return_all: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
+    def _forward(self, qkv, return_intermediates: bool = False) -> torch.Tensor | dict[str, torch.Tensor]:
         # qkv: (b, dim, zl, yl, xl)
 
         embeddings = []
@@ -398,17 +391,15 @@ class Perceiver3DEncoderProcess(nn.Module):
             embeddings.append(embedding)
         # (b, dim, zl, yl, xl)
 
-        return_value = embeddings[-1]
-        if return_all:
-            return_value = {
-                "embeddings": return_value,
-                "all_embeddings": embeddings,
-            }
+        encoded = embeddings[-1]
+        # (b, dim, zl, yl, xl)
 
-        return return_value
+        if return_intermediates:
+            return encoded, embeddings
+        return encoded
 
-    def forward(self, q: torch.Tensor, return_all: bool = False):
-        return self.checkpointing_level4(self._forward, q, return_all)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level4(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 21
 class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
@@ -433,37 +424,30 @@ class Perceiver3DEncoder(nn.Module, PyTorchModelHubMixin):
         x,
         sliding_window: int | None = None,
         sliding_stride: int | None = None,
-        return_all: bool = False,
+        return_intermediates: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # x: (b, in_channels, z, y, x)
 
         return_value = {}
 
-        encode_embeddings = self.encode(x, sliding_window, sliding_stride, return_all=True)["all_embeddings"]
+        _, encode_embeddings = self.encode(x, sliding_window, sliding_stride, return_intermediates=True)
         return_value["encode_embeddings"] = encode_embeddings
         embeddings = encode_embeddings[-1]
         # (b, dim, zl, yl, xl)
 
-        process_embeddings = self.process(embeddings, return_all=True)["all_embeddings"]
+        _, process_embeddings = self.process(embeddings, return_intermediates=True)
         return_value["process_embeddings"] = process_embeddings
         embeddings = process_embeddings[-1]
         # (b, dim, zl, yl, xl)
 
         return_value["embeddings"] = embeddings
 
-        if not return_all:
-            return_value = embeddings
+        if return_intermediates:
+            return_value = return_value
+        return return_value["embeddings"]
 
-        return return_value
-
-    def forward(
-        self,
-        x: torch.Tensor,
-        sliding_window: int | None = None,
-        sliding_stride: int | None = None,
-        return_all: bool = False,
-    ):
-        return self.checkpointing_level5(self._forward, x, sliding_window, sliding_stride, return_all)
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level5(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 24
 class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
@@ -510,7 +494,7 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         sliding_window: tuple[int, int, int] | None = None,
         sliding_stride: tuple[int, int, int] | None = None,
         crop_offsets: torch.Tensor = None,
-        return_all: bool = False,
+        return_intermediates: bool = False,
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         # kv: (b, dim, zl, yl, xl)
 
@@ -544,24 +528,9 @@ class Perceiver3DDecoder(nn.Module, PyTorchModelHubMixin):
         output = self.channel_mapping(output)
         # (b, out_channels, z, y, x)
 
-        return_value = output
-        if return_all:
-            return_value = {
-                "output": output,
-                "all_outputs": outputs,
-            }
+        if return_intermediates:
+            return output, outputs
+        return output
 
-        return return_value
-
-    def forward(
-        self,
-        kv: torch.Tensor,
-        out_shape: tuple[int, int, int],
-        sliding_window: tuple[int, int, int] | None = None,
-        sliding_stride: tuple[int, int, int] | None = None,
-        crop_offsets: torch.Tensor = None,
-        return_all: bool = False,
-    ):
-        return self.checkpointing_level4(
-            self._forward, kv, out_shape, sliding_window, sliding_stride, crop_offsets, return_all
-        )
+    def forward(self, *args, **kwargs):
+        return self.checkpointing_level4(self._forward, *args, **kwargs)
