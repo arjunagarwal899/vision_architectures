@@ -8,7 +8,7 @@ __all__ = ['MaxViT3DStem0Config', 'MaxViT3DBlockConfig', 'MaxViT3DStemConfig', '
 import torch
 from torch import nn
 
-from ..blocks.cnn import CNNBlock3D, CNNBlock3DConfig
+from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
 from ..blocks.mbconv_3d import MBConv3D, MBConv3DConfig
 from ..blocks.transformer import Attention3DWithMLPConfig
 from .swinv2_3d import SwinV23DLayer
@@ -57,7 +57,7 @@ class MaxViT3DStem0(nn.Module):
         self.layers = nn.ModuleList()
         self.layers.append(
             CNNBlock3D(
-                CNNBlock3DConfig(
+                CNNBlockConfig(
                     in_channels=self.config.in_channels,
                     out_channels=self.config.dim,
                     kernel_size=3,
@@ -72,7 +72,7 @@ class MaxViT3DStem0(nn.Module):
         for i in range(self.config.depth - 1):
             self.layers.append(
                 CNNBlock3D(
-                    CNNBlock3DConfig(
+                    CNNBlockConfig(
                         in_channels=self.config.dim,
                         out_channels=self.config.dim,
                         kernel_size=3,

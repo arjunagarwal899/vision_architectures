@@ -7,7 +7,7 @@ __all__ = ['MBConv3DConfig', 'MBConv3D']
 import torch
 from torch import nn
 
-from .cnn import CNNBlock3D, CNNBlock3DConfig
+from .cnn import CNNBlock3D, CNNBlockConfig
 from .se import SEBlock3D
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import model_validator
@@ -15,7 +15,7 @@ from ..utils.rearrange import rearrange_channels
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 4
-class MBConv3DConfig(CNNBlock3DConfig):
+class MBConv3DConfig(CNNBlockConfig):
     dim: int
     out_dim: int | None = None
     expansion_ratio: float = 6.0
