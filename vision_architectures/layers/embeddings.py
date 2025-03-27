@@ -18,6 +18,7 @@ from torch import nn
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.normalizations import get_norm_layer
+from ..utils.rearrange import make_channels_last, rearrange_channels
 
 # %% ../../nbs/layers/02_embeddings.ipynb 4
 class RelativePositionEmbeddings3DConfig(CustomBaseModel):
@@ -251,6 +252,7 @@ def get_absolute_position_embeddings_3d(
     grid_size: tuple[int, int, int],
     spacing: tuple[float, float, float] = (1.0, 1.0, 1.0),
     crop_offset: tuple[int, int, int] = None,  # Used if the embeddings required are of a crop of a larger image
+    channels_first: bool = True,
 ) -> torch.Tensor:
     if dim % 6 != 0:
         raise ValueError("dim must be divisible by 6")
@@ -297,6 +299,9 @@ def get_absolute_position_embeddings_3d(
     ).contiguous()
     # (1, dim, d, h, w)
 
+    position_embeddings = rearrange_channels(position_embeddings, True, channels_first)
+    # (1, [dim], d, h, w, [dim])
+
     return position_embeddings
 
 # %% ../../nbs/layers/02_embeddings.ipynb 14
@@ -323,17 +328,18 @@ class AbsolutePositionEmbeddings3D(nn.Module):
         embedding_type: Literal["add", "concat"] = "add",
         spacings: torch.Tensor = None,
         device=torch.device("cpu"),
+        channels_first: bool = True,
         crop_offsets: torch.Tensor | None = None,  # Used if the embeddings required are of a crop of a larger image
     ):
-        assert x.ndim == 5, "Input tensor must be of shape (b, d, z, y, x)"
+        assert x.ndim == 5, "Input tensor must be of shape (b, [d], z, y, x, [d])"
         # Check if sufficient information has been provided
         if self.position_embeddings is None:
             dim = self.config.dim
             if dim is None:
-                dim = x.shape[1]
+                dim = x.shape[1] if channels_first else x.shape[-1]
             grid_size = self.config.grid_size
             if grid_size is None:
-                grid_size = (x.shape[2], x.shape[3], x.shape[4])
+                grid_size = tuple(x.shape[2:5] if channels_first else x.shape[1:4])
         else:
             dim = self.config.dim
             grid_size = self.config.grid_size
@@ -343,8 +349,8 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
         # Get position embeddings, adjust based on crop offsets if applicable
         if self.position_embeddings is not None:
-            position_embeddings = self.position_embeddings
-            position_embeddings = repeat(position_embeddings, "1 e d h w -> b e d h w", b=b)
+            position_embeddings = rearrange_channels(self.position_embeddings, True, channels_first)
+            position_embeddings = repeat(position_embeddings, "1 ... -> b ...", b=b)
         else:
             if isinstance(grid_size, int):
                 grid_size = (grid_size, grid_size, grid_size)
@@ -352,9 +358,11 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             if crop_offsets is None:
                 cache_key = (dim, grid_size, None)
                 if cache_key not in self.position_embeddings_cache:
-                    self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_3d(dim, grid_size)
+                    self.position_embeddings_cache[cache_key] = get_absolute_position_embeddings_3d(
+                        dim, grid_size, channels_first=channels_first
+                    )
                 position_embeddings = self.position_embeddings_cache[cache_key]
-                position_embeddings = repeat(position_embeddings, "1 e d h w -> b e d h w", b=b)
+                position_embeddings = repeat(position_embeddings, "1 ... -> b ...", b=b)
             else:
                 if crop_offsets.ndim == 1:
                     crop_offsets = crop_offsets.unsqueeze(0)
@@ -362,11 +370,13 @@ class AbsolutePositionEmbeddings3D(nn.Module):
                 position_embeddings = []
                 for crop_offset in crop_offsets:
                     position_embeddings.append(
-                        get_absolute_position_embeddings_3d(dim, grid_size, crop_offset=crop_offset.tolist())
+                        get_absolute_position_embeddings_3d(
+                            dim, grid_size, crop_offset=crop_offset.tolist(), channels_first=channels_first
+                        )
                     )
                 position_embeddings = torch.cat(position_embeddings, dim=0)
             position_embeddings = position_embeddings.to(device)
-        # (b, dim, d, h, w)
+        # (b, [dim], d, h, w, [dim])
 
         # Incorporate spacing information
         if spacings is not None:
@@ -375,20 +385,22 @@ class AbsolutePositionEmbeddings3D(nn.Module):
             # (b, 3)
             spacings = repeat(spacings, "b three -> b (three dim_by_three) 1 1 1", three=3, dim_by_three=dim // 3)
             # (b, dim, 1, 1, 1)
+            spacings = rearrange_channels(spacings, True, channels_first)
+            # (b, [dim], 1, 1, 1, [dim])
 
             position_embeddings = position_embeddings * spacings.to(position_embeddings.device)
-            # (b, dim, d, h, w)
+            # (b, [dim], d, h, w, [dim])
 
         if embedding_type == "add":
             x = x + position_embeddings
         elif embedding_type == "concat":
-            x = torch.cat([x, position_embeddings], dim=1)
+            x = torch.cat([x, position_embeddings], dim=1 if channels_first else -1)
         else:
             raise NotImplementedError("Only 'add' and 'concat' are supported for embedding_type")
 
         return x
 
-# %% ../../nbs/layers/02_embeddings.ipynb 16
+# %% ../../nbs/layers/02_embeddings.ipynb 17
 def get_absolute_position_embeddings_1d(dim: int, length: int) -> torch.Tensor:
     if dim % 2 != 0:
         raise ValueError("dim must be divisible by 2")
@@ -422,7 +434,7 @@ def get_absolute_position_embeddings_1d(dim: int, length: int) -> torch.Tensor:
 
     return position_embeddings
 
-# %% ../../nbs/layers/02_embeddings.ipynb 17
+# %% ../../nbs/layers/02_embeddings.ipynb 18
 class AbsolutePositionEmbeddings1D(nn.Module):
     def __init__(self, config: AbsolutePositionEmbeddings1DConfig = {}, **kwargs):
         super().__init__()
@@ -483,7 +495,7 @@ class AbsolutePositionEmbeddings1D(nn.Module):
 
         return x
 
-# %% ../../nbs/layers/02_embeddings.ipynb 20
+# %% ../../nbs/layers/02_embeddings.ipynb 21
 class PatchEmbeddings3D(nn.Module):
     def __init__(self, config: PatchEmbeddings3DConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
@@ -511,16 +523,20 @@ class PatchEmbeddings3D(nn.Module):
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
-    def _forward(self, pixel_values: torch.Tensor):
-        # pixel_values: (b, c, z, y, x)
+    def _forward(self, pixel_values: torch.Tensor, channels_first: bool = True):
+        # pixel_values: (b, [c], z, y, x, [c])
+
+        pixel_values = rearrange_channels(pixel_values, channels_first, True)
+        # (b, c, z, y, x)
 
         embeddings = self.patch_embeddings(pixel_values)
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
-        embeddings = rearrange(embeddings, "b d z y x -> b z y x d").contiguous()
+        embeddings = make_channels_last(embeddings)
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
         embeddings = self.normalization(embeddings)
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
-        embeddings = rearrange(embeddings, "b z y x d -> b d z y x").contiguous()
+
+        embeddings = rearrange_channels(embeddings, False, channels_first)
         # (b, dim, num_patches_z, num_patches_y, num_patches_x)
 
         return embeddings

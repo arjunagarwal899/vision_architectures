@@ -22,6 +22,7 @@ from vision_architectures.layers.embeddings import (
 )
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 5
 class SwinV23DPatchMergingConfig(CustomBaseModel):
@@ -204,6 +205,7 @@ class SwinV23DLayer(nn.Module):
 
     @staticmethod
     def _get_rearrange_patterns():
+        """Note that the patterns will be applied on tensors that are in channels_last format"""
         forward_pattern = (
             "b (num_windows_z window_size_z) (num_windows_y window_size_y) (num_windows_x window_size_x) dim -> "
             "(b num_windows_z num_windows_y num_windows_x) window_size_z window_size_y window_size_x dim "
@@ -215,7 +217,11 @@ class SwinV23DLayer(nn.Module):
         return forward_pattern, reverse_pattern
 
     def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
-        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+
         _, num_patches_z, num_patches_y, num_patches_x, _ = hidden_states.shape
 
         forward_pattern, reverse_pattern = self._get_rearrange_patterns()
@@ -252,6 +258,9 @@ class SwinV23DLayer(nn.Module):
             window_size_x=window_size_x,
         ).contiguous()
 
+        output = rearrange_channels(output, False, channels_first)
+        # (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
         return output
 
     def forward(self, *args, **kwargs):
@@ -267,13 +276,18 @@ class SwinV23DBlock(nn.Module):
         self.w_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
         self.sw_layer = SwinV23DLayer(self.stage_config.model_dump(), checkpointing_level=checkpointing_level)
 
-    def forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
-        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+    def forward(self, hidden_states: torch.Tensor, channels_first: bool = True, return_intermediates: bool = False):
+        """Please note that the ``layer_outputs`` returned if ``return_intermediates=True`` will always be in
+        ``channels_last`` format"""
+        # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         layer_outputs = []
 
         # First layer
-        hidden_states = self.w_layer(hidden_states)
+        hidden_states = self.w_layer(hidden_states, channels_first=False)
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         layer_outputs.append(hidden_states)
@@ -285,7 +299,7 @@ class SwinV23DBlock(nn.Module):
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         # Second layer
-        hidden_states = self.sw_layer(hidden_states)
+        hidden_states = self.sw_layer(hidden_states, channels_first=False)
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         # Reverse window shift
@@ -294,6 +308,9 @@ class SwinV23DBlock(nn.Module):
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         layer_outputs.append(hidden_states)
+
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
 
         if return_intermediates:
             return hidden_states, layer_outputs
@@ -312,8 +329,11 @@ class SwinV23DPatchMerging(nn.Module):
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor):
-        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
+        # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         window_size_z, window_size_y, window_size_x = self.merge_window_size
 
@@ -328,6 +348,10 @@ class SwinV23DPatchMerging(nn.Module):
 
         hidden_states = self.layer_norm(hidden_states)
         hidden_states = self.proj(hidden_states)
+
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], new_num_patches_z, new_num_patches_y, new_num_patches_x, [dim])
+
         return hidden_states
 
     def forward(self, *args, **kwargs):
@@ -346,8 +370,11 @@ class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor):
-        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
+        # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         hidden_states = self.layer_norm(hidden_states)
         hidden_states = self.proj(hidden_states)
@@ -362,6 +389,9 @@ class SwinV23DPatchSplitting(nn.Module):  # This is a self-implemented class and
             window_size_y=window_size_y,
             window_size_x=window_size_x,
         ).contiguous()
+
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
 
         return hidden_states
 
@@ -401,22 +431,28 @@ class SwinV23DStage(nn.Module):
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
-        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True, return_intermediates: bool = False):
+        # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         if self.patch_merging:
-            hidden_states = self.patch_merging(hidden_states)
+            hidden_states = self.patch_merging(hidden_states, channels_first=False)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, new_dim)
 
         layer_outputs = []
         for layer_module in self.blocks:
-            hidden_states, _layer_outputs = layer_module(hidden_states, return_intermediates=True)
+            hidden_states, _layer_outputs = layer_module(hidden_states, channels_first=False, return_intermediates=True)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, new_dim)
             layer_outputs.extend(_layer_outputs)
 
         if self.patch_splitting:
-            hidden_states = self.patch_splitting(hidden_states)
+            hidden_states = self.patch_splitting(hidden_states, channels_first=False)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, new_dim)
+
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
 
         if return_intermediates:
             return hidden_states, layer_outputs
@@ -442,16 +478,24 @@ class SwinV23DEncoder(nn.Module, PyTorchModelHubMixin):
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor, return_intermediates: bool = False):
-        # hidden_states: (b, num_patches_z, num_patches_y, num_patches_x, dim)
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True, return_intermediates: bool = False):
+        """Please note that the ``stage_outputs`` and ``layer_outputs`` returned if ``return_intermediates=True`` will
+        always be in ``channels_last`` format"""
+        # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
+
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         stage_outputs, layer_outputs = [], []
         for stage_module in self.stages:
-            hidden_states, _layer_outputs = stage_module(hidden_states, return_intermediates=True)
+            hidden_states, _layer_outputs = stage_module(hidden_states, channels_first=False, return_intermediates=True)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
 
             stage_outputs.append(hidden_states)
             layer_outputs.extend(_layer_outputs)
+
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
 
         if return_intermediates:
             return hidden_states, stage_outputs, layer_outputs
@@ -480,24 +524,23 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
     def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True, return_intermediates: bool = False):
+        """Please note that the ``stage_outputs`` and ``layer_outputs`` returned if ``return_intermediates=True`` will
+        always be in ``channels_last`` format"""
         # hidden_states: (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
 
-        if channels_first:
-            hidden_states = rearrange(hidden_states, "b d z y x -> b z y x d").contiguous()
-
-        # Now hidden_states is (b, num_patches_z, num_patches_y, num_patches_x, dim)
+        hidden_states = rearrange_channels(hidden_states, channels_first, False)
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
         stage_outputs, layer_outputs = [], []
         for stage_module in self.stages:
-            hidden_states, _layer_outputs = stage_module(hidden_states, return_intermediates=True)
+            hidden_states, _layer_outputs = stage_module(hidden_states, channels_first=False, return_intermediates=True)
             # (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
 
             stage_outputs.append(hidden_states)
             layer_outputs.extend(_layer_outputs)
 
-        if channels_first:
-            hidden_states = rearrange(hidden_states, "b z y x d -> b d z y x").contiguous()
-            # (b, dim, num_patches_z, num_patches_y, num_patches_x)
+        hidden_states = rearrange_channels(hidden_states, False, channels_first)
+        # (b, [dim], num_patches_z, num_patches_y, num_patches_x, [dim])
 
         if return_intermediates:
             return hidden_states, stage_outputs, layer_outputs
@@ -529,45 +572,40 @@ class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
         pixel_values: torch.Tensor,
         spacings: torch.Tensor = None,
         crop_offsets: torch.Tensor = None,
-        mask_patches: torch.Tensor = None,
-        mask_token: torch.Tensor = None,
+        # mask_patches: torch.Tensor = None,  # TODO: Move this logic to MIM class instead of here
+        # mask_token: torch.Tensor = None,
+        channels_first: bool = True,
         return_intermediates: bool = False,
     ):
-        # pixel_values: (b, c, z, y, x)
+        # pixel_values: (b, [c], z, y, x, [c])
         # spacings: (b, 3)
-        # mask_patches: (num_patches_z, num_patches_y, num_patches_x)
+        # mask_patches: (num_patches_z, num_patches_y, num_patches_x)  # TODO: Remove
 
-        embeddings = self.patchify(pixel_values)
-        # (b, dim, num_patches_z, num_patches_y, num_patches_x)
+        pixel_values = rearrange_channels(pixel_values, channels_first, False)
+        # (b, z, y, x, c)
 
-        if mask_patches is not None:
-            # mask_patches (binary mask): (b, num_patches_z, num_patches_y, num_patches_x)
-            # mask_token: (1, dim, 1, 1, 1)
-            mask_patches = repeat(mask_patches, "b z y x -> b d z y x", d=embeddings.shape[1])
-            embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
-
-        embeddings = self.absolute_position_embeddings(
-            embeddings, spacings=spacings, device=embeddings.device, crop_offsets=crop_offsets
-        )
-        # (b, dim, num_patches_z, num_patches_y, num_patches_x)
-
-        embeddings = rearrange(embeddings, "b e nz ny nx -> b nz ny nx e").contiguous()
+        embeddings = self.patchify(pixel_values, channels_first=False)
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
-        encoded, stage_outputs, layer_outputs = self.encoder(embeddings, return_intermediates=True)
+        # if mask_patches is not None:  # TODO: Remove
+        #     # mask_patches (binary mask): (b, num_patches_z, num_patches_y, num_patches_x)
+        #     # mask_token: (1, dim, 1, 1, 1)
+        #     mask_patches = repeat(mask_patches, "b z y x -> b d z y x", d=embeddings.shape[1])
+        #     embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
+
+        embeddings = self.absolute_position_embeddings(
+            embeddings, spacings=spacings, device=embeddings.device, crop_offsets=crop_offsets, channels_first=False
+        )
+        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
+
+        encoded, stage_outputs, layer_outputs = self.encoder(
+            embeddings, channels_first=False, return_intermediates=True
+        )
         # encoded: (b, new_num_patches_z, new_num_patches_y, new_num_patches_x, dim)
         # stage_outputs, layer_outputs: list of (b, some_num_patches_z, some_num_patches_y, some_num_patches_x, dim)
 
-        encoded = rearrange(encoded, "b nz ny nx d -> b d nz ny nx").contiguous()
-        # (b, dim, new_num_patches_z, new_num_patches_y, new_num_patches_x)
-
-        for i in range(len(stage_outputs)):
-            stage_outputs[i] = rearrange(stage_outputs[i], "b nz ny nx d -> b d nz ny nx").contiguous()
-            # (b, dim, some_num_patches_z, some_num_patches_y, some_num_patches_x)
-
-        for i in range(len(layer_outputs)):
-            layer_outputs[i] = rearrange(layer_outputs[i], "b nz ny nx d -> b d nz ny nx").contiguous()
-            # (b, dim, some_num_patches_z, some_num_patches_y, some_num_patches_x)
+        encoded = rearrange_channels(encoded, False, channels_first)
+        # (b [dim], new_num_patches_z, new_num_patches_y, new_num_patches_x, [dim])
 
         if return_intermediates:
             return encoded, stage_outputs, layer_outputs
