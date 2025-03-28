@@ -177,5 +177,10 @@ class GaussianLatentSpace(nn.Module):
         z_sigma: torch.Tensor,
         prior_mu: torch.Tensor | None = None,
         prior_sigma: torch.Tensor | None = None,
+        kl_divergence_reduction: Literal["allsum", "channelssum"] | None = "allsum",
+        force_sampling: bool = False,
+        channels_first: bool = True,
     ):
-        return self.sample(z_mu, z_sigma), self.kl_divergence(z_mu, z_sigma, prior_mu, prior_sigma)
+        return self.sample(z_mu, z_sigma, force_sampling), self.kl_divergence(
+            z_mu, z_sigma, prior_mu, prior_sigma, kl_divergence_reduction, channels_first
+        )
