@@ -15,10 +15,10 @@ import torch
 from einops import rearrange, repeat
 from torch import nn
 
+from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
-from ..utils.normalizations import get_norm_layer
-from ..utils.rearrange import make_channels_last, rearrange_channels
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/layers/02_embeddings.ipynb 4
 class RelativePositionEmbeddings3DConfig(CustomBaseModel):
@@ -86,11 +86,21 @@ class AbsolutePositionEmbeddings1DConfig(CustomBaseModel):
         return self
 
 
-class PatchEmbeddings3DConfig(CustomBaseModel):
+class PatchEmbeddings3DConfig(CNNBlockConfig):
     patch_size: tuple[int, int, int]
     in_channels: int
     dim: int
     norm_layer: str = "layernorm"
+
+    out_channels: None = None
+    kernel_size: None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_before(cls, data: dict):
+        data.setdefault("patch_size", data.pop("kernel_size", None))
+        data.setdefault("dim", data.pop("out_channels", None))
+        return data
 
 # %% ../../nbs/layers/02_embeddings.ipynb 7
 def get_coords_grid(grid_size: tuple[int, int, int]) -> torch.Tensor:
@@ -496,50 +506,12 @@ class AbsolutePositionEmbeddings1D(nn.Module):
         return x
 
 # %% ../../nbs/layers/02_embeddings.ipynb 21
-class PatchEmbeddings3D(nn.Module):
+class PatchEmbeddings3D(CNNBlock3D):
     def __init__(self, config: PatchEmbeddings3DConfig = {}, checkpointing_level: int = 0, **kwargs):
-        super().__init__()
-
         self.config = PatchEmbeddings3DConfig.model_validate(config | kwargs)
-
-        patch_size = self.config.patch_size
-        in_channels = self.config.in_channels
-        dim = self.config.dim
-        norm_layer = self.config.norm_layer
-
-        self.patch_embeddings = nn.Conv3d(
-            in_channels=in_channels,
-            out_channels=dim,
-            kernel_size=patch_size,
-            stride=patch_size,
-        )
-
-        if norm_layer is None:
-            self.normalization = nn.Identity()
-        elif isinstance(norm_layer, nn.Module):
-            self.normalization = norm_layer(dim)
-        else:
-            self.normalization = get_norm_layer(norm_layer, dim)
-
-        self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
-
-    def _forward(self, pixel_values: torch.Tensor, channels_first: bool = True):
-        # pixel_values: (b, [c], z, y, x, [c])
-
-        pixel_values = rearrange_channels(pixel_values, channels_first, True)
-        # (b, c, z, y, x)
-
-        embeddings = self.patch_embeddings(pixel_values)
-        # (b, dim, num_patches_z, num_patches_y, num_patches_x)
-        embeddings = make_channels_last(embeddings)
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
-        embeddings = self.normalization(embeddings)
-        # (b, num_patches_z, num_patches_y, num_patches_x, dim)
-
-        embeddings = rearrange_channels(embeddings, False, channels_first)
-        # (b, dim, num_patches_z, num_patches_y, num_patches_x)
-
-        return embeddings
-
-    def forward(self, *args, **kwargs):
-        return self.checkpointing_level1(self._forward, *args, **kwargs)
+        config = self.config.model_dump() | {
+            "kernel_size": self.config.get("patch_size"),
+            "out_channels": self.config.get("dim"),
+        }
+        display(config)
+        super().__init__(config, checkpointing_level, **kwargs)

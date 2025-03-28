@@ -19,7 +19,7 @@ from ..utils.rearrange import rearrange_channels
 class CNNBlockConfig(CustomBaseModel):
     in_channels: int
     out_channels: int
-    kernel_size: int
+    kernel_size: int | tuple[int, ...]
     padding: int | tuple[int, ...] | str = "same"
     stride: int = 1
     conv_kwargs: dict[str, Any] = {}
