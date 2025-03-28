@@ -116,6 +116,9 @@ class LatentDecoder(nn.Module):
         z = rearrange_channels(z, channels_first, True)
         # (b, latent_dim, z, y, x)
 
+        z = self.post_quant_conv(z)
+        # (b, latent_dim, z, y, x)
+
         x = self.dim_mapper(z, channels_first=True)
         # (b, dim, z, y, x)
 
