@@ -12,11 +12,15 @@ from torch import nn
 from torch.distributions import Normal, kl_divergence
 
 from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
-from ..utils.custom_base_model import CustomBaseModel, model_validator
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/layers/04_latent_space.ipynb 4
 class LatentEncoderConfig(CNNBlockConfig):
+    init_zero_var: bool = Field(
+        False, description="Whether to initialize weights such that output variance is close to 0"
+    )
+
     @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data: dict):
@@ -65,6 +69,13 @@ class LatentEncoder(nn.Module):
         self.dim_mapper = CNNBlock3D(self.config, checkpointing_level)
         self.quant_conv_mu = nn.Conv3d(latent_dim, latent_dim, 1)
         self.quant_conv_log_var = nn.Conv3d(latent_dim, latent_dim, 1)
+
+        if self.config.init_zero_var:
+            self.init_zero_var()
+
+    def init_zero_var(self):
+        nn.init.uniform_(self.quant_conv_log_var.weight, -5.0, -3.0)
+        nn.init.zeros_(self.quant_conv_log_var.bias)
 
     def forward(self, x: torch.Tensor, channels_first: bool = True):
         # x: (b, [dim], z, y, x, [dim])
