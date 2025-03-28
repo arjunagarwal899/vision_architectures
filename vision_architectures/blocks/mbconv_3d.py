@@ -32,6 +32,13 @@ class MBConv3DConfig(CNNBlockConfig):
     def hidden_dim(self):
         return int(self.expansion_ratio * self.dim)
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_before(cls, data: dict):
+        data.setdefault("dim", data.pop("in_channels", None))
+        data.setdefault("out_dim", data.pop("out_channels", None))
+        return data
+
     @model_validator(mode="after")
     def validate(self):
         super().validate()
