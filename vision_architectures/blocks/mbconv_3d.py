@@ -53,6 +53,8 @@ class MBConv3D(nn.Module):
         out_dim = self.config.out_dim
         se_reduction_ratio = self.config.se_reduction_ratio
 
+        se_config = self.config.model_dump() | {"dim": hidden_dim, "r": se_reduction_ratio}
+
         self.expand = CNNBlock3D(
             self.config,
             checkpointing_level,
@@ -69,7 +71,7 @@ class MBConv3D(nn.Module):
             out_channels=hidden_dim,
             conv_kwargs=self.config.conv_kwargs | dict(groups=hidden_dim),
         )
-        self.se = SEBlock3D(dim=hidden_dim, r=se_reduction_ratio)
+        self.se = SEBlock3D(se_config, checkpointing_level)
         self.pointwise_conv = CNNBlock3D(
             self.config,
             checkpointing_level,
