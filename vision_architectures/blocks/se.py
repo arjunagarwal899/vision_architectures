@@ -7,10 +7,9 @@ __all__ = ['SEBlock3DConfig', 'SEBlock3D']
 import torch
 from torch import nn
 
+from .cnn import CNNBlock3D
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel
-from ..utils.normalizations import get_norm_layer
 from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 4
@@ -29,23 +28,30 @@ class SEBlock3D(nn.Module):
 
         dim = self.config.dim
         r = self.config.r
-        activation = self.config.activation
-        normalization = self.config.normalization
 
         excitation_dim = int(dim // r)
 
         self.squeeze = nn.AdaptiveAvgPool3d((1, 1, 1))
         self.excite = nn.Sequential(
-            nn.Conv3d(
-                dim, excitation_dim, kernel_size=1, bias=False if normalization.startswith("batchnorm") else True
+            CNNBlock3D(
+                self.config.model_dump()
+                | {
+                    "in_channels": dim,
+                    "out_channels": excitation_dim,
+                    "kernel_size": 1,
+                },
+                checkpointing_level,
             ),
-            get_norm_layer(normalization, excitation_dim),
-            get_act_layer(activation),
-            nn.Conv3d(
-                excitation_dim, dim, kernel_size=1, bias=False if normalization.startswith("batchnorm") else True
+            CNNBlock3D(
+                self.config.model_dump()
+                | {
+                    "in_channels": excitation_dim,
+                    "out_channels": dim,
+                    "kernel_size": 1,
+                    "activation": "sigmoid",
+                },
+                checkpointing_level,
             ),
-            get_norm_layer(normalization, dim),
-            nn.Sigmoid(),
         )
 
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
