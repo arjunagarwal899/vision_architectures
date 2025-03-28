@@ -42,6 +42,7 @@ class SEBlock3D(nn.Module):
                 | {
                     "in_channels": dim,
                     "out_channels": excitation_dim,
+                    "kernel_size": 1,
                 },
                 checkpointing_level,
             ),
@@ -50,6 +51,7 @@ class SEBlock3D(nn.Module):
                 | {
                     "in_channels": excitation_dim,
                     "out_channels": dim,
+                    "kernel_size": 1,
                     "activation": "sigmoid",
                 },
                 checkpointing_level,

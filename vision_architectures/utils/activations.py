@@ -28,7 +28,7 @@ def get_act_layer(activation_name: str | Callable | None, *args, **kwargs):
         act_layer = nn.GELU(*args, **kwargs)
     elif activation_name == "silu":
         act_layer = nn.SiLU(*args, **kwargs)
-    elif isinstance(activation_name, callable):
+    elif isinstance(activation_name, Callable):
         act_layer = activation_name(*args, **kwargs)
     else:
         raise ValueError(f"Activation {activation_name} not implemented")
