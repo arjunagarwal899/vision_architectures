@@ -35,7 +35,7 @@ class SEBlock3D(nn.Module):
         excitation_dim = int(dim // r)
 
         self.squeeze = nn.AdaptiveAvgPool3d((1, 1, 1))
-        self.excitation = nn.Sequential(
+        self.excite = nn.Sequential(
             nn.Conv3d(
                 dim, excitation_dim, kernel_size=1, bias=False if normalization.startswith("batchnorm") else True
             ),
@@ -58,7 +58,7 @@ class SEBlock3D(nn.Module):
 
         p = self.squeeze(x)
         # (b, dim, 1, 1, 1)
-        p = self.excitation(p)
+        p = self.excite(p)
         # (b, dim, 1, 1, 1)
         x = x * p
         # (b, dim, z, y, x)
