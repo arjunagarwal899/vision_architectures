@@ -78,4 +78,4 @@ class ActivationCheckpointing(nn.Module):
         return fn(*fn_args, **fn_kwargs)
 
     def extra_repr(self):
-        return f"enabled={self.perform_checkpointing}, checkpointing_level={self.fn_checkpoint_level}"
+        return f"enabled={self.perform_checkpointing}"
