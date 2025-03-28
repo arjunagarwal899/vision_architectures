@@ -7,17 +7,21 @@ __all__ = ['SEBlock3DConfig', 'SEBlock3D']
 import torch
 from torch import nn
 
-from .cnn import CNNBlock3D
+from .cnn import CNNBlock3D, CNNBlockConfig
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.custom_base_model import CustomBaseModel
 from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 4
-class SEBlock3DConfig(CustomBaseModel):
+class SEBlock3DConfig(CNNBlockConfig):
     dim: int
     r: float
+
+    kernel_size: int = 1
     normalization: str = "batchnorm3d"
     activation: str = "silu"
+
+    in_channels: None = None  # determined by dim and r
+    out_channels: None = None  # determined by dim and r
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 6
 class SEBlock3D(nn.Module):
@@ -38,7 +42,6 @@ class SEBlock3D(nn.Module):
                 | {
                     "in_channels": dim,
                     "out_channels": excitation_dim,
-                    "kernel_size": 1,
                 },
                 checkpointing_level,
             ),
@@ -47,7 +50,6 @@ class SEBlock3D(nn.Module):
                 | {
                     "in_channels": excitation_dim,
                     "out_channels": dim,
-                    "kernel_size": 1,
                     "activation": "sigmoid",
                 },
                 checkpointing_level,
