@@ -72,7 +72,7 @@ class LatentEncoder(nn.Module):
             self.init_low_var()
 
     def init_low_var(self, bias_constant: float = -1.0):
-        nn.init.zeros_(self.quant_conv_log_var.weight)
+        nn.init.normal_(self.quant_conv_log_var.weight, std=0.001)
         nn.init.constant_(self.quant_conv_log_var.bias, bias_constant)
 
     def forward(self, x: torch.Tensor, channels_first: bool = True):
