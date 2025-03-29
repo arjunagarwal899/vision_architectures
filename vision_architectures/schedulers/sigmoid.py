@@ -16,8 +16,8 @@ class SigmoidScheduler:
         self.max_y = max_y
         self.min_x = min_x
         self.max_x = max_x
-        self.num_steps = ...
-        self.x_step_size = ...
+        self.num_steps = None
+        self.x_step_size = None
 
         self.x = min_x
 
@@ -26,12 +26,12 @@ class SigmoidScheduler:
         return 1 / (1 + math.exp(-x))
 
     def set_num_steps(self, num_steps):
-        if self.num_steps == ...:
+        if self.num_steps is None:
             self.num_steps = num_steps
             self.x_step_size = (self.max_x - self.min_x) / self.num_steps
 
     def is_ready(self):
-        return self.num_steps != ...
+        return self.num_steps is not None
 
     def is_completed(self):
         return self.x >= self.max_x
