@@ -1,0 +1,2170 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Index &#8212; Vision Architectures (main)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=db78e746"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Vision Architectures (main)</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="modules/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="modules/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none"></div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#_"><strong>_</strong></a>
+ | <a href="#A"><strong>A</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#K"><strong>K</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
+ 
+</div>
+<h2 id="_">_</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.__all__">__all__ (in module vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTracking.__call__">__call__() (vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTracking method)</a>
+
+      <ul>
+        <li><a href="modules/utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing.__call__">(vision_architectures.utils.activation_checkpointing.ActivationCheckpointing method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlock3D.__init__">__init__() (vision_architectures.blocks.cnn.CNNBlock3D method)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlock3D.__init__">(vision_architectures.blocks.cnn.MultiResCNNBlock3D method)</a>
+</li>
+        <li><a href="modules/blocks/heads_3d.html#vision_architectures.blocks.heads_3d.ClassificationHead3D.__init__">(vision_architectures.blocks.heads_3d.ClassificationHead3D method)</a>
+</li>
+        <li><a href="modules/blocks/heads_3d.html#vision_architectures.blocks.heads_3d.SegmentationHead3D.__init__">(vision_architectures.blocks.heads_3d.SegmentationHead3D method)</a>
+</li>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3D.__init__">(vision_architectures.blocks.mbconv_3d.MBConv3D method)</a>
+</li>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3D.__init__">(vision_architectures.blocks.se.SEBlock3D method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DMLP.__init__">(vision_architectures.blocks.transformer.Attention1DMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DWithMLP.__init__">(vision_architectures.blocks.transformer.Attention1DWithMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DMLP.__init__">(vision_architectures.blocks.transformer.Attention3DMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DWithMLP.__init__">(vision_architectures.blocks.transformer.Attention3DWithMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerDecoderBlock1D.__init__">(vision_architectures.blocks.transformer.TransformerDecoderBlock1D method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerDecoderBlock3D.__init__">(vision_architectures.blocks.transformer.TransformerDecoderBlock3D method)</a>
+</li>
+        <li><a href="modules/image_readers/safetensors_reader.html#vision_architectures.image_readers.safetensors_reader.SafetensorsReader.__init__">(vision_architectures.image_readers.safetensors_reader.SafetensorsReader method)</a>
+</li>
+        <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1D.__init__">(vision_architectures.layers.attention.Attention1D method)</a>
+</li>
+        <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention3D.__init__">(vision_architectures.layers.attention.Attention3D method)</a>
+</li>
+        <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.Codebook.__init__">(vision_architectures.layers.codebook.Codebook method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1D.__init__">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1D method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3D.__init__">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3D method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3D.__init__">(vision_architectures.layers.embeddings.PatchEmbeddings3D method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3D.__init__">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3D method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DMetaNetwork.__init__">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3DMetaNetwork method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.GaussianLatentSpace.__init__">(vision_architectures.layers.latent_space.GaussianLatentSpace method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentDecoder.__init__">(vision_architectures.layers.latent_space.LatentDecoder method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoder.__init__">(vision_architectures.layers.latent_space.LatentEncoder method)</a>
+</li>
+        <li><a href="modules/nets/fpn_2d.html#vision_architectures.nets.fpn_2d.FPN2D.__init__">(vision_architectures.nets.fpn_2d.FPN2D method)</a>
+</li>
+        <li><a href="modules/nets/fpn_2d.html#vision_architectures.nets.fpn_2d.FPN2DBlock.__init__">(vision_architectures.nets.fpn_2d.FPN2DBlock method)</a>
+</li>
+        <li><a href="modules/nets/fpn_3d.html#vision_architectures.nets.fpn_3d.FPN3D.__init__">(vision_architectures.nets.fpn_3d.FPN3D method)</a>
+</li>
+        <li><a href="modules/nets/fpn_3d.html#vision_architectures.nets.fpn_3d.FPN3DBlock.__init__">(vision_architectures.nets.fpn_3d.FPN3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DBlock.__init__">(vision_architectures.nets.maxvit_3d.MaxViT3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DEncoder.__init__">(vision_architectures.nets.maxvit_3d.MaxViT3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem.__init__">(vision_architectures.nets.maxvit_3d.MaxViT3DStem method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem0.__init__">(vision_architectures.nets.maxvit_3d.MaxViT3DStem0 method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DChannelMapping.__init__">(vision_architectures.nets.perceiver_3d.Perceiver3DChannelMapping method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DDecoder.__init__">(vision_architectures.nets.perceiver_3d.Perceiver3DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoder.__init__">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncode.__init__">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncode method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcess.__init__">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcess method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DBlock.__init__">(vision_architectures.nets.swin_3d.Swin3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DEncoder.__init__">(vision_architectures.nets.swin_3d.Swin3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DLayer.__init__">(vision_architectures.nets.swin_3d.Swin3DLayer method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DMIM.__init__">(vision_architectures.nets.swin_3d.Swin3DMIM method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DMIMDecoder.__init__">(vision_architectures.nets.swin_3d.Swin3DMIMDecoder method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DModel.__init__">(vision_architectures.nets.swin_3d.Swin3DModel method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchMerging.__init__">(vision_architectures.nets.swin_3d.Swin3DPatchMerging method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStage.__init__">(vision_architectures.nets.swin_3d.Swin3DStage method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DBlock.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DBlock method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoder.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DEncoder.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DLayer.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DLayer method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DLayerLogitScale.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DLayerLogitScale method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DMIM.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DMIM method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DModel.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DModel method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchMerging.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DPatchMerging method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchSplitting.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DPatchSplitting method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DReconstructionDecoder.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DReconstructionDecoder method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DSimMIM.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DSimMIM method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStage.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DStage method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM.__init__">(vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DBlock.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DEncoder.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DLayer.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DLayer method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DMHSA method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DMIM.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DMIM method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DModel.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DModel method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DSimMIM method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DStage.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DStage method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.__init__">(vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DBlock.__init__">(vision_architectures.nets.unetr_3d_decoder.UNetR3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DConvBlock.__init__">(vision_architectures.nets.unetr_3d_decoder.UNetR3DConvBlock method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder.__init__">(vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDeConvBlock.__init__">(vision_architectures.nets.unetr_3d_decoder.UNetR3DDeConvBlock method)</a>
+</li>
+        <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2D.__init__">(vision_architectures.nets.upernet_2d.UPerNet2D method)</a>
+</li>
+        <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2DFusion.__init__">(vision_architectures.nets.upernet_2d.UPerNet2DFusion method)</a>
+</li>
+        <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3D.__init__">(vision_architectures.nets.upernet_3d.UPerNet3D method)</a>
+</li>
+        <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3DFusion.__init__">(vision_architectures.nets.upernet_3d.UPerNet3DFusion method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoder.__init__">(vision_architectures.nets.vit_3d.ViT3DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoder.__init__">(vision_architectures.nets.vit_3d.ViT3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DMIM.__init__">(vision_architectures.nets.vit_3d.ViT3DMIM method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DMIMDecoder.__init__">(vision_architectures.nets.vit_3d.ViT3DMIMDecoder method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DModel.__init__">(vision_architectures.nets.vit_3d.ViT3DModel method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DSimMIM.__init__">(vision_architectures.nets.vit_3d.ViT3DSimMIM method)</a>
+</li>
+        <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineLR.__init__">(vision_architectures.schedulers.decaying_sine.DecayingSineLR method)</a>
+</li>
+        <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineScheduler.__init__">(vision_architectures.schedulers.decaying_sine.DecayingSineScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.CosineNoiseScheduler.__init__">(vision_architectures.schedulers.noise.CosineNoiseScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.ExponentialNoiseScheduler.__init__">(vision_architectures.schedulers.noise.ExponentialNoiseScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.FibonacciNoiseScheduler.__init__">(vision_architectures.schedulers.noise.FibonacciNoiseScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.LinearNoiseScheduler.__init__">(vision_architectures.schedulers.noise.LinearNoiseScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.NoiseScheduler.__init__">(vision_architectures.schedulers.noise.NoiseScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.SigmoidNoiseScheduler.__init__">(vision_architectures.schedulers.noise.SigmoidNoiseScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.SquareRootNoiseScheduler.__init__">(vision_architectures.schedulers.noise.SquareRootNoiseScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/sigmoid.html#vision_architectures.schedulers.sigmoid.SigmoidScheduler.__init__">(vision_architectures.schedulers.sigmoid.SigmoidScheduler method)</a>
+</li>
+        <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.CropForegroundWithCropTrackingd.__init__">(vision_architectures.transforms.croppad.CropForegroundWithCropTrackingd method)</a>
+</li>
+        <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTracking.__init__">(vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTracking method)</a>
+</li>
+        <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTrackingd.__init__">(vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTrackingd method)</a>
+</li>
+        <li><a href="modules/transforms/spatial.html#vision_architectures.transforms.spatial.RandFlipWithCropTrackingd.__init__">(vision_architectures.transforms.spatial.RandFlipWithCropTrackingd method)</a>
+</li>
+        <li><a href="modules/transforms/spatial.html#vision_architectures.transforms.spatial.ResizedWithCropTrackingd.__init__">(vision_architectures.transforms.spatial.ResizedWithCropTrackingd method)</a>
+</li>
+        <li><a href="modules/utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing.__init__">(vision_architectures.utils.activation_checkpointing.ActivationCheckpointing method)</a>
+</li>
+        <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.DyT.__init__">(vision_architectures.utils.normalizations.DyT method)</a>
+</li>
+        <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.StochasticDepthResidual.__init__">(vision_architectures.utils.residuals.StochasticDepthResidual method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1D">AbsolutePositionEmbeddings1D (class in vision_architectures.layers.embeddings)</a>
+</li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3D">AbsolutePositionEmbeddings3D (class in vision_architectures.layers.embeddings)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.activation">activation (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.activation">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.activation">(vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3DConfig.activation">(vision_architectures.blocks.se.SEBlock3DConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DMLPConfig.activation">(vision_architectures.blocks.transformer.Attention1DMLPConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing">ActivationCheckpointing (class in vision_architectures.utils.activation_checkpointing)</a>
+</li>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.NoiseScheduler.add_noise">add_noise() (vision_architectures.schedulers.noise.NoiseScheduler method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.add_stochastic_depth_dropout">add_stochastic_depth_dropout() (in module vision_architectures.utils.residuals)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1D">Attention1D (class in vision_architectures.layers.attention)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DMLP">Attention1DMLP (class in vision_architectures.blocks.transformer)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DWithMLP">Attention1DWithMLP (class in vision_architectures.blocks.transformer)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention3D">Attention3D (class in vision_architectures.layers.attention)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DMLP">Attention3DMLP (class in vision_architectures.blocks.transformer)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DWithMLP">Attention3DWithMLP (class in vision_architectures.blocks.transformer)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.attn_drop_prob">attn_drop_prob (vision_architectures.layers.attention.Attention1DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.attn_drop_prob">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.attn_drop_prob">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.Codebook.calculate_losses">calculate_losses() (vision_architectures.layers.codebook.Codebook method)</a>
+</li>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.Codebook.calculate_perplexity">calculate_perplexity() (vision_architectures.layers.codebook.Codebook method)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.calculate_relative_position_bias">calculate_relative_position_bias() (vision_architectures.nets.symswin_3d.SymSwin3DMHSA method)</a>
+</li>
+      <li><a href="modules/blocks/heads_3d.html#vision_architectures.blocks.heads_3d.ClassificationHead3D">ClassificationHead3D (class in vision_architectures.blocks.heads_3d)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlock3D">CNNBlock3D (class in vision_architectures.blocks.cnn)</a>
+</li>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.Codebook">Codebook (class in vision_architectures.layers.codebook)</a>
+</li>
+      <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2DFusion.concat_features">concat_features() (vision_architectures.nets.upernet_2d.UPerNet2DFusion method)</a>
+
+      <ul>
+        <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3DFusion.concat_features">(vision_architectures.nets.upernet_3d.UPerNet3DFusion method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoderConfig.conv_kernel_size">conv_kernel_size (vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoderConfig attribute)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.conv_kwargs">conv_kwargs (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.conv_kwargs">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.CosineNoiseScheduler">CosineNoiseScheduler (class in vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.CropForegroundWithCropTrackingd">CropForegroundWithCropTrackingd (class in vision_architectures.transforms.croppad)</a>
+</li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder.cross_entropy_loss_fn">cross_entropy_loss_fn() (vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder static method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineLR">DecayingSineLR (class in vision_architectures.schedulers.decaying_sine)</a>
+</li>
+      <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineScheduler">DecayingSineScheduler (class in vision_architectures.schedulers.decaying_sine)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DConfig.decode">decode (vision_architectures.nets.perceiver_3d.Perceiver3DConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig.decoder">decoder (vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.decoder_depth">decoder_depth (vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem0Config.depth">depth (vision_architectures.nets.maxvit_3d.MaxViT3DStem0Config attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStemConfig.depth">(vision_architectures.nets.maxvit_3d.MaxViT3DStemConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.depth">(vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.depth">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.dim">dim (vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3DConfig.dim">(vision_architectures.blocks.se.SEBlock3DConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DMLPConfig.dim">(vision_architectures.blocks.transformer.Attention1DMLPConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DWithMLPConfig.dim">(vision_architectures.blocks.transformer.Attention1DWithMLPConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DWithMLPConfig.dim">(vision_architectures.blocks.transformer.Attention3DWithMLPConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.dim">(vision_architectures.layers.attention.Attention1DConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.CodebookConfig.dim">(vision_architectures.layers.codebook.CodebookConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig.dim">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig.dim">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3DConfig.dim">(vision_architectures.layers.embeddings.PatchEmbeddings3DConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentDecoderConfig.dim">(vision_architectures.layers.latent_space.LatentDecoderConfig property)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoderConfig.dim">(vision_architectures.layers.latent_space.LatentEncoderConfig property)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem0Config.dim">(vision_architectures.nets.maxvit_3d.MaxViT3DStem0Config attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig.dim">(vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig.dim">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig property)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncodeConfig.dim">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncodeConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig.dim">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.dim">(vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.dim">(vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig.dim">(vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.dim">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.dim">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.dim">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.dim_qk">dim_qk (vision_architectures.layers.attention.Attention1DConfig property)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.dim_v">dim_v (vision_architectures.layers.attention.Attention1DConfig property)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.drop_prob">drop_prob (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.drop_prob">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.drop_prob">(vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig.drop_prob">(vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DConfig.drop_prob">(vision_architectures.nets.vit_3d.ViT3DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.DyT">DyT (class in vision_architectures.utils.normalizations)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.CodebookConfig.ema_decay">ema_decay (vision_architectures.layers.codebook.CodebookConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.embed_spacing_info">embed_spacing_info (vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig.embed_spacing_info">(vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.embed_spacings_in_position_embeddings">embed_spacings_in_position_embeddings() (in module vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig.encode">encode (vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.encoder_depth">encoder_depth (vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.expansion_ratio">expansion_ratio (vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+</li>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.ExponentialNoiseScheduler">ExponentialNoiseScheduler (class in vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing.extra_repr">extra_repr() (vision_architectures.utils.activation_checkpointing.ActivationCheckpointing method)</a>
+
+      <ul>
+        <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.DyT.extra_repr">(vision_architectures.utils.normalizations.DyT method)</a>
+</li>
+        <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.StochasticDepthResidual.extra_repr">(vision_architectures.utils.residuals.StochasticDepthResidual method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.FibonacciNoiseScheduler">FibonacciNoiseScheduler (class in vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios">filter_ratios (vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoderConfig.final_layer_kernel_size">final_layer_kernel_size (vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoderConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchSplittingConfig.final_window_size">final_window_size (vision_architectures.nets.swin_3d.Swin3DPatchSplittingConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchSplittingConfig.final_window_size">(vision_architectures.nets.swinv2_3d.SwinV23DPatchSplittingConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.fold_back_3d">fold_back_3d() (in module vision_architectures.nets.perceiver_3d)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlock3D.forward">forward() (vision_architectures.blocks.cnn.CNNBlock3D method)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlock3D.forward">(vision_architectures.blocks.cnn.MultiResCNNBlock3D method)</a>
+</li>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3D.forward">(vision_architectures.blocks.mbconv_3d.MBConv3D method)</a>
+</li>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3D.forward">(vision_architectures.blocks.se.SEBlock3D method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DMLP.forward">(vision_architectures.blocks.transformer.Attention1DMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DWithMLP.forward">(vision_architectures.blocks.transformer.Attention1DWithMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DMLP.forward">(vision_architectures.blocks.transformer.Attention3DMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DWithMLP.forward">(vision_architectures.blocks.transformer.Attention3DWithMLP method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerDecoderBlock1D.forward">(vision_architectures.blocks.transformer.TransformerDecoderBlock1D method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerDecoderBlock3D.forward">(vision_architectures.blocks.transformer.TransformerDecoderBlock3D method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerEncoderBlock1D.forward">(vision_architectures.blocks.transformer.TransformerEncoderBlock1D method)</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerEncoderBlock3D.forward">(vision_architectures.blocks.transformer.TransformerEncoderBlock3D method)</a>
+</li>
+        <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1D.forward">(vision_architectures.layers.attention.Attention1D method)</a>
+</li>
+        <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention3D.forward">(vision_architectures.layers.attention.Attention3D method)</a>
+</li>
+        <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.Codebook.forward">(vision_architectures.layers.codebook.Codebook method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1D.forward">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1D method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3D.forward">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3D method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3D.forward">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3D method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DMetaNetwork.forward">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3DMetaNetwork method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.GaussianLatentSpace.forward">(vision_architectures.layers.latent_space.GaussianLatentSpace method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentDecoder.forward">(vision_architectures.layers.latent_space.LatentDecoder method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoder.forward">(vision_architectures.layers.latent_space.LatentEncoder method)</a>
+</li>
+        <li><a href="modules/nets/fpn_2d.html#vision_architectures.nets.fpn_2d.FPN2D.forward">(vision_architectures.nets.fpn_2d.FPN2D method)</a>
+</li>
+        <li><a href="modules/nets/fpn_2d.html#vision_architectures.nets.fpn_2d.FPN2DBlock.forward">(vision_architectures.nets.fpn_2d.FPN2DBlock method)</a>
+</li>
+        <li><a href="modules/nets/fpn_3d.html#vision_architectures.nets.fpn_3d.FPN3D.forward">(vision_architectures.nets.fpn_3d.FPN3D method)</a>
+</li>
+        <li><a href="modules/nets/fpn_3d.html#vision_architectures.nets.fpn_3d.FPN3DBlock.forward">(vision_architectures.nets.fpn_3d.FPN3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DBlock.forward">(vision_architectures.nets.maxvit_3d.MaxViT3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DEncoder.forward">(vision_architectures.nets.maxvit_3d.MaxViT3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem.forward">(vision_architectures.nets.maxvit_3d.MaxViT3DStem method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem0.forward">(vision_architectures.nets.maxvit_3d.MaxViT3DStem0 method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DChannelMapping.forward">(vision_architectures.nets.perceiver_3d.Perceiver3DChannelMapping method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DDecoder.forward">(vision_architectures.nets.perceiver_3d.Perceiver3DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoder.forward">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncode.forward">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncode method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcess.forward">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcess method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DBlock.forward">(vision_architectures.nets.swin_3d.Swin3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DEncoder.forward">(vision_architectures.nets.swin_3d.Swin3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DLayer.forward">(vision_architectures.nets.swin_3d.Swin3DLayer method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DMIM.forward">(vision_architectures.nets.swin_3d.Swin3DMIM method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DMIMDecoder.forward">(vision_architectures.nets.swin_3d.Swin3DMIMDecoder method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DModel.forward">(vision_architectures.nets.swin_3d.Swin3DModel method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchMerging.forward">(vision_architectures.nets.swin_3d.Swin3DPatchMerging method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStage.forward">(vision_architectures.nets.swin_3d.Swin3DStage method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DBlock.forward">(vision_architectures.nets.swinv2_3d.SwinV23DBlock method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoder.forward">(vision_architectures.nets.swinv2_3d.SwinV23DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DEncoder.forward">(vision_architectures.nets.swinv2_3d.SwinV23DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DLayer.forward">(vision_architectures.nets.swinv2_3d.SwinV23DLayer method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DLayerLogitScale.forward">(vision_architectures.nets.swinv2_3d.SwinV23DLayerLogitScale method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DModel.forward">(vision_architectures.nets.swinv2_3d.SwinV23DModel method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchMerging.forward">(vision_architectures.nets.swinv2_3d.SwinV23DPatchMerging method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchSplitting.forward">(vision_architectures.nets.swinv2_3d.SwinV23DPatchSplitting method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DReconstructionDecoder.forward">(vision_architectures.nets.swinv2_3d.SwinV23DReconstructionDecoder method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DSimMIM.forward">(vision_architectures.nets.swinv2_3d.SwinV23DSimMIM method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStage.forward">(vision_architectures.nets.swinv2_3d.SwinV23DStage method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM.forward">(vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DBlock.forward">(vision_architectures.nets.symswin_3d.SymSwin3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.forward">(vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DEncoder.forward">(vision_architectures.nets.symswin_3d.SymSwin3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DLayer.forward">(vision_architectures.nets.symswin_3d.SymSwin3DLayer method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.forward">(vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.forward">(vision_architectures.nets.symswin_3d.SymSwin3DMHSA method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DModel.forward">(vision_architectures.nets.symswin_3d.SymSwin3DModel method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.forward">(vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.forward">(vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.forward">(vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.forward">(vision_architectures.nets.symswin_3d.SymSwin3DSimMIM method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DStage.forward">(vision_architectures.nets.symswin_3d.SymSwin3DStage method)</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.forward">(vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DBlock.forward">(vision_architectures.nets.unetr_3d_decoder.UNetR3DBlock method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DConvBlock.forward">(vision_architectures.nets.unetr_3d_decoder.UNetR3DConvBlock method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder.forward">(vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDeConvBlock.forward">(vision_architectures.nets.unetr_3d_decoder.UNetR3DDeConvBlock method)</a>
+</li>
+        <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2D.forward">(vision_architectures.nets.upernet_2d.UPerNet2D method)</a>
+</li>
+        <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2DFusion.forward">(vision_architectures.nets.upernet_2d.UPerNet2DFusion method)</a>
+</li>
+        <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3D.forward">(vision_architectures.nets.upernet_3d.UPerNet3D method)</a>
+</li>
+        <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3DFusion.forward">(vision_architectures.nets.upernet_3d.UPerNet3DFusion method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoder.forward">(vision_architectures.nets.vit_3d.ViT3DDecoder method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoder.forward">(vision_architectures.nets.vit_3d.ViT3DEncoder method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DMIMDecoder.forward">(vision_architectures.nets.vit_3d.ViT3DMIMDecoder method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DModel.forward">(vision_architectures.nets.vit_3d.ViT3DModel method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DSimMIM.forward">(vision_architectures.nets.vit_3d.ViT3DSimMIM method)</a>
+</li>
+        <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.DyT.forward">(vision_architectures.utils.normalizations.DyT method)</a>
+</li>
+        <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.LayerNorm2D.forward">(vision_architectures.utils.normalizations.LayerNorm2D method)</a>
+</li>
+        <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.LayerNorm3D.forward">(vision_architectures.utils.normalizations.LayerNorm3D method)</a>
+</li>
+        <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.Residual.forward">(vision_architectures.utils.residuals.Residual method)</a>
+</li>
+        <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.StochasticDepthResidual.forward">(vision_architectures.utils.residuals.StochasticDepthResidual method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/fpn_2d.html#vision_architectures.nets.fpn_2d.FPN2D">FPN2D (class in vision_architectures.nets.fpn_2d)</a>
+</li>
+      <li><a href="modules/nets/fpn_2d.html#vision_architectures.nets.fpn_2d.FPN2DBlock">FPN2DBlock (class in vision_architectures.nets.fpn_2d)</a>
+</li>
+      <li><a href="modules/nets/fpn_3d.html#vision_architectures.nets.fpn_3d.FPN3D">FPN3D (class in vision_architectures.nets.fpn_3d)</a>
+</li>
+      <li><a href="modules/nets/fpn_3d.html#vision_architectures.nets.fpn_3d.FPN3DBlock">FPN3DBlock (class in vision_architectures.nets.fpn_3d)</a>
+</li>
+      <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2DFusion.fuse_features">fuse_features() (vision_architectures.nets.upernet_2d.UPerNet2DFusion method)</a>
+
+      <ul>
+        <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3DFusion.fuse_features">(vision_architectures.nets.upernet_3d.UPerNet3DFusion method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.GaussianLatentSpace">GaussianLatentSpace (class in vision_architectures.layers.latent_space)</a>
+</li>
+      <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineScheduler.get">get() (vision_architectures.schedulers.decaying_sine.DecayingSineScheduler method)</a>
+
+      <ul>
+        <li><a href="modules/schedulers/sigmoid.html#vision_architectures.schedulers.sigmoid.SigmoidScheduler.get">(vision_architectures.schedulers.sigmoid.SigmoidScheduler method)</a>
+</li>
+        <li><a href="modules/utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.get">(vision_architectures.utils.custom_base_model.CustomBaseModel method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.get_3d_position_embeddings">get_3d_position_embeddings() (in module vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.get_absolute_position_embeddings_1d">get_absolute_position_embeddings_1d() (in module vision_architectures.layers.embeddings)</a>
+</li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.get_absolute_position_embeddings_3d">get_absolute_position_embeddings_3d() (in module vision_architectures.layers.embeddings)</a>
+</li>
+      <li><a href="modules/utils/activations.html#vision_architectures.utils.activations.get_act_layer">get_act_layer() (in module vision_architectures.utils.activations)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM.get_beta">get_beta() (vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM method)</a>
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.get_beta">(vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.get_coords_grid">get_coords_grid() (in module vision_architectures.layers.embeddings)</a>
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.get_coords_grid">(in module vision_architectures.nets.symswin_3d)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/image_readers/safetensors_reader.html#vision_architectures.image_readers.safetensors_reader.SafetensorsReader.get_data">get_data() (vision_architectures.image_readers.safetensors_reader.SafetensorsReader method)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.get_in_patch_size">get_in_patch_size() (vision_architectures.nets.swin_3d.Swin3DStageConfig method)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.get_in_patch_size">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineLR.get_lr">get_lr() (vision_architectures.schedulers.decaying_sine.DecayingSineLR method)</a>
+</li>
+      <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.get_norm_layer">get_norm_layer() (in module vision_architectures.utils.normalizations)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.get_out_patch_size">get_out_patch_size() (vision_architectures.nets.swin_3d.Swin3DStageConfig method)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.get_out_patch_size">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DMetaNetwork.get_relative_position_embeddings_table">get_relative_position_embeddings_table() (vision_architectures.layers.embeddings.RelativePositionEmbeddings3DMetaNetwork method)</a>
+</li>
+      <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.get_updated_crop_start">get_updated_crop_start() (in module vision_architectures.transforms.croppad)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.gqa_mqa_enabled">gqa_mqa_enabled (vision_architectures.layers.attention.Attention1DConfig property)</a>
+</li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig.grid_size">grid_size (vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig.grid_size">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.hidden_dim">hidden_dim (vision_architectures.blocks.mbconv_3d.MBConv3DConfig property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.image_size">image_size (vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DConfig.image_size">(vision_architectures.nets.swinv2_3d.SwinV23DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DConfig.image_size">(vision_architectures.nets.vit_3d.ViT3DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.in_channels">in_channels (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.in_channels">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.in_channels">(vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3DConfig.in_channels">(vision_architectures.blocks.se.SEBlock3DConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3DConfig.in_channels">(vision_architectures.layers.embeddings.PatchEmbeddings3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem0Config.in_channels">(vision_architectures.nets.maxvit_3d.MaxViT3DStem0Config attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DChannelMappingConfig.in_channels">(vision_architectures.nets.perceiver_3d.Perceiver3DChannelMappingConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.in_channels">(vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DConfig.in_channels">(vision_architectures.nets.swinv2_3d.SwinV23DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig.in_channels">(vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DConfig.in_channels">(vision_architectures.nets.vit_3d.ViT3DConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.in_dim">in_dim (vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.in_dim">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig.in_dim">(vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig.in_patch_size">in_patch_size (vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig attribute)</a>
+</li>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoderConfig.init_low_var">init_low_var (vision_architectures.layers.latent_space.LatentEncoderConfig attribute)</a>
+</li>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoder.init_low_var">init_low_var() (vision_architectures.layers.latent_space.LatentEncoder method)</a>
+</li>
+      <li><a href="modules/transforms/resize.html#vision_architectures.transforms.resize.ResizeWithSpacing.inverse_transform">inverse_transform() (vision_architectures.transforms.resize.ResizeWithSpacing method)</a>
+</li>
+      <li><a href="modules/schedulers/sigmoid.html#vision_architectures.schedulers.sigmoid.SigmoidScheduler.is_completed">is_completed() (vision_architectures.schedulers.sigmoid.SigmoidScheduler method)</a>
+</li>
+      <li><a href="modules/schedulers/sigmoid.html#vision_architectures.schedulers.sigmoid.SigmoidScheduler.is_ready">is_ready() (vision_architectures.schedulers.sigmoid.SigmoidScheduler method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="K">K</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.kernel_size">kernel_size (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.kernel_size">(vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3DConfig.kernel_size">(vision_architectures.blocks.se.SEBlock3DConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3DConfig.kernel_size">(vision_architectures.layers.embeddings.PatchEmbeddings3DConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_sizes">kernel_sizes (vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.GaussianLatentSpace.kl_divergence">kl_divergence() (vision_architectures.layers.latent_space.GaussianLatentSpace static method)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM.kl_divergence_loss_fn">kl_divergence_loss_fn() (vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM static method)</a>
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.kl_divergence_loss_fn">(vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentDecoderConfig.latent_dim">latent_dim (vision_architectures.layers.latent_space.LatentDecoderConfig property)</a>
+
+      <ul>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoderConfig.latent_dim">(vision_architectures.layers.latent_space.LatentEncoderConfig property)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig.latent_grid_size">latent_grid_size (vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig property)</a>
+
+      <ul>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncodeConfig.latent_grid_size">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncodeConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig.latent_grid_size">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentDecoder">LatentDecoder (class in vision_architectures.layers.latent_space)</a>
+</li>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoder">LatentEncoder (class in vision_architectures.layers.latent_space)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DWithMLPConfig.layer_norm_eps">layer_norm_eps (vision_architectures.blocks.transformer.Attention1DWithMLPConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DWithMLPConfig.layer_norm_eps">(vision_architectures.blocks.transformer.Attention3DWithMLPConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.layer_norm_eps">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.layer_norm_eps">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.LayerNorm2D">LayerNorm2D (class in vision_architectures.utils.normalizations)</a>
+</li>
+      <li><a href="modules/utils/normalizations.html#vision_architectures.utils.normalizations.LayerNorm3D">LayerNorm3D (class in vision_architectures.utils.normalizations)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig.learnable">learnable (vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig.learnable">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.learnable_absolute_position_embeddings">learnable_absolute_position_embeddings (vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DConfig.learnable_absolute_position_embeddings">(vision_architectures.nets.swinv2_3d.SwinV23DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig.length">length (vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig attribute)</a>
+</li>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.LinearNoiseScheduler">LinearNoiseScheduler (class in vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.logit_scale_learnable">logit_scale_learnable (vision_architectures.layers.attention.Attention1DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.logit_scale_learnable">(vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.logit_scale_learnable">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DSimMIM.loss_fn">loss_fn() (vision_architectures.nets.swinv2_3d.SwinV23DSimMIM static method)</a>
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.loss_fn">(vision_architectures.nets.symswin_3d.SymSwin3DSimMIM static method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder.loss_fn">(vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder static method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DSimMIM.loss_fn">(vision_architectures.nets.vit_3d.ViT3DSimMIM static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/utils/rearrange.html#vision_architectures.utils.rearrange.make_channels_first">make_channels_first() (in module vision_architectures.utils.rearrange)</a>
+</li>
+      <li><a href="modules/utils/rearrange.html#vision_architectures.utils.rearrange.make_channels_last">make_channels_last() (in module vision_architectures.utils.rearrange)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DMIM.mask_image">mask_image() (vision_architectures.nets.swinv2_3d.SwinV23DMIM method)</a>
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DMIM.mask_image">(vision_architectures.nets.symswin_3d.SymSwin3DMIM method)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DMIM.mask_image">(vision_architectures.nets.vit_3d.ViT3DMIM method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DConfig.mask_ratio">mask_ratio (vision_architectures.nets.vit_3d.ViT3DConfig attribute)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.max_attention_batch_size">max_attention_batch_size (vision_architectures.layers.attention.Attention1DConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DBlock">MaxViT3DBlock (class in vision_architectures.nets.maxvit_3d)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DBlockAttention">MaxViT3DBlockAttention (class in vision_architectures.nets.maxvit_3d)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DEncoder">MaxViT3DEncoder (class in vision_architectures.nets.maxvit_3d)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DGridAttention">MaxViT3DGridAttention (class in vision_architectures.nets.maxvit_3d)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem">MaxViT3DStem (class in vision_architectures.nets.maxvit_3d)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DStem0">MaxViT3DStem0 (class in vision_architectures.nets.maxvit_3d)</a>
+</li>
+      <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3D">MBConv3D (class in vision_architectures.blocks.mbconv_3d)</a>
+</li>
+      <li><a href="modules/nets/fpn_2d.html#vision_architectures.nets.fpn_2d.FPN2DBlock.merge_features">merge_features() (vision_architectures.nets.fpn_2d.FPN2DBlock method)</a>
+
+      <ul>
+        <li><a href="modules/nets/fpn_3d.html#vision_architectures.nets.fpn_3d.FPN3DBlock.merge_features">(vision_architectures.nets.fpn_3d.FPN3DBlock method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchMergingConfig.merge_window_size">merge_window_size (vision_architectures.nets.swin_3d.Swin3DPatchMergingConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchMergingConfig.merge_window_size">(vision_architectures.nets.swinv2_3d.SwinV23DPatchMergingConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DMIMConfig.mim">mim (vision_architectures.nets.swin_3d.Swin3DMIMConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.Swin3DMIMConfig.mim">(vision_architectures.nets.swinv2_3d.Swin3DMIMConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DMLPConfig.mlp_drop_prob">mlp_drop_prob (vision_architectures.blocks.transformer.Attention1DMLPConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.mlp_drop_prob">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.mlp_drop_prob">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DMLPConfig.mlp_ratio">mlp_ratio (vision_architectures.blocks.transformer.Attention1DMLPConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.mlp_ratio">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.mlp_ratio">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DBlockConfig.modify_dims">modify_dims (vision_architectures.nets.maxvit_3d.MaxViT3DBlockConfig attribute)</a>
+</li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#module-vision_architectures.blocks.cnn">vision_architectures.blocks.cnn</a>
+</li>
+        <li><a href="modules/blocks/heads_3d.html#module-vision_architectures.blocks.heads_3d">vision_architectures.blocks.heads_3d</a>
+</li>
+        <li><a href="modules/blocks/mbconv_3d.html#module-vision_architectures.blocks.mbconv_3d">vision_architectures.blocks.mbconv_3d</a>
+</li>
+        <li><a href="modules/blocks/se.html#module-vision_architectures.blocks.se">vision_architectures.blocks.se</a>
+</li>
+        <li><a href="modules/blocks/transformer.html#module-vision_architectures.blocks.transformer">vision_architectures.blocks.transformer</a>
+</li>
+        <li><a href="modules/image_readers/safetensors_reader.html#module-vision_architectures.image_readers.safetensors_reader">vision_architectures.image_readers.safetensors_reader</a>
+</li>
+        <li><a href="modules/layers/attention.html#module-vision_architectures.layers.attention">vision_architectures.layers.attention</a>
+</li>
+        <li><a href="modules/layers/codebook.html#module-vision_architectures.layers.codebook">vision_architectures.layers.codebook</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#module-vision_architectures.layers.embeddings">vision_architectures.layers.embeddings</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#module-vision_architectures.layers.latent_space">vision_architectures.layers.latent_space</a>
+</li>
+        <li><a href="modules/nets/fpn_2d.html#module-vision_architectures.nets.fpn_2d">vision_architectures.nets.fpn_2d</a>
+</li>
+        <li><a href="modules/nets/fpn_3d.html#module-vision_architectures.nets.fpn_3d">vision_architectures.nets.fpn_3d</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#module-vision_architectures.nets.maxvit_3d">vision_architectures.nets.maxvit_3d</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#module-vision_architectures.nets.perceiver_3d">vision_architectures.nets.perceiver_3d</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#module-vision_architectures.nets.swin_3d">vision_architectures.nets.swin_3d</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#module-vision_architectures.nets.swinv2_3d">vision_architectures.nets.swinv2_3d</a>
+</li>
+        <li><a href="modules/nets/symswin_3d.html#module-vision_architectures.nets.symswin_3d">vision_architectures.nets.symswin_3d</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#module-vision_architectures.nets.unetr_3d_decoder">vision_architectures.nets.unetr_3d_decoder</a>
+</li>
+        <li><a href="modules/nets/upernet_2d.html#module-vision_architectures.nets.upernet_2d">vision_architectures.nets.upernet_2d</a>
+</li>
+        <li><a href="modules/nets/upernet_3d.html#module-vision_architectures.nets.upernet_3d">vision_architectures.nets.upernet_3d</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#module-vision_architectures.nets.vit_3d">vision_architectures.nets.vit_3d</a>
+</li>
+        <li><a href="modules/schedulers/decaying_sine.html#module-vision_architectures.schedulers.decaying_sine">vision_architectures.schedulers.decaying_sine</a>
+</li>
+        <li><a href="modules/schedulers/noise.html#module-vision_architectures.schedulers.noise">vision_architectures.schedulers.noise</a>
+</li>
+        <li><a href="modules/schedulers/sigmoid.html#module-vision_architectures.schedulers.sigmoid">vision_architectures.schedulers.sigmoid</a>
+</li>
+        <li><a href="modules/transforms/croppad.html#module-vision_architectures.transforms.croppad">vision_architectures.transforms.croppad</a>
+</li>
+        <li><a href="modules/transforms/resize.html#module-vision_architectures.transforms.resize">vision_architectures.transforms.resize</a>
+</li>
+        <li><a href="modules/transforms/spatial.html#module-vision_architectures.transforms.spatial">vision_architectures.transforms.spatial</a>
+</li>
+        <li><a href="modules/utils/activation_checkpointing.html#module-vision_architectures.utils.activation_checkpointing">vision_architectures.utils.activation_checkpointing</a>
+</li>
+        <li><a href="modules/utils/activations.html#module-vision_architectures.utils.activations">vision_architectures.utils.activations</a>
+</li>
+        <li><a href="modules/utils/custom_base_model.html#module-vision_architectures.utils.custom_base_model">vision_architectures.utils.custom_base_model</a>
+</li>
+        <li><a href="modules/utils/normalizations.html#module-vision_architectures.utils.normalizations">vision_architectures.utils.normalizations</a>
+</li>
+        <li><a href="modules/utils/rearrange.html#module-vision_architectures.utils.rearrange">vision_architectures.utils.rearrange</a>
+</li>
+        <li><a href="modules/utils/residuals.html#module-vision_architectures.utils.residuals">vision_architectures.utils.residuals</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlock3D">MultiResCNNBlock3D (class in vision_architectures.blocks.cnn)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.NoiseScheduler">NoiseScheduler (class in vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3DConfig.norm_layer">norm_layer (vision_architectures.layers.embeddings.PatchEmbeddings3DConfig attribute)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention1DWithMLPConfig.norm_location">norm_location (vision_architectures.blocks.transformer.Attention1DWithMLPConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.Attention3DWithMLPConfig.norm_location">(vision_architectures.blocks.transformer.Attention3DWithMLPConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.norm_location">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.norm_location">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.normalization">normalization (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.normalization">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.normalization">(vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3DConfig.normalization">(vision_architectures.blocks.se.SEBlock3DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DConfig.num_class_tokens">num_class_tokens (vision_architectures.nets.vit_3d.ViT3DConfig attribute)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.num_heads">num_heads (vision_architectures.layers.attention.Attention1DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig.num_heads">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.num_heads">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.num_heads">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.num_kv_heads">num_kv_heads (vision_architectures.layers.attention.Attention1DConfig property)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig.num_layers">num_layers (vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncodeConfig.num_layers">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncodeConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig.num_layers">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoderConfig.num_outputs">num_outputs (vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoderConfig attribute)</a>
+</li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig.num_patches">num_patches (vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig property)</a>
+
+      <ul>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig.num_patches">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig property)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.num_q_heads">num_q_heads (vision_architectures.layers.attention.Attention1DConfig property)</a>
+</li>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.CodebookConfig.num_vectors">num_vectors (vision_architectures.layers.codebook.CodebookConfig attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.out_channels">out_channels (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.out_channels">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.out_channels">(vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+</li>
+        <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3DConfig.out_channels">(vision_architectures.blocks.se.SEBlock3DConfig attribute)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3DConfig.out_channels">(vision_architectures.layers.embeddings.PatchEmbeddings3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DChannelMappingConfig.out_channels">(vision_architectures.nets.perceiver_3d.Perceiver3DChannelMappingConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig.out_channels">(vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.out_dim">out_dim (vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.out_dim">(vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.out_dim">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig.out_dim">(vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DBlockConfig.out_dim_ratio">out_dim_ratio (vision_architectures.nets.maxvit_3d.MaxViT3DBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchMergingConfig.out_dim_ratio">(vision_architectures.nets.swin_3d.Swin3DPatchMergingConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchSplittingConfig.out_dim_ratio">(vision_architectures.nets.swin_3d.Swin3DPatchSplittingConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchMergingConfig.out_dim_ratio">(vision_architectures.nets.swinv2_3d.SwinV23DPatchMergingConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchSplittingConfig.out_dim_ratio">(vision_architectures.nets.swinv2_3d.SwinV23DPatchSplittingConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig.out_patch_size">out_patch_size (vision_architectures.nets.unetr_3d_decoder.UNetR3DStageConfig attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.padding">padding (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.padding">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.patch_merging">patch_merging (vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.patch_merging">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3DConfig.patch_size">patch_size (vision_architectures.layers.embeddings.PatchEmbeddings3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.patch_size">(vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DConfig.patch_size">(vision_architectures.nets.swinv2_3d.SwinV23DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DConfig.patch_size">(vision_architectures.nets.vit_3d.ViT3DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.patch_splitting">patch_splitting (vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.patch_splitting">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3D">PatchEmbeddings3D (class in vision_architectures.layers.embeddings)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.per_head_dim_qk">per_head_dim_qk (vision_architectures.layers.attention.Attention1DConfig property)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DChannelMapping">Perceiver3DChannelMapping (class in vision_architectures.nets.perceiver_3d)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DDecoder">Perceiver3DDecoder (class in vision_architectures.nets.perceiver_3d)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoder">Perceiver3DEncoder (class in vision_architectures.nets.perceiver_3d)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderEncode">Perceiver3DEncoderEncode (class in vision_architectures.nets.perceiver_3d)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcess">Perceiver3DEncoderProcess (class in vision_architectures.nets.perceiver_3d)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.populate">populate() (vision_architectures.nets.swin_3d.Swin3DConfig method)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig.populate">(vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.populate_and_validate_config">populate_and_validate_config() (in module vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig.process">process (vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig attribute)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.proj_drop_prob">proj_drop_prob (vision_architectures.layers.attention.Attention1DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoderConfig.proj_drop_prob">(vision_architectures.nets.vit_3d.ViT3DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoderConfig.proj_drop_prob">(vision_architectures.nets.vit_3d.ViT3DEncoderConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.Codebook.quantize">quantize() (vision_architectures.layers.codebook.Codebook method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3DConfig.r">r (vision_architectures.blocks.se.SEBlock3DConfig attribute)</a>
+</li>
+      <li><a href="modules/transforms/spatial.html#vision_architectures.transforms.spatial.RandFlipWithCropTrackingd">RandFlipWithCropTrackingd (class in vision_architectures.transforms.spatial)</a>
+</li>
+      <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTracking">RandSpatialCropSamplesWithCropTracking (class in vision_architectures.transforms.croppad)</a>
+</li>
+      <li><a href="modules/transforms/croppad.html#vision_architectures.transforms.croppad.RandSpatialCropSamplesWithCropTrackingd">RandSpatialCropSamplesWithCropTrackingd (class in vision_architectures.transforms.croppad)</a>
+</li>
+      <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.ratio_q_to_kv_heads">ratio_q_to_kv_heads (vision_architectures.layers.attention.Attention1DConfig attribute)</a>
+</li>
+      <li><a href="modules/image_readers/safetensors_reader.html#vision_architectures.image_readers.safetensors_reader.SafetensorsReader.read">read() (vision_architectures.image_readers.safetensors_reader.SafetensorsReader method)</a>
+</li>
+      <li><a href="modules/utils/rearrange.html#vision_architectures.utils.rearrange.rearrange_channels">rearrange_channels() (in module vision_architectures.utils.rearrange)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM.reconstruction_loss_fn">reconstruction_loss_fn() (vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM static method)</a>
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reconstruction_loss_fn">(vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM static method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3D">RelativePositionEmbeddings3D (class in vision_architectures.layers.embeddings)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DMetaNetwork">RelativePositionEmbeddings3DMetaNetwork (class in vision_architectures.layers.embeddings)</a>
+</li>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.NoiseScheduler.remove_noise">remove_noise() (vision_architectures.schedulers.noise.NoiseScheduler method)</a>
+</li>
+      <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.remove_stochastic_depth_dropout">remove_stochastic_depth_dropout() (in module vision_architectures.utils.residuals)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM.reparameterize">reparameterize() (vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM method)</a>
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reparameterize">(vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.Residual">Residual (class in vision_architectures.utils.residuals)</a>
+</li>
+      <li><a href="modules/transforms/spatial.html#vision_architectures.transforms.spatial.ResizedWithCropTrackingd">ResizedWithCropTrackingd (class in vision_architectures.transforms.spatial)</a>
+</li>
+      <li><a href="modules/transforms/resize.html#vision_architectures.transforms.resize.ResizeWithSpacing">ResizeWithSpacing (class in vision_architectures.transforms.resize)</a>
+</li>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.Codebook.revive_dead_vectors">revive_dead_vectors() (vision_architectures.layers.codebook.Codebook method)</a>
+</li>
+      <li><a href="modules/layers/codebook.html#vision_architectures.layers.codebook.CodebookConfig.revive_dead_vectors_after_n_steps">revive_dead_vectors_after_n_steps (vision_architectures.layers.codebook.CodebookConfig attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/image_readers/safetensors_reader.html#vision_architectures.image_readers.safetensors_reader.SafetensorsReader">SafetensorsReader (class in vision_architectures.image_readers.safetensors_reader)</a>
+</li>
+      <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.GaussianLatentSpace.sample">sample() (vision_architectures.layers.latent_space.GaussianLatentSpace method)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios">scale_filter_ratios() (vision_architectures.blocks.cnn.MultiResCNNBlockConfig class method)</a>
+</li>
+      <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.se_reduction_ratio">se_reduction_ratio (vision_architectures.blocks.mbconv_3d.MBConv3DConfig attribute)</a>
+</li>
+      <li><a href="modules/blocks/se.html#vision_architectures.blocks.se.SEBlock3D">SEBlock3D (class in vision_architectures.blocks.se)</a>
+</li>
+      <li><a href="modules/blocks/heads_3d.html#vision_architectures.blocks.heads_3d.SegmentationHead3D">SegmentationHead3D (class in vision_architectures.blocks.heads_3d)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.sequence">sequence (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.sequence">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/schedulers/sigmoid.html#vision_architectures.schedulers.sigmoid.SigmoidScheduler.set_num_steps">set_num_steps() (vision_architectures.schedulers.sigmoid.SigmoidScheduler method)</a>
+</li>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.SigmoidNoiseScheduler">SigmoidNoiseScheduler (class in vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/schedulers/sigmoid.html#vision_architectures.schedulers.sigmoid.SigmoidScheduler">SigmoidScheduler (class in vision_architectures.schedulers.sigmoid)</a>
+</li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder.soft_dice_loss_fn">soft_dice_loss_fn() (vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder static method)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.spatial_compression_ratio">spatial_compression_ratio (vision_architectures.nets.swinv2_3d.SwinV23DStageConfig property)</a>
+</li>
+      <li><a href="modules/schedulers/noise.html#vision_architectures.schedulers.noise.SquareRootNoiseScheduler">SquareRootNoiseScheduler (class in vision_architectures.schedulers.noise)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.stages">stages (vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig.stages">(vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig.stages">(vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DEncoderConfig.stem0">stem0 (vision_architectures.nets.maxvit_3d.MaxViT3DEncoderConfig attribute)</a>
+</li>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DEncoderConfig.stems">stems (vision_architectures.nets.maxvit_3d.MaxViT3DEncoderConfig attribute)</a>
+</li>
+      <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineLR.step">step() (vision_architectures.schedulers.decaying_sine.DecayingSineLR method)</a>
+
+      <ul>
+        <li><a href="modules/schedulers/decaying_sine.html#vision_architectures.schedulers.decaying_sine.DecayingSineScheduler.step">(vision_architectures.schedulers.decaying_sine.DecayingSineScheduler method)</a>
+</li>
+        <li><a href="modules/schedulers/sigmoid.html#vision_architectures.schedulers.sigmoid.SigmoidScheduler.step">(vision_architectures.schedulers.sigmoid.SigmoidScheduler method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/utils/residuals.html#vision_architectures.utils.residuals.StochasticDepthResidual">StochasticDepthResidual (class in vision_architectures.utils.residuals)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.stride">stride (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.stride">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DBlock">Swin3DBlock (class in vision_architectures.nets.swin_3d)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DEncoder">Swin3DEncoder (class in vision_architectures.nets.swin_3d)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DLayer">Swin3DLayer (class in vision_architectures.nets.swin_3d)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DMIM">Swin3DMIM (class in vision_architectures.nets.swin_3d)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DMIMDecoder">Swin3DMIMDecoder (class in vision_architectures.nets.swin_3d)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DModel">Swin3DModel (class in vision_architectures.nets.swin_3d)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchMerging">Swin3DPatchMerging (class in vision_architectures.nets.swin_3d)</a>
+</li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStage">Swin3DStage (class in vision_architectures.nets.swin_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DBlock">SwinV23DBlock (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoder">SwinV23DDecoder (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DEncoder">SwinV23DEncoder (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DLayer">SwinV23DLayer (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DLayerLogitScale">SwinV23DLayerLogitScale (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DMIM">SwinV23DMIM (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DModel">SwinV23DModel (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchMerging">SwinV23DPatchMerging (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchSplitting">SwinV23DPatchSplitting (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DReconstructionDecoder">SwinV23DReconstructionDecoder (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DSimMIM">SwinV23DSimMIM (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStage">SwinV23DStage (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DVAEMIM">SwinV23DVAEMIM (class in vision_architectures.nets.swinv2_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_backward">symmetry_attention_rearrange_backward() (in module vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_forward">symmetry_attention_rearrange_forward() (in module vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DBlock">SymSwin3DBlock (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings">SymSwin3DEmbeddings (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DEncoder">SymSwin3DEncoder (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DLayer">SymSwin3DLayer (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP">SymSwin3DLayerMLP (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DMHSA">SymSwin3DMHSA (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DMIM">SymSwin3DMIM (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DModel">SymSwin3DModel (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings">SymSwin3DPatchEmbeddings (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging">SymSwin3DPatchMerging (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder">SymSwin3DReconstructionDecoder (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM">SymSwin3DSimMIM (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DStage">SymSwin3DStage (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+      <li><a href="modules/nets/symswin_3d.html#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM">SymSwin3DVAEMIM (class in vision_architectures.nets.symswin_3d)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerDecoderBlock1D">TransformerDecoderBlock1D (class in vision_architectures.blocks.transformer)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerDecoderBlock3D">TransformerDecoderBlock3D (class in vision_architectures.blocks.transformer)</a>
+</li>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerEncoderBlock1D">TransformerEncoderBlock1D (class in vision_architectures.blocks.transformer)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/transformer.html#vision_architectures.blocks.transformer.TransformerEncoderBlock3D">TransformerEncoderBlock3D (class in vision_architectures.blocks.transformer)</a>
+</li>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.CNNBlockConfig.transposed">transposed (vision_architectures.blocks.cnn.CNNBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.transposed">(vision_architectures.blocks.cnn.MultiResCNNBlockConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DBlock">UNetR3DBlock (class in vision_architectures.nets.unetr_3d_decoder)</a>
+</li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DConvBlock">UNetR3DConvBlock (class in vision_architectures.nets.unetr_3d_decoder)</a>
+</li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDecoder">UNetR3DDecoder (class in vision_architectures.nets.unetr_3d_decoder)</a>
+</li>
+      <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DDeConvBlock">UNetR3DDeConvBlock (class in vision_architectures.nets.unetr_3d_decoder)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.unfold_with_roll_3d">unfold_with_roll_3d() (in module vision_architectures.nets.perceiver_3d)</a>
+</li>
+      <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2D">UPerNet2D (class in vision_architectures.nets.upernet_2d)</a>
+</li>
+      <li><a href="modules/nets/upernet_2d.html#vision_architectures.nets.upernet_2d.UPerNet2DFusion">UPerNet2DFusion (class in vision_architectures.nets.upernet_2d)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3D">UPerNet3D (class in vision_architectures.nets.upernet_3d)</a>
+</li>
+      <li><a href="modules/nets/upernet_3d.html#vision_architectures.nets.upernet_3d.UPerNet3DFusion">UPerNet3DFusion (class in vision_architectures.nets.upernet_3d)</a>
+</li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig.use_absolute_position_embeddings">use_absolute_position_embeddings (vision_architectures.nets.perceiver_3d.Perceiver3DDecoderConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.use_absolute_position_embeddings">(vision_architectures.nets.swin_3d.Swin3DConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DConfig.use_absolute_position_embeddings">(vision_architectures.nets.swinv2_3d.SwinV23DConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.use_relative_position_bias">use_relative_position_bias (vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.use_relative_position_bias">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig.use_relative_position_embeddings">use_relative_position_embeddings (vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/blocks/cnn.html#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate">validate() (vision_architectures.blocks.cnn.MultiResCNNBlockConfig method)</a>
+
+      <ul>
+        <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.validate">(vision_architectures.blocks.mbconv_3d.MBConv3DConfig method)</a>
+</li>
+        <li><a href="modules/layers/attention.html#vision_architectures.layers.attention.Attention1DConfig.validate">(vision_architectures.layers.attention.Attention1DConfig method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig.validate">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings1DConfig method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig.validate">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig.validate">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig method)</a>
+</li>
+        <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DEncoderConfig.validate">(vision_architectures.nets.maxvit_3d.MaxViT3DEncoderConfig method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DConfig.validate">(vision_architectures.nets.perceiver_3d.Perceiver3DConfig method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig.validate">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig.validate">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderProcessConfig method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DConfig.validate">(vision_architectures.nets.swin_3d.Swin3DConfig method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DConfig.validate">(vision_architectures.nets.swinv2_3d.SwinV23DConfig method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig.validate">(vision_architectures.nets.swinv2_3d.SwinV23DDecoderConfig method)</a>
+</li>
+        <li><a href="modules/nets/unetr_3d_decoder.html#vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig.validate">(vision_architectures.nets.unetr_3d_decoder.UNetR3DConfig method)</a>
+</li>
+        <li><a href="modules/utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate">(vision_architectures.utils.custom_base_model.CustomBaseModel method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/blocks/mbconv_3d.html#vision_architectures.blocks.mbconv_3d.MBConv3DConfig.validate_before">validate_before() (vision_architectures.blocks.mbconv_3d.MBConv3DConfig class method)</a>
+
+      <ul>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig.validate_before">(vision_architectures.layers.embeddings.AbsolutePositionEmbeddings3DConfig class method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.PatchEmbeddings3DConfig.validate_before">(vision_architectures.layers.embeddings.PatchEmbeddings3DConfig class method)</a>
+</li>
+        <li><a href="modules/layers/embeddings.html#vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig.validate_before">(vision_architectures.layers.embeddings.RelativePositionEmbeddings3DConfig class method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentDecoderConfig.validate_before">(vision_architectures.layers.latent_space.LatentDecoderConfig class method)</a>
+</li>
+        <li><a href="modules/layers/latent_space.html#vision_architectures.layers.latent_space.LatentEncoderConfig.validate_before">(vision_architectures.layers.latent_space.LatentEncoderConfig class method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DConfig.validate_before">(vision_architectures.nets.perceiver_3d.Perceiver3DConfig class method)</a>
+</li>
+        <li><a href="modules/nets/perceiver_3d.html#vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig.validate_before">(vision_architectures.nets.perceiver_3d.Perceiver3DEncoderConfig class method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchMergingConfig.validate_before">(vision_architectures.nets.swin_3d.Swin3DPatchMergingConfig class method)</a>
+</li>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DPatchSplittingConfig.validate_before">(vision_architectures.nets.swin_3d.Swin3DPatchSplittingConfig class method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchMergingConfig.validate_before">(vision_architectures.nets.swinv2_3d.SwinV23DPatchMergingConfig class method)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DPatchSplittingConfig.validate_before">(vision_architectures.nets.swinv2_3d.SwinV23DPatchSplittingConfig class method)</a>
+</li>
+        <li><a href="modules/utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before">(vision_architectures.utils.custom_base_model.CustomBaseModel class method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules/image_readers/safetensors_reader.html#vision_architectures.image_readers.safetensors_reader.SafetensorsReader.verify_suffix">verify_suffix() (vision_architectures.image_readers.safetensors_reader.SafetensorsReader method)</a>
+</li>
+      <li>
+    vision_architectures.blocks.cnn
+
+      <ul>
+        <li><a href="modules/blocks/cnn.html#module-vision_architectures.blocks.cnn">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.blocks.heads_3d
+
+      <ul>
+        <li><a href="modules/blocks/heads_3d.html#module-vision_architectures.blocks.heads_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.blocks.mbconv_3d
+
+      <ul>
+        <li><a href="modules/blocks/mbconv_3d.html#module-vision_architectures.blocks.mbconv_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.blocks.se
+
+      <ul>
+        <li><a href="modules/blocks/se.html#module-vision_architectures.blocks.se">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.blocks.transformer
+
+      <ul>
+        <li><a href="modules/blocks/transformer.html#module-vision_architectures.blocks.transformer">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.image_readers.safetensors_reader
+
+      <ul>
+        <li><a href="modules/image_readers/safetensors_reader.html#module-vision_architectures.image_readers.safetensors_reader">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.layers.attention
+
+      <ul>
+        <li><a href="modules/layers/attention.html#module-vision_architectures.layers.attention">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.layers.codebook
+
+      <ul>
+        <li><a href="modules/layers/codebook.html#module-vision_architectures.layers.codebook">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.layers.embeddings
+
+      <ul>
+        <li><a href="modules/layers/embeddings.html#module-vision_architectures.layers.embeddings">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.layers.latent_space
+
+      <ul>
+        <li><a href="modules/layers/latent_space.html#module-vision_architectures.layers.latent_space">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.fpn_2d
+
+      <ul>
+        <li><a href="modules/nets/fpn_2d.html#module-vision_architectures.nets.fpn_2d">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    vision_architectures.nets.fpn_3d
+
+      <ul>
+        <li><a href="modules/nets/fpn_3d.html#module-vision_architectures.nets.fpn_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.maxvit_3d
+
+      <ul>
+        <li><a href="modules/nets/maxvit_3d.html#module-vision_architectures.nets.maxvit_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.perceiver_3d
+
+      <ul>
+        <li><a href="modules/nets/perceiver_3d.html#module-vision_architectures.nets.perceiver_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.swin_3d
+
+      <ul>
+        <li><a href="modules/nets/swin_3d.html#module-vision_architectures.nets.swin_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.swinv2_3d
+
+      <ul>
+        <li><a href="modules/nets/swinv2_3d.html#module-vision_architectures.nets.swinv2_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.symswin_3d
+
+      <ul>
+        <li><a href="modules/nets/symswin_3d.html#module-vision_architectures.nets.symswin_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.unetr_3d_decoder
+
+      <ul>
+        <li><a href="modules/nets/unetr_3d_decoder.html#module-vision_architectures.nets.unetr_3d_decoder">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.upernet_2d
+
+      <ul>
+        <li><a href="modules/nets/upernet_2d.html#module-vision_architectures.nets.upernet_2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.upernet_3d
+
+      <ul>
+        <li><a href="modules/nets/upernet_3d.html#module-vision_architectures.nets.upernet_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.nets.vit_3d
+
+      <ul>
+        <li><a href="modules/nets/vit_3d.html#module-vision_architectures.nets.vit_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.schedulers.decaying_sine
+
+      <ul>
+        <li><a href="modules/schedulers/decaying_sine.html#module-vision_architectures.schedulers.decaying_sine">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.schedulers.noise
+
+      <ul>
+        <li><a href="modules/schedulers/noise.html#module-vision_architectures.schedulers.noise">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.schedulers.sigmoid
+
+      <ul>
+        <li><a href="modules/schedulers/sigmoid.html#module-vision_architectures.schedulers.sigmoid">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.transforms.croppad
+
+      <ul>
+        <li><a href="modules/transforms/croppad.html#module-vision_architectures.transforms.croppad">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.transforms.resize
+
+      <ul>
+        <li><a href="modules/transforms/resize.html#module-vision_architectures.transforms.resize">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.transforms.spatial
+
+      <ul>
+        <li><a href="modules/transforms/spatial.html#module-vision_architectures.transforms.spatial">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.utils.activation_checkpointing
+
+      <ul>
+        <li><a href="modules/utils/activation_checkpointing.html#module-vision_architectures.utils.activation_checkpointing">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.utils.activations
+
+      <ul>
+        <li><a href="modules/utils/activations.html#module-vision_architectures.utils.activations">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.utils.custom_base_model
+
+      <ul>
+        <li><a href="modules/utils/custom_base_model.html#module-vision_architectures.utils.custom_base_model">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.utils.normalizations
+
+      <ul>
+        <li><a href="modules/utils/normalizations.html#module-vision_architectures.utils.normalizations">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.utils.rearrange
+
+      <ul>
+        <li><a href="modules/utils/rearrange.html#module-vision_architectures.utils.rearrange">module</a>
+</li>
+      </ul></li>
+      <li>
+    vision_architectures.utils.residuals
+
+      <ul>
+        <li><a href="modules/utils/residuals.html#module-vision_architectures.utils.residuals">module</a>
+</li>
+      </ul></li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DDecoder">ViT3DDecoder (class in vision_architectures.nets.vit_3d)</a>
+</li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DEncoder">ViT3DEncoder (class in vision_architectures.nets.vit_3d)</a>
+</li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DMIM">ViT3DMIM (class in vision_architectures.nets.vit_3d)</a>
+</li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DMIMDecoder">ViT3DMIMDecoder (class in vision_architectures.nets.vit_3d)</a>
+</li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DModel">ViT3DModel (class in vision_architectures.nets.vit_3d)</a>
+</li>
+      <li><a href="modules/nets/vit_3d.html#vision_architectures.nets.vit_3d.ViT3DSimMIM">ViT3DSimMIM (class in vision_architectures.nets.vit_3d)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules/nets/maxvit_3d.html#vision_architectures.nets.maxvit_3d.MaxViT3DBlockConfig.window_size">window_size (vision_architectures.nets.maxvit_3d.MaxViT3DBlockConfig attribute)</a>
+
+      <ul>
+        <li><a href="modules/nets/swin_3d.html#vision_architectures.nets.swin_3d.Swin3DStageConfig.window_size">(vision_architectures.nets.swin_3d.Swin3DStageConfig attribute)</a>
+</li>
+        <li><a href="modules/nets/swinv2_3d.html#vision_architectures.nets.swinv2_3d.SwinV23DStageConfig.window_size">(vision_architectures.nets.swinv2_3d.SwinV23DStageConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2023 onwards, Arjun Agarwal.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

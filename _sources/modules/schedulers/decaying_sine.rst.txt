@@ -1,0 +1,7 @@
+DecayingSine
+============
+
+.. automodule:: vision_architectures.schedulers.decaying_sine
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,11 @@
+Schedulers
+==========
+
+This section documents the schedulers components.
+
+.. toctree::
+   :maxdepth: 1
+
+   decaying_sine
+   noise
+   sigmoid
