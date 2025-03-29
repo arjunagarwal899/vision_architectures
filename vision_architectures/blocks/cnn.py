@@ -152,6 +152,7 @@ class MultiResCNNBlock3D(nn.Module):
             [
                 CNNBlock3D(
                     self.config.model_dump(),
+                    checkpointing_level,
                     in_channels=in_channels,
                     out_channels=out_channels,
                     kernel_size=3,
@@ -162,6 +163,7 @@ class MultiResCNNBlock3D(nn.Module):
 
         self.residual_conv = CNNBlock3D(
             self.config.model_dump(),
+            checkpointing_level,
             in_channels=self.config.in_channels,
             out_channels=self.config.out_channels,
             kernel_size=1,
