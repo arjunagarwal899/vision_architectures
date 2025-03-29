@@ -17,9 +17,7 @@ from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/layers/04_latent_space.ipynb 4
 class LatentEncoderConfig(CNNBlockConfig):
-    init_zero_var: bool = Field(
-        False, description="Whether to initialize weights such that output variance is close to 0"
-    )
+    init_low_var: bool = Field(True, description="Whether to initialize weights such that output variance is low")
 
     @model_validator(mode="before")
     @classmethod
@@ -70,12 +68,12 @@ class LatentEncoder(nn.Module):
         self.quant_conv_mu = nn.Conv3d(latent_dim, latent_dim, 1)
         self.quant_conv_log_var = nn.Conv3d(latent_dim, latent_dim, 1)
 
-        if self.config.init_zero_var:
-            self.init_zero_var()
+        if self.config.init_low_var:
+            self.init_low_var()
 
-    def init_zero_var(self):
-        nn.init.uniform_(self.quant_conv_log_var.weight, -5.0, -3.0)
-        nn.init.zeros_(self.quant_conv_log_var.bias)
+    def init_low_var(self, bias_constant: float = -1.0):
+        nn.init.zeros_(self.quant_conv_log_var.weight)
+        nn.init.constant_(self.quant_conv_log_var.bias, bias_constant)
 
     def forward(self, x: torch.Tensor, channels_first: bool = True):
         # x: (b, [dim], z, y, x, [dim])
