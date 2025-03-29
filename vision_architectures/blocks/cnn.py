@@ -84,10 +84,10 @@ class CNNBlock3D(nn.Module):
         if normalization is not None and normalization.startswith("batchnorm") and sequence.startswith("N"):
             bias = False
 
-        cnn_module = nn.Conv3d
+        conv_module = nn.Conv3d
         if self.config.transposed:
-            cnn_module = nn.ConvTranspose3d
-        self.cnn = cnn_module(
+            conv_module = nn.ConvTranspose3d
+        self.conv = conv_module(
             in_channels=self.config.in_channels,
             out_channels=self.config.out_channels,
             kernel_size=self.config.kernel_size,
@@ -109,7 +109,7 @@ class CNNBlock3D(nn.Module):
         x = rearrange_channels(x, channels_first, True)
         # Now x is (b, in_channels, z, y, x)
 
-        x = self.cnn(x)
+        x = self.conv(x)
         # Now x is (b, out_channels, z, y, x)
 
         for layer in self.config.sequence:
