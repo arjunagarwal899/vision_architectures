@@ -138,10 +138,14 @@ class MultiResCNNBlock3D(nn.Module):
 
         assert self.config.kernel_sizes == (3, 5, 7), "Only kernel sizes of (3, 5, 7) are supported for now"
 
-        all_out_channels = [int(self.config.out_channels * ratio) for ratio in self.config.filter_ratios]
-        if sum(all_out_channels) != self.config.out_channels:
-            all_out_channels[-1] += self.config.out_channels - sum(all_out_channels)
-
+        all_out_channels = [max(1, int(self.config.out_channels * ratio)) for ratio in self.config.filter_ratios[:-1]]
+        last_out_channels = self.config.out_channels - sum(all_out_channels)
+        all_out_channels.append(last_out_channels)
+        if last_out_channels <= 0:
+            raise ValueError(
+                f"These filter values ({self.config.filter_ratios}) won't work with the given out_channels. Please "
+                f"adjust them. The out_channels of each conv layer is coming out to be {all_out_channels}."
+            )
         all_in_channels = [self.config.in_channels] + all_out_channels[:-1]
 
         self.convs = nn.ModuleList(
