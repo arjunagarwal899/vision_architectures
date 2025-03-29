@@ -61,7 +61,7 @@ class StochasticDepthResidual(Residual):
         """
 
         if not self.training:
-            return super().forward(old_value, new_value)
+            return super().forward(new_value, old_value)
 
         if self.dropout_type == "layer":
             ndim = new_value.ndim
