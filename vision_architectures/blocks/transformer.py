@@ -150,7 +150,7 @@ class Attention1DWithMLP(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, T, dim)
 
-        hidden_states = self.residual(res_connection1, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection1)
         res_connection2 = hidden_states
         # (b, T, dim)
 
@@ -165,7 +165,7 @@ class Attention1DWithMLP(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, T, dim)
 
-        hidden_states = self.residual(res_connection2, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection2)
         # (b, T, dim)
 
         return hidden_states
@@ -234,7 +234,7 @@ class Attention3DWithMLP(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = self.residual(res_connection1, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection1)
         res_connection2 = hidden_states
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
@@ -249,7 +249,7 @@ class Attention3DWithMLP(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = self.residual(res_connection2, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection2)
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = rearrange_channels(hidden_states, False, channels_first)
@@ -328,7 +328,7 @@ class TransformerDecoderBlock1D(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, num_tokens_in_q, dim)
 
-        hidden_states = self.residual(res_connection1, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection1)
         res_connection2 = hidden_states
         # (b, num_tokens_in_q, dim)
 
@@ -343,7 +343,7 @@ class TransformerDecoderBlock1D(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, num_tokens_in_q, dim)
 
-        hidden_states = self.residual(res_connection2, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection2)
         res_connection3 = hidden_states
         # (b, num_tokens_in_q, dim)
 
@@ -358,7 +358,7 @@ class TransformerDecoderBlock1D(nn.Module):
             hidden_states = self.layernorm3(hidden_states)
             # (b, num_tokens_in_q, dim)
 
-        hidden_states = self.residual(res_connection3, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection3)
         # (b, num_tokens_in_q, dim)
 
         return hidden_states
@@ -424,7 +424,7 @@ class TransformerDecoderBlock3D(nn.Module):
             hidden_states = self.layernorm1(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = self.residual(res_connection1, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection1)
         res_connection2 = hidden_states
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
@@ -439,7 +439,7 @@ class TransformerDecoderBlock3D(nn.Module):
             hidden_states = self.layernorm2(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = self.residual(res_connection2, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection2)
         res_connection3 = hidden_states
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
@@ -454,7 +454,7 @@ class TransformerDecoderBlock3D(nn.Module):
             hidden_states = self.layernorm3(hidden_states)
             # (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = self.residual(res_connection3, hidden_states)
+        hidden_states = self.residual(hidden_states, res_connection3)
         # (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = rearrange_channels(hidden_states, False, channels_first)

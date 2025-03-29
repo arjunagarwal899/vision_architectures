@@ -186,7 +186,7 @@ class MultiResCNNBlock3D(nn.Module):
         x = torch.cat(conv_outputs, dim=1)
         # (b, out_channels, z, y, x)
 
-        x = self.residual(residual, x)
+        x = self.residual(x, residual)
         # (b, out_channels, z, y, x)
 
         x = rearrange_channels(x, True, channels_first)
