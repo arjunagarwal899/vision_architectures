@@ -53,13 +53,13 @@ class DyT(nn.Module):
 def get_norm_layer(normalization_name: str, *args, **kwargs):
     if normalization_name is None:
         norm_layer = nn.Identity()
-    elif normalization_name == "layernorm":
+    elif normalization_name in {"layernorm", "layernorm1d"}:
         norm_layer = nn.LayerNorm(*args, **kwargs)
     elif normalization_name == "layernorm2d":
         norm_layer = LayerNorm2D(*args, **kwargs)
     elif normalization_name == "layernorm3d":
         norm_layer = LayerNorm3D(*args, **kwargs)
-    elif normalization_name == "batchnorm" or normalization_name == "batchnorm1d":
+    elif normalization_name in {"batchnorm", "batchnorm1d"}:
         norm_layer = nn.BatchNorm1d(*args, **kwargs)
     elif normalization_name == "batchnorm2d":
         norm_layer = nn.BatchNorm2d(*args, **kwargs)
@@ -71,6 +71,8 @@ def get_norm_layer(normalization_name: str, *args, **kwargs):
         norm_layer = nn.InstanceNorm2d(*args, **kwargs)
     elif normalization_name == "instancenorm3d":
         norm_layer = nn.InstanceNorm3d(*args, **kwargs)
+    elif normalization_name == "groupnorm":
+        norm_layer = nn.GroupNorm(*args, **kwargs)
     elif normalization_name == "dyt":
         norm_layer = DyT(*args, **kwargs)
     else:

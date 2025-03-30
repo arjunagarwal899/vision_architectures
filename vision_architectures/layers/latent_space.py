@@ -17,7 +17,7 @@ from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/layers/04_latent_space.ipynb 4
 class LatentEncoderConfig(CNNBlockConfig):
-    init_low_var: bool = Field(True, description="Whether to initialize weights such that output variance is low")
+    init_low_var: bool = Field(False, description="Whether to initialize weights such that output variance is low")
 
     @model_validator(mode="before")
     @classmethod
