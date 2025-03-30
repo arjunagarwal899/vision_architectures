@@ -16,6 +16,8 @@ def get_act_layer(activation_name: str | Callable | None, *args, **kwargs):
         act_layer = nn.ReLU(*args, **kwargs)
     elif activation_name == "relu6":
         act_layer = nn.ReLU6(*args, **kwargs)
+    elif activation_name == "prelu":
+        act_layer = nn.PReLU(*args, **kwargs)
     elif activation_name == "leaky_relu":
         act_layer = nn.LeakyReLU(*args, **kwargs)
     elif activation_name == "sigmoid":

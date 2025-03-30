@@ -65,6 +65,12 @@ def get_norm_layer(normalization_name: str, *args, **kwargs):
         norm_layer = nn.BatchNorm2d(*args, **kwargs)
     elif normalization_name == "batchnorm3d":
         norm_layer = nn.BatchNorm3d(*args, **kwargs)
+    elif normalization_name == "instancenorm1d":
+        norm_layer = nn.InstanceNorm1d(*args, **kwargs)
+    elif normalization_name == "instancenorm2d":
+        norm_layer = nn.InstanceNorm2d(*args, **kwargs)
+    elif normalization_name == "instancenorm3d":
+        norm_layer = nn.InstanceNorm3d(*args, **kwargs)
     elif normalization_name == "dyt":
         norm_layer = DyT(*args, **kwargs)
     else:
