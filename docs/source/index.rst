@@ -29,14 +29,14 @@ Basic Usage Example:
    
    # Create a 3D Vision Transformer model
    model = ViT3DModel(
-        "dim": 768,
-        "num_heads": 12,
-        "mlp_ratio": 4,
-        "patch_size": (16, 16, 16),
-        "in_channels": 1,
-        "encoder_depth": 12,
-        "num_class_tokens": 1,
-        "layer_norm_eps": 1e-6,
+        dim=768,
+        num_heads=12,
+        mlp_ratio=4,
+        patch_size=(16, 16, 16),
+        in_channels=1,
+        encoder_depth=12,
+        num_class_tokens=1,
+        layer_norm_eps=1e-6,
    )
    
    # Forward pass with 3D input
