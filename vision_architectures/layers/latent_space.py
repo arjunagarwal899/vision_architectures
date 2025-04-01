@@ -82,6 +82,7 @@ class LatentEncoder(nn.Module):
         x: torch.Tensor,
         prior_mu: torch.Tensor | None = None,
         prior_log_var: torch.Tensor | None = None,
+        return_logvar: bool = False,
         channels_first: bool = True,
     ):
         """Get latent space representation of the input by mapping it to the latent dimension and then extracting the
@@ -95,6 +96,7 @@ class LatentEncoder(nn.Module):
             prior_log_var: The log-variance of the prior distribution. If None, x predicts the actual standard
                 deviation of the latent space, else it predicts the deviation from the prior distribution. Defaults to
                 None.
+            return_logvar: Whether to return the log-variance too. Defaults to False.
             channels_first: {CHANNELS_FIRST_DOC}. Defaults to True.
 
         Returns:
@@ -134,7 +136,12 @@ class LatentEncoder(nn.Module):
 
         z_mu = rearrange_channels(z_mu, True, channels_first)
         z_sigma = rearrange_channels(z_sigma, True, channels_first)
+        if return_logvar:
+            z_log_var = rearrange_channels(z_log_var, True, channels_first)
         # (b, [latent_dim], z, y, x, [latent_dim])
+
+        if return_logvar:
+            return z_mu, z_sigma, z_log_var
 
         return z_mu, z_sigma
 
