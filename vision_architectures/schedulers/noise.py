@@ -4,15 +4,14 @@
 __all__ = ['NoiseScheduler', 'LinearNoiseScheduler', 'CosineNoiseScheduler', 'SigmoidNoiseScheduler', 'FibonacciNoiseScheduler',
            'ExponentialNoiseScheduler', 'SquareRootNoiseScheduler']
 
-# %% ../../nbs/schedulers/02_noise.ipynb 1
-"""Gussian noise schedulers used in diffusion models"""
-
-# %% ../../nbs/schedulers/02_noise.ipynb 3
+# %% ../../nbs/schedulers/02_noise.ipynb 2
 import torch
 from torch import nn
 
-# %% ../../nbs/schedulers/02_noise.ipynb 5
+# %% ../../nbs/schedulers/02_noise.ipynb 4
 class NoiseScheduler(nn.Module):
+    """Base class for Gussian noise schedulers used in diffusion models"""
+
     def __init__(self, betas: torch.Tensor | None = None, alphas_cumprod: torch.Tensor | None = None):
         super().__init__()
 
@@ -98,14 +97,14 @@ class NoiseScheduler(nn.Module):
 
         return x0_hat, xt_minus_1_hat
 
-# %% ../../nbs/schedulers/02_noise.ipynb 7
+# %% ../../nbs/schedulers/02_noise.ipynb 6
 class LinearNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2006.11239
     def __init__(self, T: int, min_beta: float = 0.0001, max_beta: float = 0.02):
         betas = torch.linspace(min_beta, max_beta, T)
         super().__init__(betas)
 
-# %% ../../nbs/schedulers/02_noise.ipynb 9
+# %% ../../nbs/schedulers/02_noise.ipynb 8
 class CosineNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2102.09672
     def __init__(self, T: int, s: float = 0.008, min_alphas_cumprod: float = 1e-9):
@@ -116,7 +115,7 @@ class CosineNoiseScheduler(NoiseScheduler):
         alphas_cumprod.clamp_(min=min_alphas_cumprod)
         super().__init__(alphas_cumprod=alphas_cumprod)
 
-# %% ../../nbs/schedulers/02_noise.ipynb 11
+# %% ../../nbs/schedulers/02_noise.ipynb 10
 class SigmoidNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2212.11972
     def __init__(
@@ -137,7 +136,7 @@ class SigmoidNoiseScheduler(NoiseScheduler):
         alphas_cumprod.clamp_(min=min_alphas_cumprod)
         super().__init__(alphas_cumprod=alphas_cumprod)
 
-# %% ../../nbs/schedulers/02_noise.ipynb 13
+# %% ../../nbs/schedulers/02_noise.ipynb 12
 class FibonacciNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2009.00713
     def __init__(self, T: int, first_element: float = 1e-6, second_element: float = 2e-6):
@@ -150,7 +149,7 @@ class FibonacciNoiseScheduler(NoiseScheduler):
         betas = torch.Tensor(betas).clamp(0.0, 1.0)
         super().__init__(betas=betas)
 
-# %% ../../nbs/schedulers/02_noise.ipynb 15
+# %% ../../nbs/schedulers/02_noise.ipynb 14
 class ExponentialNoiseScheduler(NoiseScheduler):
     def __init__(self, T: int, beta_min: float = 0.0001, beta_max: float = 0.02):
         self.beta_min = beta_min
@@ -159,7 +158,7 @@ class ExponentialNoiseScheduler(NoiseScheduler):
         betas = beta_min * (beta_max / beta_min) ** ((torch.arange(T) - 1) / (T - 1))
         super().__init__(betas=betas)
 
-# %% ../../nbs/schedulers/02_noise.ipynb 17
+# %% ../../nbs/schedulers/02_noise.ipynb 16
 class SquareRootNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2205.14217
     def __init__(self, T: int, s: float = 0.008, min_alphas_cumprod: float = 1e-9):

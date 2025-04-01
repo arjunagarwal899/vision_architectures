@@ -27,7 +27,11 @@ class CNNBlockConfig(CustomBaseModel):
     transposed: bool = Field(False, description="Whether to perform ConvTranspose instead of Conv")
 
     normalization: str | None = "batchnorm3d"
+    normalization_pre_args: list = []
+    normalization_post_args: list = []
+    normalization_kwargs: dict = {}
     activation: str | None = "relu"
+    activation_kwargs: dict = {}
 
     sequence: Literal["ADN", "AND", "DAN", "DNA", "NAD", "NDA"] = "NDA"
 
@@ -47,7 +51,11 @@ class MultiResCNNBlockConfig(CustomBaseModel):
     transposed: bool = Field(False, description="Whether to perform ConvTranspose instead of Conv")
 
     normalization: str | None = "batchnorm3d"
+    normalization_pre_args: list = []
+    normalization_post_args: list = []
+    normalization_kwargs: dict = {}
     activation: str | None = "relu"
+    activation_kwargs: dict = {}
 
     sequence: Literal["ADN", "AND", "DAN", "DNA", "NAD", "NDA"] = "NDA"
 
@@ -97,8 +105,14 @@ class CNNBlock3D(nn.Module):
             **self.config.conv_kwargs,
         )
 
-        self.norm_layer = get_norm_layer(normalization, self.config.out_channels)
-        self.act_layer = get_act_layer(activation)
+        self.norm_layer = get_norm_layer(
+            normalization,
+            *self.config.normalization_pre_args,
+            self.config.out_channels,
+            *self.config.normalization_post_args,
+            **self.config.normalization_kwargs,
+        )
+        self.act_layer = get_act_layer(activation, **self.config.activation_kwargs)
         self.dropout = nn.Dropout(drop_prob)
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
