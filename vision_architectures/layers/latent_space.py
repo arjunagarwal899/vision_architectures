@@ -12,6 +12,7 @@ from torch import nn
 from torch.distributions import Normal, kl_divergence
 
 from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
+from ..docstrings import populate_docstring
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
 
@@ -75,17 +76,58 @@ class LatentEncoder(nn.Module):
         nn.init.normal_(self.quant_conv_log_var.weight, std=0.001)
         nn.init.constant_(self.quant_conv_log_var.bias, bias_constant)
 
-    def forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def forward(
+        self,
+        x: torch.Tensor,
+        prior_mu: torch.Tensor | None = None,
+        prior_log_var: torch.Tensor | None = None,
+        channels_first: bool = True,
+    ):
+        """Get latent space representation of the input by mapping it to the latent dimension and then extracting the
+        mean and standard deviation of the latent space. If a prior distribution is provided, the input is expected to
+        predict the deviation from the prior. The output is the mean and standard deviation of the latent space.
+
+        Args:
+            x: The input feature tensor.
+            prior_mu: The mean of the prior distribution. If None, x predicts the actual mean of the latent space,
+                else it predicts the deviation from the prior distribution. Defaults to None.
+            prior_log_var: The log-variance of the prior distribution. If None, x predicts the actual standard
+                deviation of the latent space, else it predicts the deviation from the prior distribution. Defaults to
+                None.
+            channels_first: {CHANNELS_FIRST_DOC}. Defaults to True.
+
+        Returns:
+            z_mu: The mean of the latent space.
+            z_sigma: The standard deviation of the latent space.
+        """
         # x: (b, [dim], z, y, x, [dim])
+        # z_mu_prior: (b, [latent_dim], z, y, x, [latent_dim])
+        # z_logvar_prior: (b, [latent_dim], z, y, x, [latent_dim])
+
+        assert (
+            prior_mu is None and prior_log_var is None or (prior_mu is not None and prior_log_var is not None)
+        ), "If prior_mu or prior_log_var are provided, both must be provided."
 
         x = rearrange_channels(x, channels_first, True)
         # (b, dim, z, y, x)
+        if prior_mu is not None:
+            prior_mu = rearrange_channels(prior_mu, channels_first, True)
+            prior_log_var = rearrange_channels(prior_log_var, channels_first, True)
+            # (b, latent_dim, z, y, x)
 
         x = self.dim_mapper(x, channels_first=True)
         # (b, latent_dim, z, y, x)
 
         z_mu = self.quant_conv_mu(x)
         z_log_var = self.quant_conv_log_var(x)
+        # (b, latent_dim, z, y, x)
+
+        if prior_mu is not None:
+            z_mu = prior_mu + z_mu
+            z_log_var = prior_log_var + z_log_var
+            # (b, latent_dim, z, y, x)
+
         z_log_var = torch.clamp(z_log_var, -30.0, 20.0)
         z_sigma = torch.exp(z_log_var / 2)
         # (b, latent_dim, z, y, x)
@@ -96,7 +138,7 @@ class LatentEncoder(nn.Module):
 
         return z_mu, z_sigma
 
-# %% ../../nbs/layers/04_latent_space.ipynb 8
+# %% ../../nbs/layers/04_latent_space.ipynb 9
 class LatentDecoder(nn.Module):
     def __init__(self, config: LatentDecoderConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
@@ -125,7 +167,7 @@ class LatentDecoder(nn.Module):
 
         return x
 
-# %% ../../nbs/layers/04_latent_space.ipynb 10
+# %% ../../nbs/layers/04_latent_space.ipynb 11
 class GaussianLatentSpace(nn.Module):
     def __init__(self, config: GaussianLatentSpaceConfig = {}, **kwargs):
         super().__init__()
