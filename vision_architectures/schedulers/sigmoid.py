@@ -59,10 +59,10 @@ class SigmoidScheduler:
 # %% ../../nbs/schedulers/01_sigmoid.ipynb 7
 class SigmoidLR(LRScheduler):
     def __init__(
-        self, optimizer, min_lr, max_lr, total_iters, min_x=-3.0, max_x=3.0, last_epoch=-1, verbose="deprecated"
+        self, optimizer, min_lr, max_lr, total_steps, min_x=-3.0, max_x=3.0, last_epoch=-1, verbose="deprecated"
     ):
         self.scheduler = SigmoidScheduler(min_lr, max_lr, min_x, max_x)
-        self.scheduler.set_num_steps(total_iters)
+        self.scheduler.set_num_steps(total_steps)
         super().__init__(optimizer, last_epoch, verbose)
 
     def get_lr(self):
