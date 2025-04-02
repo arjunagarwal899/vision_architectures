@@ -4,7 +4,7 @@
 __all__ = ['possible_sequences', 'CNNBlockConfig', 'MultiResCNNBlockConfig', 'CNNBlock3D', 'MultiResCNNBlock3D']
 
 # %% ../../nbs/blocks/04_cnn.ipynb 2
-from itertools import permutations
+from itertools import chain, permutations
 from typing import Any, Literal
 
 import torch
@@ -18,7 +18,7 @@ from ..utils.rearrange import rearrange_channels
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/04_cnn.ipynb 4
-possible_sequences = ["".join(p) for p in permutations("ACND")]
+possible_sequences = ["".join(p) for p in chain.from_iterable(permutations("ACDN", r) for r in range(5)) if "C" in p]
 
 
 class CNNBlockConfig(CustomBaseModel):
@@ -41,29 +41,26 @@ class CNNBlockConfig(CustomBaseModel):
 
     drop_prob: float = 0.0
 
+    @model_validator(mode="after")
+    def validate(self):
+        super().validate()
+        if self.normalization is None and "N" in self.sequence:
+            self.sequence = self.sequence.replace("N", "")
+        if self.activation is None and "A" in self.sequence:
+            self.sequence = self.sequence.replace("A", "")
+        if self.drop_prob == 0 and "D" in self.sequence:
+            self.sequence = self.sequence.replace("D", "")
+        return self
 
-class MultiResCNNBlockConfig(CustomBaseModel):
-    in_channels: int
-    out_channels: int
+
+class MultiResCNNBlockConfig(CNNBlockConfig):
     kernel_sizes: tuple[int | tuple[int, ...], ...] = (3, 5, 7)
     filter_ratios: tuple[float, ...] = Field(
         (1, 2, 3), description="Ratio of filters to out_channels for each conv layer. Will be scaled to sum to 1."
     )
     padding: Literal["same"] = "same"
-    stride: int = 1
-    conv_kwargs: dict[str, Any] = {}
-    transposed: bool = Field(False, description="Whether to perform ConvTranspose instead of Conv")
 
-    normalization: str | None = "batchnorm3d"
-    normalization_pre_args: list = []
-    normalization_post_args: list = []
-    normalization_kwargs: dict = {}
-    activation: str | None = "relu"
-    activation_kwargs: dict = {}
-
-    sequence: Literal[tuple(possible_sequences)] = "CNDA"
-
-    drop_prob: float = 0.0
+    kernel_size: int = 3
 
     @field_validator("filter_ratios", mode="after")
     @classmethod
@@ -75,12 +72,13 @@ class MultiResCNNBlockConfig(CustomBaseModel):
     def validate(self):
         super().validate()
         assert self.kernel_sizes == (3, 5, 7), "Only kernel sizes of (3, 5, 7) are supported for MultiResCNNBlock"
+        assert self.kernel_size == 3, "only kernel_size = 3 is supported for MultiResCNNBlock"
         assert len(self.kernel_sizes) == len(
             self.filter_ratios
         ), "kernel_sizes and filter_ratios must have the same length"
         return self
 
-# %% ../../nbs/blocks/04_cnn.ipynb 7
+# %% ../../nbs/blocks/04_cnn.ipynb 6
 class CNNBlock3D(nn.Module):
     def __init__(self, config: CNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
@@ -109,18 +107,26 @@ class CNNBlock3D(nn.Module):
             **self.config.conv_kwargs,
         )
 
+        self.norm = None
+        self.act = None
+        self.dropout = None
+
         norm_channels = self.config.out_channels
         if "N" in sequence.split("C")[0]:
             norm_channels = self.config.in_channels
-        self.norm_layer = get_norm_layer(
-            normalization,
-            *self.config.normalization_pre_args,
-            norm_channels,
-            *self.config.normalization_post_args,
-            **self.config.normalization_kwargs,
-        )
-        self.act_layer = get_act_layer(activation, **self.config.activation_kwargs)
-        self.dropout = nn.Dropout(drop_prob)
+
+        if "N" in sequence:
+            self.norm = get_norm_layer(
+                normalization,
+                *self.config.normalization_pre_args,
+                norm_channels,
+                *self.config.normalization_post_args,
+                **self.config.normalization_kwargs,
+            )
+        if "A" in sequence:
+            self.act = get_act_layer(activation, **self.config.activation_kwargs)
+        if "D" in sequence:
+            self.dropout = nn.Dropout(drop_prob)
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
@@ -134,11 +140,11 @@ class CNNBlock3D(nn.Module):
             if layer == "C":
                 x = self.conv(x)
             if layer == "A":
-                x = self.act_layer(x)
+                x = self.act(x)
             elif layer == "D":
                 x = self.dropout(x)
             elif layer == "N":
-                x = self.norm_layer(x)
+                x = self.norm(x)
         # (b, out_channels, z, y, x)
 
         x = rearrange_channels(x, True, channels_first)
@@ -149,7 +155,7 @@ class CNNBlock3D(nn.Module):
     def forward(self, *args, **kwargs):
         return self.checkpointing_level1(self._forward, *args, **kwargs)
 
-# %% ../../nbs/blocks/04_cnn.ipynb 10
+# %% ../../nbs/blocks/04_cnn.ipynb 9
 class MultiResCNNBlock3D(nn.Module):
     def __init__(self, config: MultiResCNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
