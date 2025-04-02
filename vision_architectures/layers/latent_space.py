@@ -87,15 +87,16 @@ class LatentEncoder(nn.Module):
     ):
         """Get latent space representation of the input by mapping it to the latent dimension and then extracting the
         mean and standard deviation of the latent space. If a prior distribution is provided, the input is expected to
-        predict the deviation from the prior. The output is the mean and standard deviation of the latent space.
+        predict the deviation from the prior. If it is not provided, one can think of it as the deviation from a
+        standard normal distribution is being predicted. The output is the mean and standard deviation of the latent
+        space.
 
         Args:
             x: The input feature tensor.
-            prior_mu: The mean of the prior distribution. If None, x predicts the actual mean of the latent space,
-                else it predicts the deviation from the prior distribution. Defaults to None.
-            prior_log_var: The log-variance of the prior distribution. If None, x predicts the actual standard
-                deviation of the latent space, else it predicts the deviation from the prior distribution. Defaults to
-                None.
+            prior_mu: The mean of the prior distribution. If None, it is assumed to be the mean of a standard normal
+                distribution. Defaults to None.
+            prior_log_var: The log-variance of the prior distribution. If None, it is assumed to be log-variance of a
+                standard normal distribution. Defaults to None.
             return_logvar: Whether to return the log-variance too. Defaults to False.
             channels_first: {CHANNELS_FIRST_DOC}. Defaults to True.
 
