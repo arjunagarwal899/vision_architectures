@@ -513,5 +513,4 @@ class PatchEmbeddings3D(CNNBlock3D):
             "kernel_size": self.config.get("patch_size"),
             "out_channels": self.config.get("dim"),
         }
-        display(config)
         super().__init__(config, checkpointing_level, **kwargs)
