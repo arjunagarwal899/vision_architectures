@@ -52,6 +52,7 @@ def title_from_module_name(module_name):
         "utils": "Utils",
         "latent_space": "Latent Space",
         "docstrings": "Docstrings",
+        "lrs": "Learning Rate Schedulers",
     }
     title = mapping.get(module_name, f"{module_name} [Add to mapping]")
 
