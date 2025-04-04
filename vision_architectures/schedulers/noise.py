@@ -60,9 +60,7 @@ class NoiseScheduler(nn.Module):
             noise = torch.randn_like(x0)
 
         unsqueeze = [slice(0, None)] + [None] * (len(x0.shape) - 1)
-        momentum_term = self.sqrt_alphas_cumprod[t][unsqueeze] * x0
-        noise_term = self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise
-        xt = momentum_term + noise_term
+        xt = self.sqrt_alphas_cumprod[t][unsqueeze] * x0 + self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise
 
         return_value = [xt]
         if not noise_provided:

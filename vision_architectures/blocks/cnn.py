@@ -37,7 +37,7 @@ class CNNBlockConfig(CustomBaseModel):
     activation: str | None = "relu"
     activation_kwargs: dict = {}
 
-    sequence: Literal[tuple(possible_sequences)] = "CNDA"
+    sequence: Literal[tuple(possible_sequences)] = "CNA"
 
     drop_prob: float = 0.0
 
@@ -46,10 +46,16 @@ class CNNBlockConfig(CustomBaseModel):
         super().validate()
         if self.normalization is None and "N" in self.sequence:
             self.sequence = self.sequence.replace("N", "")
+        if self.normalization is not None and "N" not in self.sequence:
+            raise ValueError("Add N to the sequence or set normalization=None.")
         if self.activation is None and "A" in self.sequence:
             self.sequence = self.sequence.replace("A", "")
-        if self.drop_prob == 0 and "D" in self.sequence:
+        if self.activation is not None and "A" not in self.sequence:
+            raise ValueError("Add A to the sequence or set activation=None.")
+        if self.drop_prob == 0.0 and "D" in self.sequence:
             self.sequence = self.sequence.replace("D", "")
+        if self.drop_prob > 0.0 and "D" not in self.sequence:
+            raise ValueError("Add D to the sequence or set drop_prob=0.")
         return self
 
 
