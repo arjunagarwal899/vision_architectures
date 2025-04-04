@@ -82,7 +82,9 @@ class LatentEncoder(nn.Module):
         x: torch.Tensor,
         prior_mu: torch.Tensor | None = None,
         prior_log_var: torch.Tensor | None = None,
-        return_logvar: bool = False,
+        return_log_var: bool = False,
+        min_log_var: float = -10.0,
+        max_log_var: float = 10.0,
         channels_first: bool = True,
     ):
         """Get latent space representation of the input by mapping it to the latent dimension and then extracting the
@@ -97,7 +99,11 @@ class LatentEncoder(nn.Module):
                 distribution. Defaults to None.
             prior_log_var: The log-variance of the prior distribution. If None, it is assumed to be log-variance of a
                 standard normal distribution. Defaults to None.
-            return_logvar: Whether to return the log-variance too. Defaults to False.
+            return_log_var: Whether to return the log-variance too. Defaults to False.
+            min_log_var: The minimum log-variance allowed. Defaults to -10.0, which corresponds to a variance of
+                0.000045 / a standard deviation of 0.006737.
+            max_log_var: The maximum log-variance allowed. Defaults to 10.0, which corresponds to a variance of
+                22026.465 / a standard deviation of 148.413.
             channels_first: {CHANNELS_FIRST_DOC}. Defaults to True.
 
         Returns:
@@ -106,7 +112,7 @@ class LatentEncoder(nn.Module):
         """
         # x: (b, [dim], z, y, x, [dim])
         # z_mu_prior: (b, [latent_dim], z, y, x, [latent_dim])
-        # z_logvar_prior: (b, [latent_dim], z, y, x, [latent_dim])
+        # z_log_var_prior: (b, [latent_dim], z, y, x, [latent_dim])
 
         assert (
             prior_mu is None and prior_log_var is None or (prior_mu is not None and prior_log_var is not None)
@@ -131,17 +137,17 @@ class LatentEncoder(nn.Module):
             z_log_var = prior_log_var + z_log_var
             # (b, latent_dim, z, y, x)
 
-        z_log_var = torch.clamp(z_log_var, -10.0, 10.0)
+        z_log_var = torch.clamp(z_log_var, min_log_var, max_log_var)
         z_sigma = torch.exp(z_log_var / 2).clamp(min=1e-6)
         # (b, latent_dim, z, y, x)
 
         z_mu = rearrange_channels(z_mu, True, channels_first)
         z_sigma = rearrange_channels(z_sigma, True, channels_first)
-        if return_logvar:
+        if return_log_var:
             z_log_var = rearrange_channels(z_log_var, True, channels_first)
         # (b, [latent_dim], z, y, x, [latent_dim])
 
-        if return_logvar:
+        if return_log_var:
             return z_mu, z_sigma, z_log_var
 
         return z_mu, z_sigma
