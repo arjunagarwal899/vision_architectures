@@ -131,8 +131,8 @@ class LatentEncoder(nn.Module):
             z_log_var = prior_log_var + z_log_var
             # (b, latent_dim, z, y, x)
 
-        z_log_var = torch.clamp(z_log_var, -30.0, 20.0)
-        z_sigma = torch.exp(z_log_var / 2)
+        z_log_var = torch.clamp(z_log_var, -10.0, 10.0)
+        z_sigma = torch.exp(z_log_var / 2).clamp(min=1e-6)
         # (b, latent_dim, z, y, x)
 
         z_mu = rearrange_channels(z_mu, True, channels_first)
