@@ -1,0 +1,7 @@
+UperNet3D
+=========
+
+.. automodule:: vision_architectures.nets.upernet_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:
