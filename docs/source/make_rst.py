@@ -42,17 +42,18 @@ def title_from_module_name(module_name):
         "vit_3d": "ViT3D",
         #
         "blocks": "Blocks",
+        "clamping": "Clamping / Clipping",
+        "docstrings": "Docstrings",
         "image_readers": "Image Readers",
+        "latent_space": "Latent Space",
         "layers": "Layers",
+        "lrs": "Learning Rate Schedulers",
         "nets": "Nets",
         "rearrange": "Rearrange",
         "schedulers": "Schedulers",
         "se": "Squeeze and Excitation",
         "transforms": "Transforms",
         "utils": "Utils",
-        "latent_space": "Latent Space",
-        "docstrings": "Docstrings",
-        "lrs": "Learning Rate Schedulers",
     }
     title = mapping.get(module_name, f"{module_name} [Add to mapping]")
 

@@ -13,6 +13,7 @@ from torch.distributions import Normal, kl_divergence
 
 from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
 from ..docstrings import populate_docstring
+from ..utils.clamping import symmetric_tanh_clamp
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
 
@@ -83,7 +84,7 @@ class LatentEncoder(nn.Module):
         prior_mu: torch.Tensor | None = None,
         prior_log_var: torch.Tensor | None = None,
         return_log_var: bool = False,
-        min_log_var: float = -10.0,
+        max_mu: float = 100.0,
         max_log_var: float = 10.0,
         channels_first: bool = True,
     ):
@@ -100,10 +101,11 @@ class LatentEncoder(nn.Module):
             prior_log_var: The log-variance of the prior distribution. If None, it is assumed to be log-variance of a
                 standard normal distribution. Defaults to None.
             return_log_var: Whether to return the log-variance too. Defaults to False.
-            min_log_var: The minimum log-variance allowed. Defaults to -10.0, which corresponds to a variance of
-                0.000045 / a standard deviation of 0.006737.
-            max_log_var: The maximum log-variance allowed. Defaults to 10.0, which corresponds to a variance of
-                22026.465 / a standard deviation of 148.413.
+            max_mu: Clamps sigma to the minimum and maximum values allowed i.e. to the range `[-max_mu,
+                max_mu]`. Defaults to 100.0.
+            max_log_var: Clamps log-variance to the minimum and maximum values allowed i.e. to the range `[-max_log_var,
+                max_log_var]`. Defaults to 10.0, which corresponds to a variance from 0.000045 (std=0.006737) to
+                22026.465 (std=148.413).
             channels_first: {CHANNELS_FIRST_DOC}. Defaults to True.
 
         Returns:
@@ -137,8 +139,9 @@ class LatentEncoder(nn.Module):
             z_log_var = prior_log_var + z_log_var
             # (b, latent_dim, z, y, x)
 
-        z_log_var = torch.clamp(z_log_var, min_log_var, max_log_var)
-        z_sigma = torch.exp(z_log_var / 2).clamp(min=1e-6)
+        z_mu = symmetric_tanh_clamp(z_mu, max_mu)
+        z_log_var = symmetric_tanh_clamp(z_log_var, max_log_var)
+        z_sigma = torch.exp(z_log_var / 2)
         # (b, latent_dim, z, y, x)
 
         z_mu = rearrange_channels(z_mu, True, channels_first)
