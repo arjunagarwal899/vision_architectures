@@ -41,7 +41,7 @@ class DecayingSineScheduler:
     def step(self):
         self.x = self.x + 1
 
-# %% ../../nbs/schedulers/03_decaying_sine.ipynb 7
+# %% ../../nbs/schedulers/03_decaying_sine.ipynb 8
 class DecayingSineLR(LRScheduler):
     def __init__(self, optimizer, start_lr, max_lr, wavelength, decay, last_epoch=-1, verbose="deprecated"):
         self.scheduler = DecayingSineScheduler(start_lr, max_lr, wavelength, decay)
