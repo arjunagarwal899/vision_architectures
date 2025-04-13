@@ -6,7 +6,7 @@ __all__ = ['ConstantLRWithWarmup']
 # %% ../../nbs/schedulers/04_lrs.ipynb 2
 from torch.optim.lr_scheduler import LambdaLR
 
-from .decaying_sine import DecayingSineLR  # noqa:F401
+from .cyclic import SineLR  # noqa:F401
 from .sigmoid import SigmoidLR  # noqa:F401
 
 # %% ../../nbs/schedulers/04_lrs.ipynb 5
