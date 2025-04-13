@@ -16,7 +16,7 @@ def title_from_module_name(module_name):
         "codebook": "Codebook",
         "croppad": "CropPad",
         "custom_base_model": "CustomBaseModel",
-        "decaying_sine": "DecayingSine",
+        "cyclic": "Cyclic",
         "detr_3d": "DETR3D",
         "embeddings": "Embeddings",
         "fpn_2d": "FPN2D",
