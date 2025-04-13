@@ -31,6 +31,7 @@ class SigmoidScheduler:
         if self.num_steps is None:
             self.num_steps = num_steps
             self.x_step_size = (self.max_x - self.min_x) / self.num_steps
+        return self  # to allow chaining
 
     def is_ready(self):
         return self.num_steps is not None

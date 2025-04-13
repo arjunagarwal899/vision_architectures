@@ -10,19 +10,30 @@ from torch.optim.lr_scheduler import LRScheduler
 
 # %% ../../nbs/schedulers/03_decaying_sine.ipynb 5
 class DecayingSineScheduler:
-    def __init__(self, start_value: float, max_value: float, wavelength: float, decay: float):
+    def __init__(self, start_value: float, max_value: float, decay: float):
         assert 0.0 <= decay < 1.0, "Decay must be between 0 and 1"
 
         self.start_value = start_value
         self.max_value = max_value
-        self.wavelength = wavelength
         self.decay_factor = 1 - decay
+        self.wavelength = None
 
         self.pseudo_max_value = max_value / (self.decay_factor**0.5)
 
         self.x = 1
 
+    def set_wavelength(self, wavelength: int):
+        assert wavelength > 0, "Wavelength must be greater than 0"
+        self.wavelength = wavelength
+        return self  # to allow chaining
+
+    def is_ready(self):
+        return self.wavelength is not None
+
     def get(self):
+        if not self.is_ready():
+            raise ValueError("Call set_wavelength first")
+
         # Calculate angle based on current step and wavelength and get sine value
         angle = (-0.5 + 2 * self.x / self.wavelength) * math.pi
         sine = math.sin(angle)
@@ -39,12 +50,14 @@ class DecayingSineScheduler:
         return lr
 
     def step(self):
+        if not self.is_ready():
+            raise ValueError("Call set_wavelength first")
         self.x = self.x + 1
 
 # %% ../../nbs/schedulers/03_decaying_sine.ipynb 8
 class DecayingSineLR(LRScheduler):
     def __init__(self, optimizer, start_lr, max_lr, wavelength, decay, last_epoch=-1, verbose="deprecated"):
-        self.scheduler = DecayingSineScheduler(start_lr, max_lr, wavelength, decay)
+        self.scheduler = DecayingSineScheduler(start_lr, max_lr, decay).set_wavelength(wavelength)
         self.scheduler.x -= 1  # To match the output of the non-LR scheduler
         super().__init__(optimizer, last_epoch, verbose)
 
