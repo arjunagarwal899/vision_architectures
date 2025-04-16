@@ -1,0 +1,15 @@
+Utils
+=====
+
+This section documents the utils components.
+
+.. toctree::
+   :maxdepth: 1
+
+   custom_base_model
+   residuals
+   clamping
+   rearrange
+   activation_checkpointing
+   activations
+   normalizations
