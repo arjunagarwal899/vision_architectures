@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import LRScheduler
 
 # %% ../../nbs/schedulers/03_cyclic.ipynb 5
 class SineScheduler:
-    def __init__(self, start_value: float, max_value: float, decay: float):
+    def __init__(self, start_value: float, max_value: float, decay: float = 0.0, wavelength: int | None = None):
         assert 0.0 <= decay < 1.0, "Decay must be between 0 and 1"
 
         self.start_value = start_value
@@ -21,6 +21,9 @@ class SineScheduler:
         self.pseudo_max_value = max_value / (self.decay_factor**0.5)
 
         self.x = 1
+
+        if wavelength is not None:
+            self.set_wavelength(wavelength)
 
     def set_wavelength(self, wavelength: int):
         assert wavelength > 0, "Wavelength must be greater than 0"
