@@ -43,6 +43,7 @@ def title_from_module_name(module_name):
         #
         "blocks": "Blocks",
         "clamping": "Clamping / Clipping",
+        "clipping": "Clipping",
         "docstrings": "Docstrings",
         "image_readers": "Image Readers",
         "latent_space": "Latent Space",
