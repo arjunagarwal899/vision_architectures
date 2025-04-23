@@ -54,6 +54,7 @@ def title_from_module_name(module_name):
         "schedulers": "Schedulers",
         "se": "Squeeze and Excitation",
         "transforms": "Transforms",
+        "upsample": "Upsampling",
         "utils": "Utils",
     }
     title = mapping.get(module_name, f"{module_name} [Add to mapping]")
