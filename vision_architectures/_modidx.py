@@ -1204,4 +1204,10 @@ d = { 'settings': { 'branch': 'main',
                                                       'vision_architectures.utils.residuals.add_stochastic_depth_dropout': ( 'utils/residuals.html#add_stochastic_depth_dropout',
                                                                                                                              'vision_architectures/utils/residuals.py'),
                                                       'vision_architectures.utils.residuals.remove_stochastic_depth_dropout': ( 'utils/residuals.html#remove_stochastic_depth_dropout',
-                                                                                                                                'vision_architectures/utils/residuals.py')}}}
+                                                                                                                                'vision_architectures/utils/residuals.py')},
+            'vision_architectures.utils.timesteps': { 'vision_architectures.utils.timesteps.TimestepSampler': ( 'utils/timesteps.html#timestepsampler',
+                                                                                                                'vision_architectures/utils/timesteps.py'),
+                                                      'vision_architectures.utils.timesteps.TimestepSampler.__init__': ( 'utils/timesteps.html#timestepsampler.__init__',
+                                                                                                                         'vision_architectures/utils/timesteps.py'),
+                                                      'vision_architectures.utils.timesteps.TimestepSampler.forward': ( 'utils/timesteps.html#timestepsampler.forward',
+                                                                                                                        'vision_architectures/utils/timesteps.py')}}}

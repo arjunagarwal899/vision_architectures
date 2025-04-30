@@ -53,6 +53,7 @@ def title_from_module_name(module_name):
         "rearrange": "Rearrange",
         "schedulers": "Schedulers",
         "se": "Squeeze and Excitation",
+        "timesteps": "Timesteps",
         "transforms": "Transforms",
         "upsample": "Upsampling",
         "utils": "Utils",
