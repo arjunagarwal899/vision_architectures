@@ -9,7 +9,10 @@ from typing import Literal
 import torch
 from torch import nn
 
-from ..layers.embeddings import get_absolute_timestep_embeddings_1d  # noqa: F401
+from vision_architectures.layers.embeddings import (  # noqa: F401
+    get_all_timestep_embeddings_1d,
+    get_timestep_embeddings_1d,
+)
 
 # %% ../../nbs/utils/08_timesteps.ipynb 5
 class TimestepSampler(nn.Module):
