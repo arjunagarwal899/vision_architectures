@@ -54,6 +54,8 @@ class NoiseScheduler(nn.Module):
 
         assert (t <= self.T).all(), "t should be less than T"
 
+        t.clamp_(min=0)
+
         noise_provided: bool = True
         if noise is None:
             noise_provided = False
@@ -62,10 +64,9 @@ class NoiseScheduler(nn.Module):
         unsqueeze = [slice(0, None)] + [None] * (len(x0.shape) - 1)
         xt = self.sqrt_alphas_cumprod[t][unsqueeze] * x0 + self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise
 
-        return_value = [xt]
         if not noise_provided:
-            return_value.append(noise)
-        return tuple(return_value)
+            return xt, noise
+        return xt
 
     def remove_noise(self, xt: torch.Tensor, noise_pred: torch.Tensor, t: torch.Tensor):
         # xt: (b, ...)
