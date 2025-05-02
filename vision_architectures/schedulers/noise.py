@@ -73,7 +73,7 @@ class NoiseScheduler(nn.Module):
         # noise_pred: (b, ...)
         # t: (b,)
 
-        assert (t <= self.T).all(), "t should be less than T"
+        assert (0 < t).all() and (t <= self.T).all(), "t should be between (0, T]"
 
         unsqueeze = [slice(0, None)] + [None] * (len(xt.shape) - 1)
 
