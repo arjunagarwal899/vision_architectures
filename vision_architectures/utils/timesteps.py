@@ -51,7 +51,8 @@ class TimestepSampler(nn.Module):
             num_timesteps: Number of timesteps to sample.
         """
         timesteps = self.distribution.sample((num_timesteps,))
-        timesteps = timesteps / timesteps.max()
+        if self.strategy == "gamma":  # Scale it to [0, 1]
+            timesteps = timesteps / timesteps.max()
         timesteps = (timesteps * self.total_timesteps).long()
-        timesteps = torch.clamp(timesteps, 0, self.total_timesteps - 1) + 1
+        timesteps = timesteps.clamp(1, self.total_timesteps)
         return timesteps
