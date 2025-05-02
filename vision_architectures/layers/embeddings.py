@@ -420,7 +420,7 @@ def get_specific_sinusoidal_embeddings_1d(dim: int, indices: torch.Tensor) -> to
         raise ValueError("dim must be divisible by 2")
 
     # Create frequency bands
-    omega = torch.arange(dim // 2, dtype=torch.float32)
+    omega = torch.arange(dim // 2, dtype=torch.float32, device=indices.device)
     omega /= dim / 2.0
     omega = 1.0 / (10000**omega)
     # (dim // 2)
@@ -445,9 +445,9 @@ def get_specific_sinusoidal_embeddings_1d(dim: int, indices: torch.Tensor) -> to
     return embeddings
 
 
-def get_sinusoidal_embeddings_1d(dim: int, length: int) -> torch.Tensor:
+def get_sinusoidal_embeddings_1d(dim: int, length: int, device=torch.device("cpu")) -> torch.Tensor:
     # Create position / timestep indices
-    indices = torch.arange(length, dtype=torch.int32)
+    indices = torch.arange(length, dtype=torch.int32, device=device)
     # (length,)
 
     return get_specific_sinusoidal_embeddings_1d(dim, indices)
