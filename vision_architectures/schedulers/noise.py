@@ -30,13 +30,14 @@ class NoiseScheduler(nn.Module):
         else:
             raise NotImplementedError
 
-        self.T = len(betas) - 1  # The first element is assumed not to be used i.e. t=0 is unused
+        self.T = len(betas)
 
-        betas[0] = 0.0
-        alphas[0] = 1.0
-        alphas_cumprod[0] = 1.0
-        sqrt_alphas_cumprod[0] = 1.0
-        sqrt_one_minus_alphas_cumprod[0] = 0.0
+        # For t=0 cases:
+        betas = torch.cat([torch.tensor([0.0]), betas])
+        alphas = torch.cat([torch.tensor([1.0]), alphas])
+        alphas_cumprod = torch.cat([torch.tensor([1.0]), alphas_cumprod])
+        sqrt_alphas_cumprod = torch.cat([torch.tensor([1.0]), sqrt_alphas_cumprod])
+        sqrt_one_minus_alphas_cumprod = torch.cat([torch.tensor([0.0]), sqrt_one_minus_alphas_cumprod])
 
         # Register as non-persistent buffers so that they are moved to the correct device
         self.register_buffer("betas", betas, persistent=False)
@@ -52,9 +53,7 @@ class NoiseScheduler(nn.Module):
         # t: (b,)
         # noise: (b, ...)
 
-        assert (t <= self.T).all(), "t should be less than T"
-
-        t.clamp_(min=0)
+        assert (0 < t).all() and (t <= self.T).all(), "t should be between (0, T]"
 
         noise_provided: bool = True
         if noise is None:
@@ -68,31 +67,55 @@ class NoiseScheduler(nn.Module):
             return xt, noise
         return xt
 
-    def remove_noise(self, xt: torch.Tensor, noise_pred: torch.Tensor, t: torch.Tensor):
+    def remove_noise(self, xt: torch.Tensor, noise_pred: torch.Tensor, t: torch.Tensor, eta: float = 1.0):
+        """Removes noise from the input tensor xt using the predicted noise and the time step t.
+        Equation 12 from the `DDIM paper <https://arxiv.org/pdf/2010.02502>`__.
+
+        Args:
+            xt: The input tensor with noise.
+            noise_pred: The predicted noise tensor.
+            t: The time step tensor.
+            eta: The eta parameter for DDIM sampling. Setting it to 1.0 is equivalent to DDPM sampling, while
+                setting it to 0.0 is equivalent to DDIM sampling. Use values in between for an interpolation between
+                the two.
+
+        Returns:
+            x0_hat: The estimated clean image tensor.
+            xt_minus_1_hat: The estimated previous noisy image tensor.
+        """
         # xt: (b, ...)
         # noise_pred: (b, ...)
         # t: (b,)
 
         assert (0 < t).all() and (t <= self.T).all(), "t should be between (0, T]"
+        assert 0 <= eta <= 1, "ddim_eta should be between [0, 1]"
 
+        # Slice values to get the correct shape of all required buffers
         unsqueeze = [slice(0, None)] + [None] * (len(xt.shape) - 1)
 
+        # Estimate x0
         x0_hat = (xt - (self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise_pred)) / self.sqrt_alphas_cumprod[t][
             unsqueeze
         ]
 
-        mean_batch = xt - (
-            (self.betas[t][unsqueeze] * noise_pred) / (self.sqrt_one_minus_alphas_cumprod[t][unsqueeze])
-        ) / torch.sqrt(self.alphas[t][unsqueeze])
-        variance_batch = (
-            self.betas[t][unsqueeze]
+        # Start building x{t-1}
+        mean_t = self.sqrt_alphas_cumprod[t - 1][unsqueeze] * x0_hat
+
+        variance_t = (
+            eta**2
+            * self.betas[t][unsqueeze]
             * (1.0 - self.alphas_cumprod[t - 1][unsqueeze])
             / (1.0 - self.alphas_cumprod[t][unsqueeze])
         )
-        sigma_batch = torch.sqrt(variance_batch)
-        standard_noise = torch.randn_like(xt)
+        sigma_t = torch.sqrt(variance_t)
 
-        xt_minus_1_hat = mean_batch + sigma_batch * standard_noise
+        direction_t = torch.sqrt(1.0 - self.alphas_cumprod[t - 1][unsqueeze] - variance_t) * noise_pred
+
+        xt_minus_1_hat = mean_t + direction_t
+
+        if eta > 0.0:  # Don't waste GPU memory if not required
+            standard_noise = torch.randn_like(xt)
+            xt_minus_1_hat = xt_minus_1_hat + sigma_t * standard_noise
 
         return x0_hat, xt_minus_1_hat
 
