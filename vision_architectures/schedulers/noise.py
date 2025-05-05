@@ -23,7 +23,7 @@ class NoiseScheduler(nn.Module):
             sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
             sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
         elif alphas_cumprod is not None:
-            alphas = alphas_cumprod[1:] / alphas_cumprod[:-1]
+            alphas = torch.cat([alphas_cumprod[0:1], alphas_cumprod[1:] / alphas_cumprod[:-1]], dim=0)
             betas = 1.0 - alphas
             sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
             sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
@@ -53,7 +53,7 @@ class NoiseScheduler(nn.Module):
         # t: (b,)
         # noise: (b, ...)
 
-        assert (0 < t).all() and (t <= self.T).all(), "t should be between (0, T]"
+        self._validate_timesteps(t)
 
         noise_provided: bool = True
         if noise is None:
@@ -87,7 +87,7 @@ class NoiseScheduler(nn.Module):
         # noise_pred: (b, ...)
         # t: (b,)
 
-        assert (0 < t).all() and (t <= self.T).all(), "t should be between (0, T]"
+        self._validate_timesteps(t)
         assert 0 <= eta <= 1, "ddim_eta should be between [0, 1]"
 
         # Slice values to get the correct shape of all required buffers
@@ -118,6 +118,40 @@ class NoiseScheduler(nn.Module):
             xt_minus_1_hat = xt_minus_1_hat + sigma_t * standard_noise
 
         return x0_hat, xt_minus_1_hat
+
+    def get_velocity(self, x0: torch.Tensor, t: torch.Tensor, noise: torch.Tensor):
+        """Computes the velocity of the diffusion process at time step t.
+
+        Args:
+            x0: The input tensor (clean image).
+            t: The time step tensor.
+            noise: The noise tensor.
+
+        Returns:
+            velocity: The estimated velocity tensor.
+        """
+        # x0: (b, ...)
+        # t: (b,)
+        # noise: (b, ...)
+
+        self._validate_timesteps(t)
+
+        unsqueeze = [slice(0, None)] + [None] * (len(x0.shape) - 1)
+
+        # Estimate velocity
+        velocity = (
+            self.sqrt_alphas_cumprod[t][unsqueeze] * noise - self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * x0
+        )
+
+        return velocity
+
+    def _validate_timesteps(self, timesteps: torch.Tensor, allow_zero: bool = False):
+        """Validates the timesteps tensor to ensure it is within the valid range."""
+
+        upper_bound = self.T
+        lower_bound = 0 if allow_zero else 1
+        if not (lower_bound <= timesteps).all() or not (timesteps <= upper_bound).all():
+            raise ValueError(f"Timesteps should be between [{lower_bound}, {upper_bound}]")
 
 # %% ../../nbs/schedulers/02_noise.ipynb 6
 class LinearNoiseScheduler(NoiseScheduler):
