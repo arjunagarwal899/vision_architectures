@@ -67,7 +67,15 @@ class NoiseScheduler(nn.Module):
             return xt, noise
         return xt
 
-    def remove_noise(self, xt: torch.Tensor, noise_pred: torch.Tensor, t: torch.Tensor, eta: float = 1.0):
+    def remove_noise(
+        self,
+        xt: torch.Tensor,
+        noise_pred: torch.Tensor,
+        t: torch.Tensor,
+        eta: float = 1.0,
+        x0_limits: tuple[float, float] = (-5.0, 5.0),
+        eps: float = 1e-9,
+    ):
         """Removes noise from the input tensor xt using the predicted noise and the time step t.
         Equation 12 from the `DDIM paper <https://arxiv.org/pdf/2010.02502>`__.
 
@@ -78,6 +86,8 @@ class NoiseScheduler(nn.Module):
             eta: The eta parameter for DDIM sampling. Setting it to 1.0 is equivalent to DDPM sampling, while
                 setting it to 0.0 is equivalent to DDIM sampling. Use values in between for an interpolation between
                 the two.
+            x0_limits: Clamp the x0_hat values to this range to avoid numerical instability.
+            eps: A small value to avoid division by zero.
 
         Returns:
             x0_hat: The estimated clean image tensor.
@@ -96,7 +106,8 @@ class NoiseScheduler(nn.Module):
         # Estimate x0
         x0_hat = (xt - (self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise_pred)) / self.sqrt_alphas_cumprod[t][
             unsqueeze
-        ]
+        ].clamp(min=eps)
+        x0_hat.clamp_(x0_limits[0], x0_limits[1])
 
         # Start building x{t-1}
         mean_t = self.sqrt_alphas_cumprod[t - 1][unsqueeze] * x0_hat
@@ -105,7 +116,7 @@ class NoiseScheduler(nn.Module):
             eta**2
             * self.betas[t][unsqueeze]
             * (1.0 - self.alphas_cumprod[t - 1][unsqueeze])
-            / (1.0 - self.alphas_cumprod[t][unsqueeze])
+            / (1.0 - self.alphas_cumprod[t][unsqueeze]).clamp(min=eps)
         )
         sigma_t = torch.sqrt(variance_t)
 
@@ -115,6 +126,7 @@ class NoiseScheduler(nn.Module):
 
         if eta > 0.0:  # Don't waste GPU memory if not required
             standard_noise = torch.randn_like(xt)
+            standard_noise[t == 1] = 0.0  # Don't add noise when t=1
             xt_minus_1_hat = xt_minus_1_hat + sigma_t * standard_noise
 
         return x0_hat, xt_minus_1_hat
