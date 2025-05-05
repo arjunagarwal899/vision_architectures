@@ -60,7 +60,7 @@ class NoiseScheduler(nn.Module):
             noise_provided = False
             noise = torch.randn_like(x0)
 
-        unsqueeze = [slice(0, None)] + [None] * (len(x0.shape) - 1)
+        unsqueeze = tuple([slice(0, None)] + [None] * (len(x0.shape) - 1))
         xt = self.sqrt_alphas_cumprod[t][unsqueeze] * x0 + self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise
 
         if not noise_provided:
@@ -91,7 +91,7 @@ class NoiseScheduler(nn.Module):
         assert 0 <= eta <= 1, "ddim_eta should be between [0, 1]"
 
         # Slice values to get the correct shape of all required buffers
-        unsqueeze = [slice(0, None)] + [None] * (len(xt.shape) - 1)
+        unsqueeze = tuple([slice(0, None)] + [None] * (len(xt.shape) - 1))
 
         # Estimate x0
         x0_hat = (xt - (self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise_pred)) / self.sqrt_alphas_cumprod[t][
@@ -136,7 +136,7 @@ class NoiseScheduler(nn.Module):
 
         self._validate_timesteps(t)
 
-        unsqueeze = [slice(0, None)] + [None] * (len(x0.shape) - 1)
+        unsqueeze = tuple([slice(0, None)] + [None] * (len(x0.shape) - 1))
 
         # Estimate velocity
         velocity = (
