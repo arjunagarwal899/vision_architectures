@@ -5,6 +5,8 @@ __all__ = ['NoiseScheduler', 'LinearNoiseScheduler', 'CosineNoiseScheduler', 'Si
            'ExponentialNoiseScheduler', 'SquareRootNoiseScheduler']
 
 # %% ../../nbs/schedulers/02_noise.ipynb 2
+from typing import Literal
+
 import torch
 from torch import nn
 
@@ -70,10 +72,12 @@ class NoiseScheduler(nn.Module):
     def remove_noise(
         self,
         xt: torch.Tensor,
-        noise_pred: torch.Tensor,
         t: torch.Tensor,
+        model_output: torch.Tensor,
+        model_output_type: Literal["noise", "sample", "velocity"] = "noise",
+        prev_t_offset: int = 1,
         eta: float = 1.0,
-        x0_limits: tuple[float, float] = (-5.0, 5.0),
+        x_limits: tuple[float, float] = (-5.0, 5.0),
         eps: float = 1e-9,
     ):
         """Removes noise from the input tensor xt using the predicted noise and the time step t.
@@ -81,12 +85,14 @@ class NoiseScheduler(nn.Module):
 
         Args:
             xt: The input tensor with noise.
-            noise_pred: The predicted noise tensor.
             t: The time step tensor.
+            model_output: The predicted noise / sample / velocity tensor.
+            model_output_type: The type of model output.
+            prev_t_offset: The offset to derive the previous time step. Use 1 for DDPM.
             eta: The eta parameter for DDIM sampling. Setting it to 1.0 is equivalent to DDPM sampling, while
                 setting it to 0.0 is equivalent to DDIM sampling. Use values in between for an interpolation between
                 the two.
-            x0_limits: Clamp the x0_hat values to this range to avoid numerical instability.
+            x_limits: Clamp the x0_hat and xt_miuns_1 values to this range to avoid numerical instability.
             eps: A small value to avoid division by zero.
 
         Returns:
@@ -99,28 +105,43 @@ class NoiseScheduler(nn.Module):
 
         self._validate_timesteps(t)
         assert 0 <= eta <= 1, "ddim_eta should be between [0, 1]"
+        assert 0 < prev_t_offset <= self.T, "prev_t_offset should be between [1, T]"
+
+        # Derive previous time step
+        prev_t = (t - prev_t_offset).clamp(min=0)
 
         # Slice values to get the correct shape of all required buffers
         unsqueeze = tuple([slice(0, None)] + [None] * (len(xt.shape) - 1))
 
-        # Estimate x0
-        x0_hat = (xt - (self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise_pred)) / self.sqrt_alphas_cumprod[t][
-            unsqueeze
-        ].clamp(min=eps)
-        x0_hat.clamp_(x0_limits[0], x0_limits[1])
+        # Estimate x0 and noise
+        if model_output_type == "noise":
+            noise_pred = model_output
+            x0_hat = (xt - (self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise_pred)) / self.sqrt_alphas_cumprod[
+                t
+            ][unsqueeze].clamp(min=eps)
+        elif model_output_type == "sample":
+            x0_hat = model_output
+            noise_pred = ...  # TODO
+        elif model_output_type == "velocity":
+            raise NotImplementedError("Velocity prediction is not supported yet")
+        else:
+            raise ValueError(f"Unknown model output type: {model_output_type}")
+
+        # Clamp x0_hat to avoid numerical instability
+        x0_hat.clamp_(x_limits[0], x_limits[1])
 
         # Start building x{t-1}
-        mean_t = self.sqrt_alphas_cumprod[t - 1][unsqueeze] * x0_hat
+        mean_t = self.sqrt_alphas_cumprod[prev_t][unsqueeze] * x0_hat
 
         variance_t = (
             eta**2
             * self.betas[t][unsqueeze]
-            * (1.0 - self.alphas_cumprod[t - 1][unsqueeze])
+            * (1.0 - self.alphas_cumprod[prev_t][unsqueeze])
             / (1.0 - self.alphas_cumprod[t][unsqueeze]).clamp(min=eps)
         )
         sigma_t = torch.sqrt(variance_t)
 
-        direction_t = torch.sqrt(1.0 - self.alphas_cumprod[t - 1][unsqueeze] - variance_t) * noise_pred
+        direction_t = torch.sqrt(1.0 - self.alphas_cumprod[prev_t][unsqueeze] - variance_t) * noise_pred
 
         xt_minus_1_hat = mean_t + direction_t
 
@@ -128,6 +149,8 @@ class NoiseScheduler(nn.Module):
             standard_noise = torch.randn_like(xt)
             standard_noise[t == 1] = 0.0  # Don't add noise when t=1
             xt_minus_1_hat = xt_minus_1_hat + sigma_t * standard_noise
+
+        xt_minus_1_hat.clamp_(x_limits[0], x_limits[1])
 
         return x0_hat, xt_minus_1_hat
 
