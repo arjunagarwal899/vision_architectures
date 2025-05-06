@@ -122,9 +122,18 @@ class NoiseScheduler(nn.Module):
             ][unsqueeze].clamp(min=eps)
         elif model_output_type == "sample":
             x0_hat = model_output
-            noise_pred = ...  # TODO
+            noise_pred = (
+                xt - self.sqrt_alphas_cumprod[t][unsqueeze] * model_output
+            ) / self.sqrt_one_minus_alphas_cumprod[t][unsqueeze].clamp(min=eps)
         elif model_output_type == "velocity":
-            raise NotImplementedError("Velocity prediction is not supported yet")
+            x0_hat = (
+                self.sqrt_alphas_cumprod[t][unsqueeze] * xt
+                - self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * model_output
+            )
+            noise_pred = (
+                self.sqrt_alphas_cumprod[t][unsqueeze] * model_output
+                + self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * xt
+            )
         else:
             raise ValueError(f"Unknown model output type: {model_output_type}")
 
@@ -205,6 +214,13 @@ class NoiseScheduler(nn.Module):
         """Returns the square root of one minus the cumulative product of alpha values for the given timesteps t."""
         self._validate_timesteps(t, allow_zero=True)
         return self.sqrt_one_minus_alphas_cumprod[t]
+
+    def get_signal_to_noise_ratio(self, t: torch.Tensor):
+        """Returns the signal-to-noise ratio for the given timesteps t."""
+        self._validate_timesteps(t, allow_zero=True)
+        return self.alphas_cumprod[t] / (1.0 - self.alphas_cumprod[t])
+
+    get_snr = get_signal_to_noise_ratio
 
     def _validate_timesteps(self, timesteps: torch.Tensor, allow_zero: bool = False):
         """Validates the timesteps tensor to ensure it is within the valid range."""
