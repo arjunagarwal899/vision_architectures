@@ -181,6 +181,31 @@ class NoiseScheduler(nn.Module):
 
         return velocity
 
+    def get_betas(self, t: torch.Tensor):
+        """Returns the beta values for the given timesteps t."""
+        self._validate_timesteps(t)
+        return self.betas[t]
+
+    def get_alphas(self, t: torch.Tensor):
+        """Returns the alpha values for the given timesteps t."""
+        self._validate_timesteps(t, allow_zero=True)
+        return self.alphas[t]
+
+    def get_alphas_cumprod(self, t: torch.Tensor):
+        """Returns the cumulative product of alpha values for the given timesteps t."""
+        self._validate_timesteps(t, allow_zero=True)
+        return self.alphas_cumprod[t]
+
+    def get_sqrt_alphas_cumprod(self, t: torch.Tensor):
+        """Returns the square root of the cumulative product of alpha values for the given timesteps t."""
+        self._validate_timesteps(t, allow_zero=True)
+        return self.sqrt_alphas_cumprod[t]
+
+    def get_sqrt_one_minus_alphas_cumprod(self, t: torch.Tensor):
+        """Returns the square root of one minus the cumulative product of alpha values for the given timesteps t."""
+        self._validate_timesteps(t, allow_zero=True)
+        return self.sqrt_one_minus_alphas_cumprod[t]
+
     def _validate_timesteps(self, timesteps: torch.Tensor, allow_zero: bool = False):
         """Validates the timesteps tensor to ensure it is within the valid range."""
 
