@@ -97,7 +97,8 @@ class NoiseScheduler(nn.Module):
 
         Returns:
             x0_hat: The estimated clean image tensor.
-            xt_minus_1_hat: The estimated previous noisy image tensor.
+            xt_minus_1_hat: The estimated previous noisy image tensor. Note that while this notation follows literature,
+                (t-1) need to actually mean the previous timestep, it is actually (t-prev_t_offset).
         """
         # xt: (b, ...)
         # noise_pred: (b, ...)
