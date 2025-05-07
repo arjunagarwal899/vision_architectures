@@ -14,21 +14,21 @@ from torch import nn
 class NoiseScheduler(nn.Module):
     """Base class for Gussian noise schedulers used in diffusion models"""
 
-    def __init__(self, betas: torch.Tensor | None = None, alphas_cumprod: torch.Tensor | None = None):
+    def __init__(self, betas: torch.Tensor | None = None, alpha_bars: torch.Tensor | None = None):
         super().__init__()
 
-        assert (betas is None) != (alphas_cumprod is None), "Either betas or alphas_cumprod should be provided"
+        assert (betas is None) != (alpha_bars is None), "Either betas or alpha_bars should be provided"
 
         if betas is not None:
             alphas = 1.0 - betas
-            alphas_cumprod = torch.cumprod(alphas, dim=0)
-            sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
-            sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
-        elif alphas_cumprod is not None:
-            alphas = torch.cat([alphas_cumprod[0:1], alphas_cumprod[1:] / alphas_cumprod[:-1]], dim=0)
+            alpha_bars = torch.cumprod(alphas, dim=0)
+            sqrt_alpha_bars = torch.sqrt(alpha_bars)
+            sqrt_one_minus_alpha_bars = torch.sqrt(1.0 - alpha_bars)
+        elif alpha_bars is not None:
+            alphas = torch.cat([alpha_bars[0:1], alpha_bars[1:] / alpha_bars[:-1]], dim=0)
             betas = 1.0 - alphas
-            sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
-            sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+            sqrt_alpha_bars = torch.sqrt(alpha_bars)
+            sqrt_one_minus_alpha_bars = torch.sqrt(1.0 - alpha_bars)
         else:
             raise NotImplementedError
 
@@ -37,16 +37,16 @@ class NoiseScheduler(nn.Module):
         # For t=0 cases:
         betas = torch.cat([torch.tensor([0.0]), betas])
         alphas = torch.cat([torch.tensor([1.0]), alphas])
-        alphas_cumprod = torch.cat([torch.tensor([1.0]), alphas_cumprod])
-        sqrt_alphas_cumprod = torch.cat([torch.tensor([1.0]), sqrt_alphas_cumprod])
-        sqrt_one_minus_alphas_cumprod = torch.cat([torch.tensor([0.0]), sqrt_one_minus_alphas_cumprod])
+        alpha_bars = torch.cat([torch.tensor([1.0]), alpha_bars])
+        sqrt_alpha_bars = torch.cat([torch.tensor([1.0]), sqrt_alpha_bars])
+        sqrt_one_minus_alpha_bars = torch.cat([torch.tensor([0.0]), sqrt_one_minus_alpha_bars])
 
         # Register as non-persistent buffers so that they are moved to the correct device
         self.register_buffer("betas", betas, persistent=False)
         self.register_buffer("alphas", alphas, persistent=False)
-        self.register_buffer("alphas_cumprod", alphas_cumprod, persistent=False)
-        self.register_buffer("sqrt_alphas_cumprod", sqrt_alphas_cumprod, persistent=False)
-        self.register_buffer("sqrt_one_minus_alphas_cumprod", sqrt_one_minus_alphas_cumprod, persistent=False)
+        self.register_buffer("alpha_bars", alpha_bars, persistent=False)
+        self.register_buffer("sqrt_alpha_bars", sqrt_alpha_bars, persistent=False)
+        self.register_buffer("sqrt_one_minus_alpha_bars", sqrt_one_minus_alpha_bars, persistent=False)
 
     def add_noise(self, x0: torch.Tensor, t: torch.Tensor, noise: torch.Tensor | None = None):
         """If noise is not provided, it is sampled from a standard normal distribution"""
@@ -63,7 +63,7 @@ class NoiseScheduler(nn.Module):
             noise = torch.randn_like(x0)
 
         unsqueeze = tuple([slice(0, None)] + [None] * (len(x0.shape) - 1))
-        xt = self.sqrt_alphas_cumprod[t][unsqueeze] * x0 + self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise
+        xt = self.sqrt_alpha_bars[t][unsqueeze] * x0 + self.sqrt_one_minus_alpha_bars[t][unsqueeze] * noise
 
         if not noise_provided:
             return xt, noise
@@ -117,22 +117,20 @@ class NoiseScheduler(nn.Module):
         # Estimate x0 and noise
         if model_output_type == "noise":
             noise_pred = model_output
-            x0_hat = (xt - (self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * noise_pred)) / self.sqrt_alphas_cumprod[
-                t
-            ][unsqueeze].clamp(min=eps)
+            x0_hat = (xt - (self.sqrt_one_minus_alpha_bars[t][unsqueeze] * noise_pred)) / self.sqrt_alpha_bars[t][
+                unsqueeze
+            ].clamp(min=eps)
         elif model_output_type == "sample":
             x0_hat = model_output
-            noise_pred = (
-                xt - self.sqrt_alphas_cumprod[t][unsqueeze] * model_output
-            ) / self.sqrt_one_minus_alphas_cumprod[t][unsqueeze].clamp(min=eps)
+            noise_pred = (xt - self.sqrt_alpha_bars[t][unsqueeze] * model_output) / self.sqrt_one_minus_alpha_bars[t][
+                unsqueeze
+            ].clamp(min=eps)
         elif model_output_type == "velocity":
             x0_hat = (
-                self.sqrt_alphas_cumprod[t][unsqueeze] * xt
-                - self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * model_output
+                self.sqrt_alpha_bars[t][unsqueeze] * xt - self.sqrt_one_minus_alpha_bars[t][unsqueeze] * model_output
             )
             noise_pred = (
-                self.sqrt_alphas_cumprod[t][unsqueeze] * model_output
-                + self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * xt
+                self.sqrt_alpha_bars[t][unsqueeze] * model_output + self.sqrt_one_minus_alpha_bars[t][unsqueeze] * xt
             )
         else:
             raise ValueError(f"Unknown model output type: {model_output_type}")
@@ -141,17 +139,17 @@ class NoiseScheduler(nn.Module):
         x0_hat.clamp_(x_limits[0], x_limits[1])
 
         # Start building x{t-1}
-        mean_t = self.sqrt_alphas_cumprod[prev_t][unsqueeze] * x0_hat
+        mean_t = self.sqrt_alpha_bars[prev_t][unsqueeze] * x0_hat
 
         variance_t = (
             eta**2
             * self.betas[t][unsqueeze]
-            * (1.0 - self.alphas_cumprod[prev_t][unsqueeze])
-            / (1.0 - self.alphas_cumprod[t][unsqueeze]).clamp(min=eps)
+            * (1.0 - self.alpha_bars[prev_t][unsqueeze])
+            / (1.0 - self.alpha_bars[t][unsqueeze]).clamp(min=eps)
         )
         sigma_t = torch.sqrt(variance_t)
 
-        direction_t = torch.sqrt(1.0 - self.alphas_cumprod[prev_t][unsqueeze] - variance_t) * noise_pred
+        direction_t = torch.sqrt(1.0 - self.alpha_bars[prev_t][unsqueeze] - variance_t) * noise_pred
 
         xt_minus_1_hat = mean_t + direction_t
 
@@ -184,51 +182,71 @@ class NoiseScheduler(nn.Module):
         unsqueeze = tuple([slice(0, None)] + [None] * (len(x0.shape) - 1))
 
         # Estimate velocity
-        velocity = (
-            self.sqrt_alphas_cumprod[t][unsqueeze] * noise - self.sqrt_one_minus_alphas_cumprod[t][unsqueeze] * x0
-        )
+        velocity = self.sqrt_alpha_bars[t][unsqueeze] * noise - self.sqrt_one_minus_alpha_bars[t][unsqueeze] * x0
 
         return velocity
 
-    def get_betas(self, t: torch.Tensor):
+    def get_betas(self, t: torch.Tensor | None = None):
         """Returns the beta values for the given timesteps t."""
-        self._validate_timesteps(t)
+        if t is None:
+            t = slice(0, None)
+        self._validate_timesteps(t, allow_zero=True)
         return self.betas[t]
 
-    def get_alphas(self, t: torch.Tensor):
+    def get_alphas(self, t: torch.Tensor | None = None):
         """Returns the alpha values for the given timesteps t."""
+        if t is None:
+            t = slice(0, None)
         self._validate_timesteps(t, allow_zero=True)
         return self.alphas[t]
 
-    def get_alphas_cumprod(self, t: torch.Tensor):
+    def get_alpha_bars(self, t: torch.Tensor | None = None):
         """Returns the cumulative product of alpha values for the given timesteps t."""
+        if t is None:
+            t = slice(0, None)
         self._validate_timesteps(t, allow_zero=True)
-        return self.alphas_cumprod[t]
+        return self.alpha_bars[t]
 
-    def get_sqrt_alphas_cumprod(self, t: torch.Tensor):
+    def get_sqrt_alpha_bars(self, t: torch.Tensor | None = None):
         """Returns the square root of the cumulative product of alpha values for the given timesteps t."""
+        if t is None:
+            t = slice(0, None)
         self._validate_timesteps(t, allow_zero=True)
-        return self.sqrt_alphas_cumprod[t]
+        return self.sqrt_alpha_bars[t]
 
-    def get_sqrt_one_minus_alphas_cumprod(self, t: torch.Tensor):
+    def get_sqrt_one_minus_alpha_bars(self, t: torch.Tensor | None = None):
         """Returns the square root of one minus the cumulative product of alpha values for the given timesteps t."""
+        if t is None:
+            t = slice(0, None)
         self._validate_timesteps(t, allow_zero=True)
-        return self.sqrt_one_minus_alphas_cumprod[t]
+        return self.sqrt_one_minus_alpha_bars[t]
 
-    def get_signal_to_noise_ratio(self, t: torch.Tensor):
+    def get_signal_to_noise_ratio(self, t: torch.Tensor | None = None):
         """Returns the signal-to-noise ratio for the given timesteps t."""
+        if t is None:
+            t = slice(0, None)
         self._validate_timesteps(t, allow_zero=True)
-        return self.alphas_cumprod[t] / (1.0 - self.alphas_cumprod[t])
+        snr = self.alpha_bars[t] / (1.0 - self.alpha_bars[t])
+        return snr.nan_to_num(posinf=1e6)  # Take care of no noise case
 
     get_snr = get_signal_to_noise_ratio
 
-    def _validate_timesteps(self, timesteps: torch.Tensor, allow_zero: bool = False):
+    def _validate_timesteps(self, timesteps: torch.Tensor | slice, allow_zero: bool = False):
         """Validates the timesteps tensor to ensure it is within the valid range."""
 
         upper_bound = self.T
         lower_bound = 0 if allow_zero else 1
-        if not (lower_bound <= timesteps).all() or not (timesteps <= upper_bound).all():
-            raise ValueError(f"Timesteps should be between [{lower_bound}, {upper_bound}]")
+
+        error_msg = f"Timesteps should be between [{lower_bound}, {upper_bound}]"
+
+        if isinstance(timesteps, torch.Tensor):
+            if not (lower_bound <= timesteps).all() or not (timesteps <= upper_bound).all():
+                raise ValueError(error_msg)
+        else:
+            if timesteps.start is not None and not (lower_bound <= timesteps.start):
+                raise ValueError(error_msg)
+            if timesteps.stop is not None and not (timesteps.stop <= upper_bound):
+                raise ValueError(error_msg)
 
 # %% ../../nbs/schedulers/02_noise.ipynb 6
 class LinearNoiseScheduler(NoiseScheduler):
@@ -240,19 +258,24 @@ class LinearNoiseScheduler(NoiseScheduler):
 # %% ../../nbs/schedulers/02_noise.ipynb 8
 class CosineNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2102.09672
-    def __init__(self, T: int, s: float = 0.008, min_alphas_cumprod: float = 1e-9):
+    def __init__(self, T: int, s: float = 0.008, min_alpha_bars: float = 1e-9):
         self.s = s
 
-        alphas_cumprod = torch.cos(((torch.arange(T) / T + s) / (1 + s)) * (torch.pi / 2)) ** 2
-        alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
-        alphas_cumprod.clamp_(min=min_alphas_cumprod)
-        super().__init__(alphas_cumprod=alphas_cumprod)
+        T = T + 1  # Generate schedule for T+1 steps
+
+        alpha_bars = torch.cos(((torch.arange(T) / T + s) / (1 + s)) * (torch.pi / 2)) ** 2
+        alpha_bars = alpha_bars / alpha_bars[0]
+        alpha_bars.clamp_(min=min_alpha_bars)
+
+        alpha_bars = alpha_bars[1:]  # Remove t=0 step, this is added back in super().__init__()
+
+        super().__init__(alpha_bars=alpha_bars)
 
 # %% ../../nbs/schedulers/02_noise.ipynb 10
 class SigmoidNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2212.11972
     def __init__(
-        self, T: int, tau: float = 1.0, sigmoid_start: int = -3, sigmoid_end: int = 3, min_alphas_cumprod: float = 1e-9
+        self, T: int, tau: float = 1.0, sigmoid_start: int = -3, sigmoid_end: int = 3, min_alpha_bars: float = 1e-9
     ):
         self.tau = tau
         self.sigmoid_start = sigmoid_start
@@ -263,11 +286,9 @@ class SigmoidNoiseScheduler(NoiseScheduler):
         v_start = torch.sigmoid(start / tau)
         v_end = torch.sigmoid(end / tau)
 
-        alphas_cumprod = (-torch.sigmoid(((torch.arange(T) / T) * (end - start) + start) / tau) + v_end) / (
-            v_end - v_start
-        )
-        alphas_cumprod.clamp_(min=min_alphas_cumprod)
-        super().__init__(alphas_cumprod=alphas_cumprod)
+        alpha_bars = (-torch.sigmoid(((torch.arange(T) / T) * (end - start) + start) / tau) + v_end) / (v_end - v_start)
+        alpha_bars.clamp_(min=min_alpha_bars)
+        super().__init__(alpha_bars=alpha_bars)
 
 # %% ../../nbs/schedulers/02_noise.ipynb 12
 class FibonacciNoiseScheduler(NoiseScheduler):
@@ -294,9 +315,9 @@ class ExponentialNoiseScheduler(NoiseScheduler):
 # %% ../../nbs/schedulers/02_noise.ipynb 16
 class SquareRootNoiseScheduler(NoiseScheduler):
     # https://arxiv.org/pdf/2205.14217
-    def __init__(self, T: int, s: float = 0.008, min_alphas_cumprod: float = 1e-9):
+    def __init__(self, T: int, s: float = 0.008, min_alpha_bars: float = 1e-9):
         self.s = s
 
-        alphas_cumprod = 1 - torch.sqrt(torch.arange(T) / T + s)
-        alphas_cumprod.clamp_(min=min_alphas_cumprod)
-        super().__init__(alphas_cumprod=alphas_cumprod)
+        alpha_bars = 1 - torch.sqrt(torch.arange(T) / T + s)
+        alpha_bars.clamp_(min=min_alpha_bars)
+        super().__init__(alpha_bars=alpha_bars)

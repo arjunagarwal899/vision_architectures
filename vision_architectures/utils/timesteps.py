@@ -20,27 +20,56 @@ class TimestepSampler(nn.Module):
 
     Args:
         total_timesteps: Total number of timesteps.
-        strategy: Sampling strategy. Can be "gamma" or "uniform".
-        gamma_alpha: Alpha parameter for the gamma distribution.
-        gamma_beta: Beta parameter for the gamma distribution.
+        strategy: Sampling strategy.
+        gamma_alpha: Used when strategy == gamma. Alpha parameter for the gamma distribution.
+        gamma_spread: Used when strategy == gamma. Controls how spread out the distribution is.
+        signal_to_noise_ratios: Used when strategy == importance. Signal-to-noise ratios of the noise schedule.
+        temperature: Used when strategy == importance. Temperature for the softmax distribution.
     """
 
     def __init__(
         self,
         total_timesteps: int,
-        strategy: Literal["gamma", "uniform"],
+        strategy: Literal["uniform", "gamma", "importance"],
         gamma_alpha: float = 1.0,
-        gamma_beta: float = 1.0,
+        gamma_spread: float = 0.8,
+        signal_to_noise_ratios: torch.Tensor = None,
+        temperature: float = 2.0,
     ):
         super().__init__()
 
-        self.total_timesteps = total_timesteps
+        self.T = total_timesteps
         self.strategy = strategy
 
         if strategy == "uniform":
-            self.distribution = torch.distributions.Uniform(0, 1)
+            # Sample uniformly from [1, T]
+            self.distribution = torch.distributions.Uniform(1, self.T + 1)
         elif strategy == "gamma":
-            self.distribution = torch.distributions.Gamma(gamma_alpha, gamma_beta)
+            raise NotImplementedError("This implementation still needs to be completeed.")
+            # Sample from a gamma distribution. There is no point in parameterizing beta as the sample is normalized
+            self.gamma_spread = gamma_spread
+            self.distribution = torch.distributions.Gamma(gamma_alpha, 1)
+        elif strategy == "importance":
+            raise NotImplementedError("This implementation still needs to be completeed.")
+            # Sample from [0, T] where prob(t) is d(log(SNR))/dt and prob(t=0) = 0
+            if signal_to_noise_ratios is None:
+                raise ValueError("signal_to_noise_ratios must be provided for importance sampling.")
+
+            self.snr = signal_to_noise_ratios
+            self.log_snr = torch.log(signal_to_noise_ratios)
+            self.log_snr_gradient = torch.abs(self.log_snr[1:] - self.log_snr[:-1])
+            self.log_snr_gradient = torch.cat(
+                [
+                    torch.zeros(
+                        1,
+                    ),
+                    self.log_snr_gradient[0:1],
+                    self.log_snr_gradient,
+                ],
+                dim=0,
+            )
+            self.weights = self.log_snr_gradient ** (1 / temperature)
+            self.distribution = torch.distributions.Categorical(probs=self.weights)
         else:
             raise NotImplementedError(f"Sampling strategy {strategy} not implemented.")
 
@@ -51,8 +80,9 @@ class TimestepSampler(nn.Module):
             num_timesteps: Number of timesteps to sample.
         """
         timesteps = self.distribution.sample((num_timesteps,))
-        if self.strategy == "gamma":  # Scale it to [0, 1]
+        if self.strategy == "gamma":
+            timesteps = timesteps**self.gamma_spread
             timesteps = timesteps / timesteps.max()
-        timesteps = (timesteps * self.total_timesteps).long()
-        timesteps = timesteps.clamp(1, self.total_timesteps)
+            timesteps = timesteps * self.T
+        timesteps = timesteps.clamp(1, self.T).long()
         return timesteps
