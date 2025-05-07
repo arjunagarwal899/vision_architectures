@@ -1,0 +1,7 @@
+MaxViT3D
+========
+
+.. automodule:: vision_architectures.nets.maxvit_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:
