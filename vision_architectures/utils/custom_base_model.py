@@ -27,6 +27,18 @@ class CustomBaseModel(BaseModel):
         if not hasattr(self, key):
             setattr(self, key, value)
 
+    @classmethod
+    def model_validate(cls, obj, cast_to_super: bool = True, **kwargs):
+        """Base class method for validating data before creating the model."""
+        if cast_to_super:
+            # if the provided data is an instance of a subclass of the desired model, the validated model remains an
+            # instance of the subclass. This is not desired in this repo, so we convert CustomBaseModel instances to
+            # dictionaries before validating
+            if isinstance(obj, CustomBaseModel):
+                obj = obj.model_dump()
+        validated = super().model_validate(obj, **kwargs)
+        return validated
+
     @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
