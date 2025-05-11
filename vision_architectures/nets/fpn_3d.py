@@ -18,6 +18,7 @@ from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 # %% ../../nbs/nets/08_fpn_3d.ipynb 4
 class FPN3DBlockConfig(CNNBlockConfig):
     dim: int
+    kernel_size: int = 3
     skip_conn_dim: int
     is_deepest: bool = Field(False, description="True if this is the deepest block in the FPN, else False")
     interpolation_mode: str = "trilinear"
@@ -34,19 +35,25 @@ class FPN3DConfig(CustomBaseModel):
     def dim(self):
         return self.blocks[0].dim
 
+    @model_validator(mode="before")
     @classmethod
-    def build(cls, skip_conn_dims: list[int], kernel_size: int = 3, **kwargs):
-        blocks = []
-        for i, skip_conn_dim in enumerate(skip_conn_dims):
-            blocks.append(
-                FPN3DBlockConfig(
-                    skip_conn_dim=skip_conn_dim,
-                    is_deepest=(i == len(skip_conn_dims) - 1),
-                    kernel_size=kernel_size,
-                    **kwargs
-                )
-            )
-        return cls(blocks=blocks)
+    def validate_before(cls, data):
+        if isinstance(data, dict):
+            # Add skip_conn_dim first
+            if "skip_conn_dims" in data:
+                # Assume blocks are to be built from scratch
+                assert "blocks" not in data, "Cannot provide both skip_conn_dims and blocks"
+                skip_conn_dims = data.pop("skip_conn_dims")
+                blocks: list[dict] = []
+                for i, skip_conn_dim in enumerate(skip_conn_dims):
+                    blocks.append({"skip_conn_dim": skip_conn_dim, "is_deepest": (i == len(skip_conn_dims) - 1)})
+                data.setdefault("blocks", blocks)
+
+            # Add the remaining
+            for key, value in data.items():
+                for block in data.get("blocks", []):
+                    block.setdefault(key, value)
+        return data
 
     @model_validator(mode="after")
     def validate(self):
