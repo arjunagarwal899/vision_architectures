@@ -22,6 +22,11 @@ class CustomBaseModel(BaseModel):
         """Returns the value of the key if it exists, otherwise returns the default value."""
         return getattr(self, key, default)
 
+    def setdefault(self, key: str, value: Any) -> None:
+        """Sets the default value of the key if it does not exist."""
+        if not hasattr(self, key):
+            setattr(self, key, value)
+
     @model_validator(mode="before")
     @classmethod
     def validate_before(cls, data):
@@ -34,7 +39,7 @@ class CustomBaseModel(BaseModel):
         return self
 
     def __contains__(self, key):
-        return key in self.model_fields
+        return hasattr(self, key)
 
     def __or__(self, other: dict):
         if not isinstance(other, (dict, CustomBaseModel)):
