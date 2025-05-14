@@ -13,14 +13,17 @@ from ..blocks.mbconv_3d import MBConv3D, MBConv3DConfig
 from ..blocks.transformer import Attention3DWithMLPConfig
 from .swinv2_3d import SwinV23DLayer
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.custom_base_model import CustomBaseModel, model_validator
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 4
-class MaxViT3DStem0Config(CustomBaseModel):
+class MaxViT3DStem0Config(CNNBlockConfig):
     in_channels: int
+    kernel_size: int = 3
     dim: int
     depth: int = 2
+
+    out_channels: None = Field(None, description="This is defined by dim")
 
 
 class MaxViT3DBlockConfig(MBConv3DConfig, Attention3DWithMLPConfig):
@@ -57,29 +60,19 @@ class MaxViT3DStem0(nn.Module):
         self.layers = nn.ModuleList()
         self.layers.append(
             CNNBlock3D(
-                CNNBlockConfig(
-                    in_channels=self.config.in_channels,
-                    out_channels=self.config.dim,
-                    kernel_size=3,
-                    stride=2,
-                    padding=1,
-                    normalization="batchnorm3d",
-                    activation="gelu",
-                ),
+                self.config.model_dump() | dict(out_channels=self.config.dim),
                 checkpointing_level,
             )
         )
         for i in range(self.config.depth - 1):
             self.layers.append(
                 CNNBlock3D(
-                    CNNBlockConfig(
+                    self.config.model_dump()
+                    | dict(
                         in_channels=self.config.dim,
                         out_channels=self.config.dim,
-                        kernel_size=3,
-                        stride=1,
-                        padding="same",
-                        normalization="batchnorm3d" if i < self.config.depth - 1 else None,
-                        activation="gelu" if i < self.config.depth - 1 else None,
+                        normalization=self.config.normalization if i < self.config.depth - 1 else None,
+                        activation=self.config.activation if i < self.config.depth - 1 else None,
                     ),
                     checkpointing_level,
                 )
@@ -260,10 +253,14 @@ class MaxViT3DEncoder(nn.Module):
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    def _forward(self, x: torch.Tensor, return_intermediates: bool = False, channels_first: bool = True):
         # x: (b, [in_channels], z, y, x, [in_channels])
+        features = []
         for stem in self.stems:
             x = stem(x, channels_first)
+            features.append(x)
+        if return_intermediates:
+            return x, features
         return x
 
     def forward(self, *args, **kwargs):

@@ -28,7 +28,7 @@ class CustomBaseModel(BaseModel):
             setattr(self, key, value)
 
     @classmethod
-    def model_validate(cls, obj, cast_to_super: bool = True, **kwargs):
+    def model_validate(cls, obj, cast_to_super: bool = False, **kwargs):
         """Base class method for validating data before creating the model."""
         if cast_to_super:
             # if the provided data is an instance of a subclass of the desired model, the validated model remains an

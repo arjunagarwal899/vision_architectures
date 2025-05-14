@@ -63,31 +63,37 @@ class MBConv3D(nn.Module):
         se_config = self.config.model_dump() | {"dim": hidden_dim, "r": se_reduction_ratio}
 
         self.expand = CNNBlock3D(
-            self.config,
+            self.config.model_dump()
+            | dict(
+                in_channels=dim,
+                out_channels=hidden_dim,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            ),
             checkpointing_level,
-            in_channels=dim,
-            out_channels=hidden_dim,
-            kernel_size=1,
-            stride=1,
-            padding=0,
         )
         self.depthwise_conv = CNNBlock3D(
-            self.config,
+            self.config.model_dump()
+            | dict(
+                in_channels=hidden_dim,
+                out_channels=hidden_dim,
+                conv_kwargs=self.config.conv_kwargs | dict(groups=hidden_dim),
+            ),
             checkpointing_level,
-            in_channels=hidden_dim,
-            out_channels=hidden_dim,
-            conv_kwargs=self.config.conv_kwargs | dict(groups=hidden_dim),
         )
         self.se = SEBlock3D(se_config, checkpointing_level)
         self.pointwise_conv = CNNBlock3D(
-            self.config,
+            self.config.model_dump()
+            | dict(
+                in_channels=hidden_dim,
+                out_channels=out_dim,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                activation=None,
+            ),
             checkpointing_level,
-            in_channels=hidden_dim,
-            out_channels=out_dim,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            activation=None,
         )
 
         self.residual = Residual()
