@@ -2,9 +2,10 @@
 
 # %% auto 0
 __all__ = ['possible_sequences', 'CNNBlockConfig', 'MultiResCNNBlockConfig', 'CNNBlock3D', 'CNNBlock2D', 'MultiResCNNBlock3D',
-           'MultiResCNNBlock2D', 'TSPConv3d']
+           'MultiResCNNBlock2D', 'TensorSplittingConv']
 
 # %% ../../nbs/blocks/04_cnn.ipynb 2
+from functools import cache
 from itertools import chain, permutations
 from typing import Any, Literal
 
@@ -17,6 +18,7 @@ from ..utils.custom_base_model import CustomBaseModel, Field, field_validator, m
 from ..utils.normalizations import get_norm_layer
 from ..utils.rearrange import rearrange_channels
 from ..utils.residuals import Residual
+from ..utils.splitter_merger import Splitter
 
 # %% ../../nbs/blocks/04_cnn.ipynb 4
 possible_sequences = ["".join(p) for p in chain.from_iterable(permutations("ACDN", r) for r in range(5)) if "C" in p]
@@ -272,9 +274,143 @@ class MultiResCNNBlock2D(_MultiResCNNBlock):
         super().__init__(2, config, checkpointing_level, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 21
-class TSPConv3d(nn.Conv3d):
-    """A 3D convolution layer with tensor splitting to allow for larger inputs to be processed across multiple
-    devices."""
+class TensorSplittingConv(nn.Module):
+    """Convolution layer that operates on splits of a tensor on desired device and concatenates the results to give a
+    lossless output. This is useful for large tensors that cannot fit in memory."""
 
-    def __init__(self):
-        pass
+    def __init__(self, conv: nn.Module, num_splits: int | tuple[int, ...]):
+        super().__init__()
+
+        if isinstance(conv, nn.Conv2d):
+            self.spatial_dims = 2
+        elif isinstance(conv, nn.Conv3d):
+            self.spatial_dims = 3
+        else:
+            raise ValueError("Unsupported convolution type. Only Conv2d and Conv3d are supported.")
+
+        assert conv.stride == (1,) * self.spatial_dims, "Stride must be 1 for tensor splitting convolution."
+        assert conv.padding == "same", "Padding must be 'same' for tensor splitting convolution."
+
+        if isinstance(num_splits, int):
+            num_splits = (num_splits,) * self.spatial_dims
+        assert len(num_splits) == self.spatial_dims, "num_splits must be a tuple of length equal to spatial_dims"
+
+        self.conv = conv
+        self.num_splits = num_splits
+
+    @cache
+    def get_receptive_field(self) -> tuple[int, ...]:
+        """Calculate the receptive field of the convolution layer."""
+        kernel_size = torch.tensor(self.conv.kernel_size)
+        dilation = torch.tensor(self.conv.dilation)
+        receptive_field = dilation * (kernel_size - 1) + 1
+        return tuple(receptive_field.tolist())
+
+    @cache
+    def get_edge_context(self):
+        """Calculate the context size required to eliminate edge effects when merging the conv outputs into one."""
+        receptive_field = self.get_receptive_field()
+        context = torch.tensor(receptive_field) // 2
+        return tuple(context.tolist())
+
+    def get_split_size(self, input_shape: tuple[int, ...] | torch.Tensor) -> tuple[int, ...]:
+        """Calculate the split size for each dimension based on the input shape and number of splits.
+
+        Args:
+            input_shape: Shape of the input tensor. If a tensor is provided, its shape will be used.
+
+        Returns:
+            Tuple of split sizes for each dimension.
+        """
+        if isinstance(input_shape, torch.Tensor):
+            input_shape = input_shape.shape
+        input_shape = input_shape[-self.spatial_dims :]
+
+        context = self.get_edge_context()
+
+        split_size = []
+        for i in range(self.spatial_dims):
+            dim = input_shape[i]
+            num_splits = self.num_splits[i]
+            if dim % num_splits != 0:
+                raise ValueError(f"Input dimension {dim} is not divisible by number of splits {num_splits}.")
+            split_size.append(dim // num_splits + 2 * context[i])
+        split_size = tuple(split_size)
+        return split_size
+
+    def get_split_stride(self, input_shape: tuple[int, ...] | torch.Tensor) -> tuple[int, ...]:
+        """Calculate the split stride for each dimension based on the input shape and context size."""
+        context = self.get_edge_context()
+        split_size = self.get_split_size(input_shape)
+        split_stride = [split_size[i] - 2 * context[i] for i in range(self.spatial_dims)]
+        assert all(
+            split_stride[i] > 0 for i in range(self.spatial_dims)
+        ), "Split stride must be greater than 0 for all dimensions."
+        return split_stride
+
+    def pad_input(self, x: torch.Tensor) -> torch.Tensor:
+        """Pad the input with the context size for consistent merging."""
+        context = self.get_edge_context()
+        padding = [0, 0] * (x.ndim - self.spatial_dims)
+        for i in range(self.spatial_dims):
+            padding.extend([context[i], context[i]])
+        x = nn.functional.pad(x, list(reversed(padding)))
+        return x
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through the convolution layer with tensor splitting parallelism. Main convolution occurs on it's
+             device, but the output is built on the input tensor's device.
+
+        Args:
+            x: Input tensor of shape (batch_size, in_channels, [z], y, x).
+
+        Returns:
+            Output tensor of shape (batch_size, out_channels, [z], y, x).
+        """
+        input_device = x.device
+        B, DIMS = x.shape[0], x.shape[2:]  # (batch_size, in_channels, [z], y, x)
+
+        # Calculate split size
+        split_size = self.get_split_size(x)
+
+        # Identify the stride required to split the input tensor such that overlapping regions can be counted only once
+        split_stride = self.get_split_stride(x)
+
+        # Pad the input
+        x = self.pad_input(x)
+
+        # Split the input tensor
+        splitter = Splitter(
+            split_dims=self.spatial_dims,
+            split_size=split_size,
+            stride=split_stride,
+        )
+        positions = splitter.get_positions(x)
+        x = splitter(x)
+        # (num_splits, batch_size, in_channels, [z1], y1, x1)
+
+        # Run the convolution on each split
+        outputs = []
+        for x_split in x:
+            x_split = x_split.to(self.conv.weight.device)
+            x_split = self.conv(x_split)
+            x_split = x_split.to(input_device)
+            outputs.append(x_split)
+        outputs = torch.stack(outputs, dim=0)
+        # (num_splits, batch_size, out_channels, [z1], y1, x1)
+
+        # Merge the outputs
+        context = self.get_edge_context()
+        merged = torch.zeros((B, outputs.shape[2], *DIMS), device=input_device)
+        for output, position in zip(outputs, positions):
+            output_slices = [slice(None), slice(None)]
+            for i in range(self.spatial_dims):
+                output_slices.append(slice(context[i], -context[i] if context[i] != 0 else None))
+            output = output[tuple(output_slices)]
+
+            merged_slices = [slice(None), slice(None)]
+            for i in range(self.spatial_dims):
+                merged_slices.append(slice(position[i], position[i] + split_stride[i]))
+            merged[tuple(merged_slices)] = output
+
+        return merged
