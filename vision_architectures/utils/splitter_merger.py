@@ -18,8 +18,11 @@ class SplitterConfig(CustomBaseModel):
     split_dims: int = Field(3, description="Number of spatial dimensions.")
     split_size: int | tuple[int, ...]
     stride: int | tuple[int, ...]
-    extend_mode: Literal["pad", "wrap"] = Field(
-        "pad", description="Whether to pad or wrap the input tensor to get correct windows."
+    extend_mode: Literal["pad", "wrap"] | None = Field(
+        "pad",
+        description=(
+            "Whether to pad or wrap the input tensor to get correct windows. If None, exact divisibility is expected"
+        ),
     )
 
     raise_large_stride_error: bool = True
@@ -154,6 +157,8 @@ class Splitter:
                     x = F.pad(x, padding)
                 elif self.config.extend_mode == "wrap":
                     x = torch.cat([x, x.narrow(dim, 0, expansion)], dim=dim)
+                elif self.config.extend_mode is None:
+                    assert expansion == 0, "Exact divisibility is expected when extend_mode is None."
 
         return x
 

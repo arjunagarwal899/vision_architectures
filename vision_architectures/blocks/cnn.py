@@ -384,6 +384,7 @@ class TensorSplittingConv(nn.Module):
             split_dims=self.spatial_dims,
             split_size=split_size,
             stride=split_stride,
+            extend_mode=None,  # Padding has been handled here for better control
         )
         positions = splitter.get_positions(x)
         x = splitter(x)
