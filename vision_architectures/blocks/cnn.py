@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['possible_sequences', 'CNNBlockConfig', 'MultiResCNNBlockConfig', 'CNNBlock3D', 'CNNBlock2D', 'MultiResCNNBlock3D',
-           'MultiResCNNBlock2D']
+           'MultiResCNNBlock2D', 'TSPConv3d']
 
 # %% ../../nbs/blocks/04_cnn.ipynb 2
 from itertools import chain, permutations
@@ -270,3 +270,11 @@ class MultiResCNNBlock3D(_MultiResCNNBlock):
 class MultiResCNNBlock2D(_MultiResCNNBlock):
     def __init__(self, config: MultiResCNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__(2, config, checkpointing_level, **kwargs)
+
+# %% ../../nbs/blocks/04_cnn.ipynb 21
+class TSPConv3d(nn.Conv3d):
+    """A 3D convolution layer with tensor splitting to allow for larger inputs to be processed across multiple
+    devices."""
+
+    def __init__(self):
+        pass

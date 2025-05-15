@@ -57,6 +57,7 @@ def title_from_module_name(module_name):
         "transforms": "Transforms",
         "upsample": "Upsampling",
         "utils": "Utils",
+        "splitter_merger": "Tensor Splitter and Merger",
     }
     title = mapping.get(module_name, f"{module_name} [Add to mapping]")
 
