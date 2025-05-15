@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['possible_sequences', 'CNNBlockConfig', 'MultiResCNNBlockConfig', 'CNNBlock3D', 'CNNBlock2D', 'MultiResCNNBlock3D',
-           'MultiResCNNBlock2D', 'TensorSplittingConv']
+           'MultiResCNNBlock2D', 'TensorSplittingConv', 'add_tsp_to_module', 'remove_tsp_to_module']
 
 # %% ../../nbs/blocks/04_cnn.ipynb 2
 from functools import cache
@@ -415,3 +415,30 @@ class TensorSplittingConv(nn.Module):
             merged[tuple(merged_slices)] = output
 
         return merged
+
+    def extra_repr(self):
+        return f"num_splits={self.num_splits}"
+
+# %% ../../nbs/blocks/04_cnn.ipynb 24
+def add_tsp_to_module(
+    module: nn.Module,
+    num_splits_2d: int | tuple[int, int] | None = None,
+    num_splits_3d: int | tuple[int, int, int] = None,
+) -> nn.Module:
+    for name, child in module.named_children():
+        if num_splits_2d is not None and isinstance(child, nn.Conv2d):
+            setattr(module, name, TensorSplittingConv(child, num_splits_2d).to(child.weight.device))
+        if num_splits_3d is not None and isinstance(child, nn.Conv3d):
+            setattr(module, name, TensorSplittingConv(child, num_splits_3d).to(child.weight.device))
+        else:
+            add_tsp_to_module(child, num_splits_2d, num_splits_3d)
+    return module
+
+# %% ../../nbs/blocks/04_cnn.ipynb 25
+def remove_tsp_to_module(module: nn.Module) -> nn.Module:
+    for name, child in module.named_children():
+        if isinstance(child, TensorSplittingConv):
+            setattr(module, name, child.conv.to(child.conv.weight.device))
+        else:
+            remove_tsp_to_module(child)
+    return module
