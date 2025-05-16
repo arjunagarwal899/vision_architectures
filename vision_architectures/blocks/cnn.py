@@ -448,6 +448,8 @@ def add_tsp_to_module(
     num_splits_2d: int | tuple[int, int] | None = None,
     num_splits_3d: int | tuple[int, int, int] = None,
 ) -> nn.Module:
+    if num_splits_2d is None and num_splits_3d is None:
+        raise ValueError("At least one of num_splits_2d or num_splits_3d must be provided.")
     for name, child in module.named_children():
         if num_splits_2d is not None and isinstance(child, nn.Conv2d):
             setattr(module, name, TensorSplittingConv(child, num_splits_2d).to(child.weight.device))
