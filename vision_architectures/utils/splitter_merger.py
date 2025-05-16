@@ -4,6 +4,7 @@
 __all__ = ['SplitterConfig', 'Splitter', 'Merger']
 
 # %% ../../nbs/utils/09_splitter_merger.ipynb 1
+from collections.abc import Generator
 from functools import wraps
 from typing import Literal
 
@@ -162,14 +163,14 @@ class Splitter:
 
         return x
 
-    def split(self, x: torch.Tensor) -> torch.Tensor:
+    def split(self, x: torch.Tensor) -> Generator[torch.Tensor, None, None]:
         """Split the input tensor into smaller tensors using the config.
 
         Args:
             x: The input tensor.
 
-        Returns:
-            A tensor of shape (num_splits, *split_size) containing the splits.
+        Yields:
+            A tensor of shape (*split_size) for each split.
         """
         input_shape = x.shape
         x = self.expand(x)
@@ -182,10 +183,7 @@ class Splitter:
 
             slices = [slice(None)] * (x.ndim - self.config.split_dims)
             slices += [slice(starts[d], ends[d]) for d in range(self.config.split_dims)]
-            splits.append(x[tuple(slices)])
-        splits = torch.stack(splits, dim=0)
-
-        return splits
+            yield x[tuple(slices)]
 
     @wraps(split)
     def __call__(self, *args, **kwargs):

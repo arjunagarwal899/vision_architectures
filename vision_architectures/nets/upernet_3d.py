@@ -22,7 +22,11 @@ class UPerNet3DFusionConfig(CNNBlockConfig):
     num_features: int
     kernel_size: int = 3
     fused_shape: tuple[int, int, int] | None = Field(
-        None, description="Shape of the fused feature map. If None, highest input resolution is used."
+        None,
+        description=(
+            "Shape of the fused feature map. It can also be provided during runtime. "
+            "If None, highest input resolution is used."
+        ),
     )
     interpolation_mode: str = "trilinear"
 
@@ -71,10 +75,20 @@ class UPerNet3DFusion(nn.Module):
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def concat_features(self, features: list[torch.Tensor]):
+    def concat_features(self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None):
+        """Concatenate features from different resolutions and interpolate them to the same size.
+
+        Args:
+            features (list[torch.Tensor]): List of feature maps to be concatenated.
+                Each feature map should have shape (b, dim, d, h, w).
+            fused_shape (tuple[int, int, int] | None): Shape to which all feature maps will be interpolated.
+                If None, value entered in the config is used. If that is None too, the shape of the largest feature map
+                is used.
+        """
         # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, ...]
 
-        fused_shape = self.config.fused_shape
+        if fused_shape is None:
+            fused_shape = self.config.fused_shape
         if fused_shape is None:
             fused_shape = features[0].shape[2:]
             for feature in features:
@@ -104,9 +118,9 @@ class UPerNet3DFusion(nn.Module):
 
         return fused_features
 
-    def _forward(self, features: list[torch.Tensor]):
+    def _forward(self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None):
         # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...] where d1 > d2 > ...
-        concatenated_features = self.checkpointing_level1(self.concat_features, features)
+        concatenated_features = self.checkpointing_level1(self.concat_features, features, fused_shape)
         # (b, dim * num_features, d, h, w)
         fused_features = self.checkpointing_level1(self.fuse_features, concatenated_features)
         # (b, dim, d, h, w)
@@ -116,7 +130,7 @@ class UPerNet3DFusion(nn.Module):
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
-# %% ../../nbs/nets/09_upernet_3d.ipynb 12
+# %% ../../nbs/nets/09_upernet_3d.ipynb 13
 class UPerNet3D(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: UPerNet3DConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__()
@@ -168,7 +182,15 @@ class UPerNet3D(nn.Module, PyTorchModelHubMixin):
         if "texture" in enabled_outputs:
             raise NotImplementedError("Texture output not implemented yet")
 
-    def forward(self, features: list[torch.Tensor]):
+    def forward(self, features: list[torch.Tensor], output_shape: tuple[int, int, int] = None):
+        """Forward pass of the UPerNet3D model.
+
+        Args:
+            features (list[torch.Tensor]): List of feature maps from the FPN.
+                Each feature map should have shape (b, dim, d, h, w).
+            output_shape (tuple[int, int, int], optional): Desired output shape for the object head. If None, the shape
+                of the highest resolution feature map is used.
+        """
         # features: [
         #   (b, in_dim1, d1, h1, w1),
         #   (b, in_dim2, d2, h2, w2),
@@ -185,7 +207,7 @@ class UPerNet3D(nn.Module, PyTorchModelHubMixin):
         output = {}
 
         if self.fusion is not None:
-            fused_features = self.fusion(features)
+            fused_features = self.fusion(features, output_shape)
             # (b, fpn_dim, d1, h1, w1)
 
             object_logits = self.object_head(fused_features)
