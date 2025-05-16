@@ -11,6 +11,7 @@ from typing import Any, Literal
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
@@ -332,8 +333,6 @@ class TensorSplittingConv(nn.Module):
         for i in range(self.spatial_dims):
             dim = input_shape[i]
             num_splits = self.num_splits[i]
-            if dim % num_splits != 0:
-                raise ValueError(f"Input dimension {dim} is not divisible by number of splits {num_splits}.")
             split_size.append(dim // num_splits + 2 * context[i])
         split_size = tuple(split_size)
         return split_size
@@ -348,13 +347,26 @@ class TensorSplittingConv(nn.Module):
         ), "Split stride must be greater than 0 for all dimensions."
         return split_stride
 
-    def pad_input(self, x: torch.Tensor) -> torch.Tensor:
+    def pad_input_for_divisibility(self, x: torch.Tensor) -> torch.Tensor:
+        """Pad the input at the end of every spatial dimension such that it is perfectly divisible by the number of
+        splits."""
+        padding = [0, 0] * (x.ndim - self.spatial_dims)
+        for i in range(self.spatial_dims):
+            dim = i + 2
+            padding_required = 0
+            if x.shape[dim] % self.num_splits[i] != 0:
+                padding_required = self.num_splits[i] - (x.shape[dim] % self.num_splits[i])
+            padding.extend([padding_required, 0])
+        x = F.pad(x, list(reversed(padding)))
+        return x
+
+    def pad_input_for_context(self, x: torch.Tensor) -> torch.Tensor:
         """Pad the input with the context size for consistent merging."""
         context = self.get_edge_context()
         padding = [0, 0] * (x.ndim - self.spatial_dims)
         for i in range(self.spatial_dims):
             padding.extend([context[i], context[i]])
-        x = nn.functional.pad(x, list(reversed(padding)))
+        x = F.pad(x, list(reversed(padding)))
         return x
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -370,6 +382,9 @@ class TensorSplittingConv(nn.Module):
         input_device = x.device
         B, DIMS = x.shape[0], x.shape[2:]  # (batch_size, in_channels, [z], y, x)
 
+        # Pad input such that it is divisible by the number of splits
+        x = self.pad_input_for_divisibility(x)
+
         # Calculate split size
         split_size = self.get_split_size(x)
 
@@ -377,7 +392,7 @@ class TensorSplittingConv(nn.Module):
         split_stride = self.get_split_stride(x)
 
         # Pad the input
-        x = self.pad_input(x)
+        x = self.pad_input_for_context(x)
 
         # Split the input tensor
         splitter = Splitter(
@@ -391,35 +406,43 @@ class TensorSplittingConv(nn.Module):
         # (num_splits, batch_size, in_channels, [z1], y1, x1)
 
         # Run the convolution on each split
-        outputs = []
+        outputs: list[torch.Tensor] = []
         for x_split in x:
             x_split = x_split.to(self.conv.weight.device)
             x_split = self.conv(x_split)
             x_split = x_split.to(input_device)
             outputs.append(x_split)
-        outputs = torch.stack(outputs, dim=0)
-        # (num_splits, batch_size, out_channels, [z1], y1, x1)
+        # list of len num_splits, each of shape (batch_size, out_channels, [z1], y1, x1)
 
         # Merge the outputs
         context = self.get_edge_context()
-        merged = torch.zeros((B, outputs.shape[2], *DIMS), device=input_device)
+        merged = torch.empty((B, outputs[0].shape[1], *DIMS), device=input_device)
         for output, position in zip(outputs, positions):
-            output_slices = [slice(None), slice(None)]
+            merged_slices = [slice(None), slice(None)]  # To track the coordinates where the output will be placed
+            output_slices = [slice(None), slice(None)]  # To track the actual output that should be placed
             for i in range(self.spatial_dims):
-                output_slices.append(slice(context[i], -context[i] if context[i] != 0 else None))
-            output = output[tuple(output_slices)]
+                dim = i + 2
+                merged_slice = slice(position[i], min(position[i] + split_stride[i], DIMS[i]))
+                output_slice = slice(context[i], -context[i] if context[i] != 0 else None)
 
-            merged_slices = [slice(None), slice(None)]
-            for i in range(self.spatial_dims):
-                merged_slices.append(slice(position[i], position[i] + split_stride[i]))
-            merged[tuple(merged_slices)] = output
+                merged_indices = merged_slice.indices(merged.shape[dim])
+                output_indices = output_slice.indices(output.shape[dim])
+                len_merged_slice = merged_indices[1] - merged_indices[0]
+                len_output_slice = output_indices[1] - output_indices[0]
+                if len_output_slice > len_merged_slice:
+                    output_slice = slice(output_slice.start, output_slice.start + len_merged_slice)
+
+                merged_slices.append(merged_slice)
+                output_slices.append(output_slice)
+
+            merged[tuple(merged_slices)] = output[tuple(output_slices)]
 
         return merged
 
     def extra_repr(self):
         return f"num_splits={self.num_splits}"
 
-# %% ../../nbs/blocks/04_cnn.ipynb 24
+# %% ../../nbs/blocks/04_cnn.ipynb 25
 def add_tsp_to_module(
     module: nn.Module,
     num_splits_2d: int | tuple[int, int] | None = None,
@@ -434,7 +457,7 @@ def add_tsp_to_module(
             add_tsp_to_module(child, num_splits_2d, num_splits_3d)
     return module
 
-# %% ../../nbs/blocks/04_cnn.ipynb 25
+# %% ../../nbs/blocks/04_cnn.ipynb 26
 def remove_tsp_to_module(module: nn.Module) -> nn.Module:
     for name, child in module.named_children():
         if isinstance(child, TensorSplittingConv):
