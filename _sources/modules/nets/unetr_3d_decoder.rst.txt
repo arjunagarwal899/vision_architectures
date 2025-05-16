@@ -1,0 +1,7 @@
+UNetR3DDecoder
+==============
+
+.. automodule:: vision_architectures.nets.unetr_3d_decoder
+   :members:
+   :undoc-members:
+   :show-inheritance:
