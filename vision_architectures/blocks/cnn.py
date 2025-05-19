@@ -331,7 +331,7 @@ class TensorSplittingConv(nn.Module):
 
         Example:
             Let's say input shape is (110, 110) and num_splits is (12, 12). The input will first be padded to (120, 120)
-             and then split into splits of size (10+overlap, 10+overlap) each. However, if you notice, the padding
+            and then split into splits of size (10+overlap, 10+overlap) each. However, if you notice, the padding
             that was also equal to 10, and therefore was completely unnecessary as the same result can be achieved by
             using num_splits = (11, 11) and reducing 144-121=23 splits to be processed.
 
