@@ -1,5 +1,6 @@
 einops
 huggingface_hub
+loguru
 monai
 munch
 nbdev

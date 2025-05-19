@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['possible_sequences', 'CNNBlockConfig', 'MultiResCNNBlockConfig', 'CNNBlock3D', 'CNNBlock2D', 'MultiResCNNBlock3D',
-           'MultiResCNNBlock2D', 'TensorSplittingConv', 'add_tsp_to_module', 'remove_tsp_to_module']
+           'MultiResCNNBlock2D', 'TensorSplittingConv', 'add_tsp_to_module', 'remove_tsp_from_module']
 
 # %% ../../nbs/blocks/04_cnn.ipynb 2
 from functools import cache
@@ -10,6 +10,7 @@ from itertools import chain, permutations
 from typing import Any, Literal
 
 import torch
+from loguru import logger
 from torch import nn
 from torch.nn import functional as F
 
@@ -290,7 +291,9 @@ class TensorSplittingConv(nn.Module):
             raise ValueError("Unsupported convolution type. Only Conv2d and Conv3d are supported.")
 
         assert conv.stride == (1,) * self.spatial_dims, "Stride must be 1 for tensor splitting convolution."
-        assert conv.padding == "same", "Padding must be 'same' for tensor splitting convolution."
+        assert conv.padding == "same" or torch.allclose(
+            torch.tensor(conv.padding), (torch.tensor(conv.kernel_size) - 1) // 2
+        ), "Padding must be 'same' for tensor splitting convolution."
 
         if isinstance(num_splits, int):
             num_splits = (num_splits,) * self.spatial_dims
@@ -498,6 +501,7 @@ def add_tsp_to_module(
     module: nn.Module,
     num_splits_2d: int | tuple[int, int] | None = None,
     num_splits_3d: int | tuple[int, int, int] = None,
+    strict: bool = True,
 ) -> nn.Module:
     if num_splits_2d is None and num_splits_3d is None:
         raise ValueError("At least one of num_splits_2d or num_splits_3d must be provided.")
@@ -505,18 +509,31 @@ def add_tsp_to_module(
         if isinstance(child, TensorSplittingConv):
             continue
         if num_splits_2d is not None and isinstance(child, nn.Conv2d):
-            setattr(module, name, TensorSplittingConv(child, num_splits_2d).to(child.weight.device))
+            try:
+                setattr(module, name, TensorSplittingConv(child, num_splits_2d).to(child.weight.device))
+            except Exception as e:
+                if strict:
+                    raise e
+                else:
+                    logger.debug(f"Could not convert {name} to TensorSplittingConv. Error: {e}")
+
         if num_splits_3d is not None and isinstance(child, nn.Conv3d):
-            setattr(module, name, TensorSplittingConv(child, num_splits_3d).to(child.weight.device))
+            try:
+                setattr(module, name, TensorSplittingConv(child, num_splits_3d).to(child.weight.device))
+            except Exception as e:
+                if strict:
+                    raise e
+                else:
+                    logger.debug(f"Could not convert {name} to TensorSplittingConv. Error: {e}")
         else:
-            add_tsp_to_module(child, num_splits_2d, num_splits_3d)
+            add_tsp_to_module(child, num_splits_2d, num_splits_3d, strict)
     return module
 
 # %% ../../nbs/blocks/04_cnn.ipynb 26
-def remove_tsp_to_module(module: nn.Module) -> nn.Module:
+def remove_tsp_from_module(module: nn.Module) -> nn.Module:
     for name, child in module.named_children():
         if isinstance(child, TensorSplittingConv):
             setattr(module, name, child.conv.to(child.conv.weight.device))
         else:
-            remove_tsp_to_module(child)
+            remove_tsp_from_module(child)
     return module
