@@ -274,12 +274,12 @@ class MultiResCNNBlock2D(_MultiResCNNBlock):
     def __init__(self, config: MultiResCNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__(2, config, checkpointing_level, **kwargs)
 
-# %% ../../nbs/blocks/04_cnn.ipynb 21
+# %% ../../nbs/blocks/04_cnn.ipynb 22
 class TensorSplittingConv(nn.Module):
     """Convolution layer that operates on splits of a tensor on desired device and concatenates the results to give a
     lossless output. This is useful for large tensors that cannot fit in memory."""
 
-    def __init__(self, conv: nn.Module, num_splits: int | tuple[int, ...]):
+    def __init__(self, conv: nn.Module, num_splits: int | tuple[int, ...], optimize_num_splits: bool = True):
         super().__init__()
 
         if isinstance(conv, nn.Conv2d):
@@ -298,6 +298,7 @@ class TensorSplittingConv(nn.Module):
 
         self.conv = conv
         self.num_splits = num_splits
+        self.optimize_num_splits = optimize_num_splits
 
     @cache
     def get_receptive_field(self) -> tuple[int, ...]:
@@ -314,7 +315,62 @@ class TensorSplittingConv(nn.Module):
         context = torch.tensor(receptive_field) // 2
         return tuple(context.tolist())
 
-    def get_split_size(self, input_shape: tuple[int, ...] | torch.Tensor) -> tuple[int, ...]:
+    def get_input_shape(self, input_shape: tuple[int, ...] | torch.Size | torch.Tensor) -> tuple[int, ...]:
+        """Get the input shape of the convolution layer."""
+        if isinstance(input_shape, torch.Tensor):
+            input_shape = input_shape.shape
+        if isinstance(input_shape, torch.Size):
+            input_shape = tuple(input_shape)
+        input_shape = input_shape[-self.spatial_dims :]
+        if len(input_shape) != self.spatial_dims:
+            raise ValueError(f"Input shape must be of length {self.spatial_dims}. Got {len(input_shape)}.")
+        return input_shape
+
+    def get_optimized_num_splits(self, input_shape: tuple[int, ...] | torch.Size | torch.Tensor) -> tuple[int, ...]:
+        """Optimize the number of splits for each dimension based on the input shape and number of splits
+
+        Example:
+            Let's say input shape is (110, 110) and num_splits is (12, 12). The input will first be padded to (120, 120)
+             and then split into splits of size (10+overlap, 10+overlap) each. However, if you notice, the padding
+            that was also equal to 10, and therefore was completely unnecessary as the same result can be achieved by
+            using num_splits = (11, 11) and reducing 144-121=23 splits to be processed.
+
+        Args:
+            input_shape: Shape of the input tensor. If a tensor is provided, its shape will be used.
+
+        Returns:
+            Tuple of optimized number of splits for each dimension.
+        """
+        input_shape = self.get_input_shape(input_shape)
+
+        num_splits = list(self.num_splits)
+        for i in range(self.spatial_dims):
+            while True:
+                padding_required = (num_splits[i] - (input_shape[i] % num_splits[i])) % num_splits[i]
+                split_size = (input_shape[i] + padding_required) // num_splits[i]
+                if padding_required >= split_size:
+                    num_splits[i] -= 1
+                else:
+                    break
+
+        return tuple(num_splits)
+
+    def pad_input_for_divisibility(self, x: torch.Tensor, num_splits: tuple[int, ...] = None) -> torch.Tensor:
+        """Pad the input at the end of every spatial dimension such that it is perfectly divisible by the number of
+        splits."""
+        if num_splits is None:
+            num_splits = self.num_splits
+        padding = [0, 0] * (x.ndim - self.spatial_dims)
+        for i in range(self.spatial_dims):
+            dim = i + 2
+            padding_required = (num_splits[i] - (x.shape[dim] % num_splits[i])) % num_splits[i]
+            padding.extend([padding_required, 0])
+        x = F.pad(x, list(reversed(padding)))
+        return x
+
+    def get_split_size(
+        self, input_shape: tuple[int, ...] | torch.Size | torch.Tensor, num_splits: tuple[int, ...] = None
+    ) -> tuple[int, ...]:
         """Calculate the split size for each dimension based on the input shape and number of splits.
 
         Args:
@@ -323,42 +379,32 @@ class TensorSplittingConv(nn.Module):
         Returns:
             Tuple of split sizes for each dimension.
         """
-        if isinstance(input_shape, torch.Tensor):
-            input_shape = input_shape.shape
-        input_shape = input_shape[-self.spatial_dims :]
+        input_shape = self.get_input_shape(input_shape)
+        if num_splits is None:
+            num_splits = self.num_splits
 
         context = self.get_edge_context()
 
         split_size = []
         for i in range(self.spatial_dims):
-            dim = input_shape[i]
-            num_splits = self.num_splits[i]
-            split_size.append(dim // num_splits + 2 * context[i])
+            split_size.append(input_shape[i] // num_splits[i] + 2 * context[i])
         split_size = tuple(split_size)
         return split_size
 
-    def get_split_stride(self, input_shape: tuple[int, ...] | torch.Tensor) -> tuple[int, ...]:
+    def get_split_stride(
+        self, input_shape: tuple[int, ...] | torch.Size | torch.Tensor, num_splits: tuple[int, ...] = None
+    ) -> tuple[int, ...]:
         """Calculate the split stride for each dimension based on the input shape and context size."""
+        input_shape = self.get_input_shape(input_shape)
+        if num_splits is None:
+            num_splits = self.num_splits
         context = self.get_edge_context()
-        split_size = self.get_split_size(input_shape)
+        split_size = self.get_split_size(input_shape, num_splits)
         split_stride = [split_size[i] - 2 * context[i] for i in range(self.spatial_dims)]
         assert all(
             split_stride[i] > 0 for i in range(self.spatial_dims)
         ), "Split stride must be greater than 0 for all dimensions."
         return split_stride
-
-    def pad_input_for_divisibility(self, x: torch.Tensor) -> torch.Tensor:
-        """Pad the input at the end of every spatial dimension such that it is perfectly divisible by the number of
-        splits."""
-        padding = [0, 0] * (x.ndim - self.spatial_dims)
-        for i in range(self.spatial_dims):
-            dim = i + 2
-            padding_required = 0
-            if x.shape[dim] % self.num_splits[i] != 0:
-                padding_required = self.num_splits[i] - (x.shape[dim] % self.num_splits[i])
-            padding.extend([padding_required, 0])
-        x = F.pad(x, list(reversed(padding)))
-        return x
 
     def pad_input_for_context(self, x: torch.Tensor) -> torch.Tensor:
         """Pad the input with the context size for consistent merging."""
@@ -382,14 +428,19 @@ class TensorSplittingConv(nn.Module):
         input_device = x.device
         B, DIMS = x.shape[0], x.shape[2:]  # (batch_size, in_channels, [z], y, x)
 
+        # Optimize num_splits
+        num_splits = self.num_splits
+        if self.optimize_num_splits:
+            num_splits = self.get_optimized_num_splits(x)
+
         # Pad input such that it is divisible by the number of splits
-        x = self.pad_input_for_divisibility(x)
+        x = self.pad_input_for_divisibility(x, num_splits)
 
         # Calculate split size
-        split_size = self.get_split_size(x)
+        split_size = self.get_split_size(x, num_splits)
 
         # Identify the stride required to split the input tensor such that overlapping regions can be counted only once
-        split_stride = self.get_split_stride(x)
+        split_stride = self.get_split_stride(x, num_splits)
 
         # Pad the input
         x = self.pad_input_for_context(x)
