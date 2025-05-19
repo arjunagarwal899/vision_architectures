@@ -41,7 +41,6 @@ def title_from_module_name(module_name):
         "upernet_3d": "UperNet3D",
         "vit_3d": "ViT3D",
         #
-        "pipeline_paralellism": "Pipeline Parallelism",
         "blocks": "Blocks",
         "clamping": "Clamping / Clipping",
         "clipping": "Clipping",
@@ -51,7 +50,9 @@ def title_from_module_name(module_name):
         "layers": "Layers",
         "lrs": "Learning Rate Schedulers",
         "nets": "Nets",
+        "pipeline_parallelism": "Pipeline Parallelism",
         "rearrange": "Rearrange",
+        "scale": "Upsample / Downsample",
         "schedulers": "Schedulers",
         "se": "Squeeze and Excitation",
         "splitter_merger": "Tensor Splitter and Merger",
