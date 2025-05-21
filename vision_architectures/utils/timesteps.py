@@ -45,12 +45,12 @@ class TimestepSampler(nn.Module):
             # Sample uniformly from [1, T]
             self.distribution = torch.distributions.Uniform(1, self.T + 1)
         elif strategy == "gamma":
-            raise NotImplementedError("This implementation still needs to be completeed.")
+            raise NotImplementedError("This implementation still needs to be completed.")
             # Sample from a gamma distribution. There is no point in parameterizing beta as the sample is normalized
             self.gamma_spread = gamma_spread
             self.distribution = torch.distributions.Gamma(gamma_alpha, 1)
         elif strategy == "importance":
-            raise NotImplementedError("This implementation still needs to be completeed.")
+            raise NotImplementedError("This implementation still needs to be completed.")
             # Sample from [0, T] where prob(t) is d(log(SNR))/dt and prob(t=0) = 0
             if signal_to_noise_ratios is None:
                 raise ValueError("signal_to_noise_ratios must be provided for importance sampling.")
