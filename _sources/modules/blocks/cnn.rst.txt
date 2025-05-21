@@ -1,0 +1,7 @@
+CNN
+===
+
+.. automodule:: vision_architectures.blocks.cnn
+   :members:
+   :undoc-members:
+   :show-inheritance:

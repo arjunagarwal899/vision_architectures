@@ -1,0 +1,981 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SymSwin3D &#8212; Vision Architectures (main)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=db78e746"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'modules/nets/symswin_3d';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="UNetR3DDecoder" href="unetr_3d_decoder.html" />
+    <link rel="prev" title="FPN3D" href="fpn_3d.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Vision Architectures (main)</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../blocks/index.html">Blocks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/heads_3d.html">Heads3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/mbconv_3d.html">MBConv3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/se.html">Squeeze and Excitation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/transformer.html">Transformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/cnn.html">CNN</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../image_readers/index.html">Image Readers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../image_readers/safetensors_reader.html">SafeTensorsReader</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../layers/index.html">Layers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../layers/latent_space.html">Latent Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/scale.html">Upsample / Downsample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/attention.html">Attention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/codebook.html">Codebook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/embeddings.html">Embeddings</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Nets</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="detr_3d.html">DETR3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vit_3d.html">ViT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="swin_3d.html">Swin3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cait_3d.html">CaiT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="upernet_3d.html">UperNet3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="swinv2_3d.html">SwinV23D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fpn_2d.html">FPN2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fpn_3d.html">FPN3D</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">SymSwin3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="unetr_3d_decoder.html">UNetR3DDecoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="upernet_2d.html">UperNet2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="perceiver_3d.html">Perceiver3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="maxvit_3d.html">MaxViT3D</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../schedulers/index.html">Schedulers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/lrs.html">Learning Rate Schedulers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/cyclic.html">Cyclic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/noise.html">Noise</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/sigmoid.html">Sigmoid</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../transforms/index.html">Transforms</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/croppad.html">CropPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/resize.html">Resize</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/spatial.html">Spatial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/clipping.html">Clipping</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../utils/index.html">Utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils/residuals.html">Residual Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/timesteps.html">Timesteps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/normalizations.html">Normalizations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/pipeline_parallelism.html">Pipeline Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/clamping.html">Clamping / Clipping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/activations.html">Activations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/rearrange.html">Rearrange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/custom_base_model.html">CustomBaseModel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/splitter_merger.html">Tensor Splitter and Merger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/activation_checkpointing.html">ActivationCheckpointing</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Nets</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">SymSwin3D</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-vision_architectures.nets.symswin_3d">
+<span id="symswin3d"></span><h1>SymSwin3D<a class="headerlink" href="#module-vision_architectures.nets.symswin_3d" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.populate_and_validate_config">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">populate_and_validate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L19-L44"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.populate_and_validate_config" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.get_coords_grid">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">get_coords_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_size</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L47-L58"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.get_coords_grid" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DMHSA">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DMHSA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_relative_position_bias</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L61-L209"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DMHSA.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_relative_position_bias</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L62-L138"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DMHSA.calculate_relative_position_bias">
+<span class="sig-name descname"><span class="pre">calculate_relative_position_bias</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L140-L158"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.calculate_relative_position_bias" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DMHSA.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L160-L209"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DLayerMLP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L212-L226"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L213-L218"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L220-L226"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_norm_eps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_relative_position_bias</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L229-L311"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DLayer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_norm_eps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_relative_position_bias</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L230-L256"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayer.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DLayer.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L258-L311"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayer.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_forward">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">symmetry_attention_rearrange_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L314-L337"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_forward" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_backward">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">symmetry_attention_rearrange_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L340-L363"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_backward" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DBlock">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L366-L441"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DBlock" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DBlock.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L367-L395"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DBlock.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DBlock.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L397-L441"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DBlock.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DPatchMerging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">merge_window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L444-L470"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">merge_window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L445-L452"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L454-L470"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DStage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DStage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L473-L504"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DStage" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DStage.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L474-L489"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DStage.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DStage.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L491-L504"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DStage.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DEncoder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L507-L524"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DEncoder" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PyTorchModelHubMixin</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DEncoder.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L508-L511"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DEncoder.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DEncoder.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_states</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L513-L524"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DEncoder.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DPatchEmbeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L527-L548"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L528-L540"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_values</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L542-L548"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.get_3d_position_embeddings">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">get_3d_position_embeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">embedding_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">1,</span> <span class="pre">1)</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L551-L585"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.get_3d_position_embeddings" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.embed_spacings_in_position_embeddings">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">embed_spacings_in_position_embeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">embeddings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacings</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L588-L595"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.embed_spacings_in_position_embeddings" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DEmbeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L598-L657"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L599-L621"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L623-L657"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L660-L701"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PyTorchModelHubMixin</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L661-L666"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DModel.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DModel.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L668-L701"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DModel.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DReconstructionDecoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L704-L734"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L705-L716"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">encodings</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L718-L734"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DMIM">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DMIM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symswin_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decoder_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mim_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L737-L785"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DMIM.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symswin_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decoder_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mim_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L738-L748"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DMIM.mask_image">
+<span class="sig-name descname"><span class="pre">mask_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_values</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L750-L785"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM.mask_image" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DSimMIM">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DSimMIM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L788-L813"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM" title="vision_architectures.nets.symswin_3d.SymSwin3DMIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymSwin3DMIM</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PyTorchModelHubMixin</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symswin_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decoder_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mim_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L789-L790"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.loss_fn">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">loss_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L792-L794"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.loss_fn" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L796-L813"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.nets.symswin_3d.</span></span><span class="sig-name descname"><span class="pre">SymSwin3DVAEMIM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L816-L911"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM" title="vision_architectures.nets.symswin_3d.SymSwin3DMIM"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymSwin3DMIM</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PyTorchModelHubMixin</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symswin_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decoder_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mim_config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L817-L842"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.get_beta">
+<span class="sig-name descname"><span class="pre">get_beta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L844-L856"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.get_beta" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reparameterize">
+<span class="sig-name descname"><span class="pre">reparameterize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logvar</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L858-L859"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reparameterize" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reconstruction_loss_fn">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reconstruction_loss_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'l2'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L861-L875"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reconstruction_loss_fn" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.kl_divergence_loss_fn">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kl_divergence_loss_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logvar</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L877-L879"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.kl_divergence_loss_fn" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconstruction_loss_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'l2'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/72871b7da4f091ba411c66771acb96a766c6d999/vision_architectures/nets/symswin_3d.py#L881-L911"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="fpn_3d.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">FPN3D</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="unetr_3d_decoder.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">UNetR3DDecoder</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.populate_and_validate_config"><code class="docutils literal notranslate"><span class="pre">populate_and_validate_config()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.get_coords_grid"><code class="docutils literal notranslate"><span class="pre">get_coords_grid()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA"><code class="docutils literal notranslate"><span class="pre">SymSwin3DMHSA</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DMHSA.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.calculate_relative_position_bias"><code class="docutils literal notranslate"><span class="pre">SymSwin3DMHSA.calculate_relative_position_bias()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DMHSA.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DMHSA.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP"><code class="docutils literal notranslate"><span class="pre">SymSwin3DLayerMLP</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DLayerMLP.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayerMLP.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DLayerMLP.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayer"><code class="docutils literal notranslate"><span class="pre">SymSwin3DLayer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayer.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DLayer.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DLayer.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DLayer.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_forward"><code class="docutils literal notranslate"><span class="pre">symmetry_attention_rearrange_forward()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.symmetry_attention_rearrange_backward"><code class="docutils literal notranslate"><span class="pre">symmetry_attention_rearrange_backward()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DBlock"><code class="docutils literal notranslate"><span class="pre">SymSwin3DBlock</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DBlock.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DBlock.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DBlock.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging"><code class="docutils literal notranslate"><span class="pre">SymSwin3DPatchMerging</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DPatchMerging.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchMerging.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DPatchMerging.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DStage"><code class="docutils literal notranslate"><span class="pre">SymSwin3DStage</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DStage.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DStage.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DStage.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DStage.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DEncoder"><code class="docutils literal notranslate"><span class="pre">SymSwin3DEncoder</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DEncoder.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DEncoder.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DEncoder.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DEncoder.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings"><code class="docutils literal notranslate"><span class="pre">SymSwin3DPatchEmbeddings</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DPatchEmbeddings.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DPatchEmbeddings.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DPatchEmbeddings.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.get_3d_position_embeddings"><code class="docutils literal notranslate"><span class="pre">get_3d_position_embeddings()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.embed_spacings_in_position_embeddings"><code class="docutils literal notranslate"><span class="pre">embed_spacings_in_position_embeddings()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings"><code class="docutils literal notranslate"><span class="pre">SymSwin3DEmbeddings</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DEmbeddings.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DEmbeddings.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DEmbeddings.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DModel"><code class="docutils literal notranslate"><span class="pre">SymSwin3DModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DModel.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DModel.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DModel.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DModel.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder"><code class="docutils literal notranslate"><span class="pre">SymSwin3DReconstructionDecoder</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DReconstructionDecoder.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DReconstructionDecoder.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DReconstructionDecoder.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM"><code class="docutils literal notranslate"><span class="pre">SymSwin3DMIM</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DMIM.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DMIM.mask_image"><code class="docutils literal notranslate"><span class="pre">SymSwin3DMIM.mask_image()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM"><code class="docutils literal notranslate"><span class="pre">SymSwin3DSimMIM</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DSimMIM.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.loss_fn"><code class="docutils literal notranslate"><span class="pre">SymSwin3DSimMIM.loss_fn()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DSimMIM.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DSimMIM.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM"><code class="docutils literal notranslate"><span class="pre">SymSwin3DVAEMIM</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.__init__"><code class="docutils literal notranslate"><span class="pre">SymSwin3DVAEMIM.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.get_beta"><code class="docutils literal notranslate"><span class="pre">SymSwin3DVAEMIM.get_beta()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reparameterize"><code class="docutils literal notranslate"><span class="pre">SymSwin3DVAEMIM.reparameterize()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.reconstruction_loss_fn"><code class="docutils literal notranslate"><span class="pre">SymSwin3DVAEMIM.reconstruction_loss_fn()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.kl_divergence_loss_fn"><code class="docutils literal notranslate"><span class="pre">SymSwin3DVAEMIM.kl_divergence_loss_fn()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.nets.symswin_3d.SymSwin3DVAEMIM.forward"><code class="docutils literal notranslate"><span class="pre">SymSwin3DVAEMIM.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2023 onwards, Arjun Agarwal.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
