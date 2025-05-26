@@ -32,7 +32,6 @@ class TimestepSampler(nn.Module):
         total_timesteps: int,
         strategy: Literal["uniform", "gamma", "importance"],
         gamma_alpha: float = 1.0,
-        gamma_spread: float = 0.8,
         signal_to_noise_ratios: torch.Tensor = None,
         temperature: float = 2.0,
     ):
@@ -45,9 +44,7 @@ class TimestepSampler(nn.Module):
             # Sample uniformly from [1, T]
             self.distribution = torch.distributions.Uniform(1, self.T + 1)
         elif strategy == "gamma":
-            raise NotImplementedError("This implementation still needs to be completed.")
             # Sample from a gamma distribution. There is no point in parameterizing beta as the sample is normalized
-            self.gamma_spread = gamma_spread
             self.distribution = torch.distributions.Gamma(gamma_alpha, 1)
         elif strategy == "importance":
             raise NotImplementedError("This implementation still needs to be completed.")
@@ -81,7 +78,6 @@ class TimestepSampler(nn.Module):
         """
         timesteps = self.distribution.sample((num_timesteps,))
         if self.strategy == "gamma":
-            timesteps = timesteps**self.gamma_spread
             timesteps = timesteps / timesteps.max()
             timesteps = timesteps * self.T
         timesteps = timesteps.clamp(1, self.T).long()
