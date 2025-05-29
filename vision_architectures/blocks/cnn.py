@@ -5,7 +5,7 @@ __all__ = ['possible_sequences', 'CNNBlockConfig', 'MultiResCNNBlockConfig', 'CN
            'MultiResCNNBlock2D', 'TensorSplittingConv', 'add_tsp_to_module', 'remove_tsp_from_module']
 
 # %% ../../nbs/blocks/04_cnn.ipynb 2
-from functools import cache
+from functools import cache, wraps
 from itertools import chain, permutations
 from typing import Any, Literal
 
@@ -14,6 +14,7 @@ from loguru import logger
 from torch import nn
 from torch.nn import functional as F
 
+from ..docstrings import populate_docstring
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
 from ..utils.custom_base_model import CustomBaseModel, Field, field_validator, model_validator
@@ -27,24 +28,34 @@ possible_sequences = ["".join(p) for p in chain.from_iterable(permutations("ACDN
 
 
 class CNNBlockConfig(CustomBaseModel):
-    in_channels: int
-    out_channels: int
-    kernel_size: int | tuple[int, ...]
-    padding: int | tuple[int, ...] | str = "same"
-    stride: int = 1
-    conv_kwargs: dict[str, Any] = {}
+    in_channels: int = Field(..., description="Number of input channels")
+    out_channels: int = Field(..., description="Number of output channels")
+    kernel_size: int | tuple[int, ...] = Field(..., description="Kernel size for the convolution")
+    padding: int | tuple[int, ...] | str = Field(
+        "same", description="Padding for the convolution. Can be 'same' or an integer/tuple of integers."
+    )
+    stride: int = Field(1, description="Stride for the convolution")
+    conv_kwargs: dict[str, Any] = Field({}, description="Additional keyword arguments for the convolution layer")
     transposed: bool = Field(False, description="Whether to perform ConvTranspose instead of Conv")
 
-    normalization: str | None = "batchnorm3d"
-    normalization_pre_args: list = []
-    normalization_post_args: list = []
-    normalization_kwargs: dict = {}
-    activation: str | None = "relu"
-    activation_kwargs: dict = {}
+    normalization: str | None = Field("batchnorm3d", description="Normalization layer type.")
+    normalization_pre_args: list = Field(
+        [],
+        description=(
+            "Arguments for the normalization layer before providing the dimension. Useful when using "
+            "GroupNorm layers are being used to specify the number of groups."
+        ),
+    )
+    normalization_post_args: list = Field(
+        [], description="Arguments for the normalization layer after providing the dimension."
+    )
+    normalization_kwargs: dict = Field({}, description="Additional keyword arguments for the normalization layer")
+    activation: str | None = Field("relu", description="Activation function type.")
+    activation_kwargs: dict = Field({}, description="Additional keyword arguments for the activation function.")
 
-    sequence: Literal[tuple(possible_sequences)] = "CNA"
+    sequence: Literal[tuple(possible_sequences)] = Field("CNA", description="Sequence of operations in the block.")
 
-    drop_prob: float = 0.0
+    drop_prob: float = Field(0.0, description="Dropout probability.")
 
     @model_validator(mode="after")
     def validate(self):
@@ -65,13 +76,17 @@ class CNNBlockConfig(CustomBaseModel):
 
 
 class MultiResCNNBlockConfig(CNNBlockConfig):
-    kernel_sizes: tuple[int | tuple[int, ...], ...] = (3, 5, 7)
+    kernel_sizes: tuple[int | tuple[int, ...], ...] = Field((3, 5, 7), description="Kernel sizes for each conv layer.")
     filter_ratios: tuple[float, ...] = Field(
         (1, 2, 3), description="Ratio of filters to out_channels for each conv layer. Will be scaled to sum to 1."
     )
-    padding: Literal["same"] = "same"
+    padding: Literal["same"] = Field(
+        "same", description="Padding for the convolution. Only 'same' is supported for MultiResCNNBlock."
+    )
 
-    kernel_size: int = 3
+    kernel_size: int = Field(
+        3, description="Kernel size for the convolution. Only kernel_size=3 is supported for MultiResCNNBlock."
+    )
 
     @field_validator("filter_ratios", mode="after")
     @classmethod
@@ -91,9 +106,18 @@ class MultiResCNNBlockConfig(CNNBlockConfig):
 
 # %% ../../nbs/blocks/04_cnn.ipynb 7
 class _CNNBlock(nn.Module):
+    @populate_docstring
     def __init__(
         self, spatial_dims: Literal[2, 3], config: CNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs
     ):
+        """Initialize the CNNBlock block. Activation checkpointing level 1.
+
+        Args:
+            spatial_dims: Number of spatial dimensions (2 or 3). This is used to determine 2D vs 3D data
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = CNNBlockConfig.model_validate(config | kwargs)
@@ -152,7 +176,17 @@ class _CNNBlock(nn.Module):
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the CNNBlock block.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [in_channels], [z], y, x, [in_channels])
 
         x = rearrange_channels(x, channels_first, True)
@@ -174,17 +208,34 @@ class _CNNBlock(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 8
 class CNNBlock3D(_CNNBlock):
+    @populate_docstring
     def __init__(self, config: CNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the CNNBlock3D block. Activation checkpointing level 1.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__(3, config, checkpointing_level, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 11
 class CNNBlock2D(_CNNBlock):
+    @populate_docstring
     def __init__(self, config: CNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the CNNBlock2D block. Activation checkpointing level 1.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__(2, config, checkpointing_level, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 15
@@ -275,10 +326,11 @@ class MultiResCNNBlock2D(_MultiResCNNBlock):
     def __init__(self, config: MultiResCNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
         super().__init__(2, config, checkpointing_level, **kwargs)
 
-# %% ../../nbs/blocks/04_cnn.ipynb 22
+# %% ../../nbs/blocks/04_cnn.ipynb 21
 class TensorSplittingConv(nn.Module):
     """Convolution layer that operates on splits of a tensor on desired device and concatenates the results to give a
-    lossless output. This is useful for large tensors that cannot fit in memory."""
+    lossless output. This is useful for large input tensors that cause intermediate buffers in the conv layer that
+    don't fit in memory."""
 
     def __init__(self, conv: nn.Module, num_splits: int | tuple[int, ...], optimize_num_splits: bool = True):
         super().__init__()
@@ -496,7 +548,7 @@ class TensorSplittingConv(nn.Module):
     def extra_repr(self):
         return f"num_splits={self.num_splits}"
 
-# %% ../../nbs/blocks/04_cnn.ipynb 25
+# %% ../../nbs/blocks/04_cnn.ipynb 24
 def add_tsp_to_module(
     module: nn.Module,
     num_splits_2d: int | tuple[int, int] | None = None,
@@ -529,7 +581,7 @@ def add_tsp_to_module(
             add_tsp_to_module(child, num_splits_2d, num_splits_3d, strict)
     return module
 
-# %% ../../nbs/blocks/04_cnn.ipynb 26
+# %% ../../nbs/blocks/04_cnn.ipynb 25
 def remove_tsp_from_module(module: nn.Module) -> nn.Module:
     for name, child in module.named_children():
         if isinstance(child, TensorSplittingConv):
