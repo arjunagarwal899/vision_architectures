@@ -6,45 +6,61 @@ __all__ = ['Attention1DMLPConfig', 'Attention3DMLPConfig', 'Attention1DWithMLPCo
            'TransformerEncoderBlock3D', 'TransformerDecoderBlock1D', 'TransformerDecoderBlock3D']
 
 # %% ../../nbs/blocks/02_transformer.ipynb 2
+from functools import wraps
 from typing import Literal
 
 import torch
 from torch import nn
 
+from ..docstrings import populate_docstring
 from ..layers.attention import Attention1D, Attention1DConfig, Attention3D, Attention3DConfig
 from ..layers.embeddings import RelativePositionEmbeddings
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.activations import get_act_layer
-from ..utils.custom_base_model import CustomBaseModel
+from ..utils.custom_base_model import CustomBaseModel, Field
 from ..utils.rearrange import rearrange_channels
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/02_transformer.ipynb 4
 class Attention1DMLPConfig(CustomBaseModel):
-    dim: int
-    mlp_ratio: int = 4
-    activation: str = "gelu"
-    mlp_drop_prob: float = 0.0
+    dim: int = Field(..., description="Dimension of the input and output features.")
+    mlp_ratio: int = Field(4, description="Ratio of the hidden dimension in the MLP to the input dimension.")
+    activation: str = Field("gelu", description="Activation function for the MLP.")
+    mlp_drop_prob: float = Field(0.0, description="Dropout probability for the MLP.")
 
 
 class Attention3DMLPConfig(Attention1DMLPConfig):
     pass
 
 
-class Attention1DWithMLPConfig(Attention1DConfig, Attention1DMLPConfig):
-    dim: int | tuple[int, int]
-    norm_location: Literal["pre", "post"] = "post"
-    layer_norm_eps: float = 1e-6
+class Attention1DWithMLPConfig(Attention1DMLPConfig, Attention1DConfig):
+    norm_location: Literal["pre", "post"] = Field(
+        "post",
+        description="Location of the normalization layer in the attention block. Pre-normalization implies "
+        "normalization before the attention operation, while post-normalization applies it after.",
+    )
+    layer_norm_eps: float = Field(1e-6, description="Epsilon value for the layer normalization.")
 
 
-class Attention3DWithMLPConfig(Attention3DConfig, Attention3DMLPConfig):
-    dim: int | tuple[int, int]
-    norm_location: Literal["pre", "post"] = "post"
-    layer_norm_eps: float = 1e-6
+class Attention3DWithMLPConfig(Attention3DMLPConfig, Attention3DConfig):
+    norm_location: Literal["pre", "post"] = Field(
+        "post",
+        description="Location of the normalization layer in the attention block. Pre-normalization implies "
+        "normalization before the attention operation, while post-normalization applies it after.",
+    )
+    layer_norm_eps: float = Field(1e-6, description="Epsilon value for the layer normalization.")
 
 # %% ../../nbs/blocks/02_transformer.ipynb 6
 class Attention1DMLP(nn.Module):
+    @populate_docstring
     def __init__(self, config: Attention1DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize an Attention1DMLP block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = Attention1DMLPConfig.model_validate(config | kwargs)
@@ -67,7 +83,16 @@ class Attention1DMLP(nn.Module):
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def _forward(self, hidden_states: torch.Tensor):
+    def _forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the Attention1DMLP block.
+
+        Args:
+            hidden_states: {INPUT_1D_DOC}
+
+        Returns:
+            {OUTPUT_1D_DOC}
+        """
+
         # hidden_states: (b, T, dim)
         def first_half(hidden_states):
             hidden_states = self.dense1(hidden_states)
@@ -83,26 +108,47 @@ class Attention1DMLP(nn.Module):
         hidden_states = self.checkpointing_level1(second_half, hidden_states)
         return hidden_states
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 8
 class Attention3DMLP(Attention1DMLP):
+    @populate_docstring
     def __init__(self, config: Attention3DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize an Attention3DMLP block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__(config, checkpointing_level, **kwargs)
 
-    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, hidden_states: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the Attention3DMLP block.
+
+        Args:
+            hidden_states: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # hidden_states: (b, dim, z, y, x) or (b, z, y, x, dim)
         hidden_states = rearrange_channels(hidden_states, channels_first, False)
         hidden_states = super()._forward(hidden_states)
         hidden_states = rearrange_channels(hidden_states, False, channels_first)
         return hidden_states
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 10
 class Attention1DWithMLP(nn.Module):
+    @populate_docstring
     def __init__(
         self,
         config: Attention1DWithMLPConfig = {},
@@ -111,6 +157,15 @@ class Attention1DWithMLP(nn.Module):
         checkpointing_level: int = 0,
         **kwargs
     ):
+        """Initialize an Attention1DWithMLP block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            relative_position_bias: {RELATIVE_POSITION_BIAS_DOC}
+            logit_scale: {LOGIT_SCALE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = Attention1DWithMLPConfig.model_validate(config | kwargs)
@@ -132,7 +187,18 @@ class Attention1DWithMLP(nn.Module):
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
-    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
+    @populate_docstring
+    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the Attention1DWithMLP block.
+
+        Args:
+            query: {INPUT_1D_DOC}
+            key: {INPUT_1D_DOC}
+            value: {INPUT_1D_DOC}
+
+        Returns:
+            {OUTPUT_1D_DOC}
+        """
         # Each is (b, T, dim)
         res_connection1 = query
         # (b, T, dim)
@@ -170,11 +236,13 @@ class Attention1DWithMLP(nn.Module):
 
         return hidden_states
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 12
 class Attention3DWithMLP(nn.Module):
+    @populate_docstring
     def __init__(
         self,
         config: Attention3DWithMLPConfig = {},
@@ -183,6 +251,15 @@ class Attention3DWithMLP(nn.Module):
         checkpointing_level: int = 0,
         **kwargs
     ):
+        """Initialize an Attention3DWithMLP block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            relative_position_bias: {RELATIVE_POSITION_BIAS_DOC}
+            logit_scale: {LOGIT_SCALE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = Attention3DWithMLPConfig.model_validate(config | kwargs)
@@ -204,13 +281,25 @@ class Attention3DWithMLP(nn.Module):
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
+    @populate_docstring
     def _forward(
         self,
         query: torch.Tensor,
         key: torch.Tensor,
         value: torch.Tensor,
         channels_first: bool = True,
-    ):
+    ) -> torch.Tensor:
+        """Forward pass of the Attention3DWithMLP block.
+
+        Args:
+            query: {INPUT_3D_DOC}
+            key: {INPUT_3D_DOC}
+            value: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         query = rearrange_channels(query, channels_first, False)
@@ -257,24 +346,52 @@ class Attention3DWithMLP(nn.Module):
 
         return hidden_states
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 14
 class TransformerEncoderBlock1D(Attention1DWithMLP):
-    def forward(self, qkv: torch.Tensor, *args, **kwargs):
+    @populate_docstring
+    def forward(self, qkv: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        """Forward pass of the TransformerEncoderBlock1D block.
+
+        Args:
+            qkv: {INPUT_1D_DOC} The same tensor is used for query, key, and value.
+
+        Returns:
+            {OUTPUT_1D_DOC}
+        """
+
         # qkv: (b, num_tokens, dim)
         return super().forward(qkv, qkv, qkv, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 16
 class TransformerEncoderBlock3D(Attention3DWithMLP):
-    def forward(self, qkv: torch.Tensor, *args, **kwargs):
-        # qkv: (b, num_tokens, dim)
+    @populate_docstring
+    def forward(self, qkv: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        """Forward pass of the TransformerEncoderBlock3D block.
+
+        Args:
+            qkv: {INPUT_3D_DOC} The same tensor is used for query, key, and value.
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
+        # qkv: (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
         return super().forward(qkv, qkv, qkv, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 18
 class TransformerDecoderBlock1D(nn.Module):
+    @populate_docstring
     def __init__(self, config: Attention1DWithMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize a TransformerDecoderBlock1D block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = Attention1DWithMLPConfig.model_validate(config | kwargs)
@@ -308,7 +425,17 @@ class TransformerDecoderBlock1D(nn.Module):
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
-    def _forward(self, q: torch.Tensor, kv: torch.Tensor):
+    @populate_docstring
+    def _forward(self, q: torch.Tensor, kv: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the TransformerDecoderBlock1D block.
+
+        Args:
+            q: The query tensor. {INPUT_1D_DOC}
+            kv: The key and value tensors. {INPUT_1D_DOC}
+
+        Returns:
+            {OUTPUT_1D_DOC}
+        """
         # q: (b, num_tokens_in_q, dim)
         # kv: (b, num_tokens_in_kv, dim)
 
@@ -363,12 +490,21 @@ class TransformerDecoderBlock1D(nn.Module):
 
         return hidden_states
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 20
 class TransformerDecoderBlock3D(nn.Module):
+    @populate_docstring
     def __init__(self, config: Attention3DWithMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize a TransformerDecoderBlock3D block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = Attention3DWithMLPConfig.model_validate(config | kwargs)
@@ -402,7 +538,18 @@ class TransformerDecoderBlock3D(nn.Module):
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
-    def _forward(self, q: torch.Tensor, kv: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, q: torch.Tensor, kv: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the TransformerDecoderBlock3D block.
+
+        Args:
+            q: The query tensor. {INPUT_3D_DOC}
+            kv: The key and value tensors. {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         q = rearrange_channels(q, channels_first, False)
@@ -462,5 +609,6 @@ class TransformerDecoderBlock3D(nn.Module):
 
         return hidden_states
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
