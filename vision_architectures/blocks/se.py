@@ -4,28 +4,40 @@
 __all__ = ['SEBlock3DConfig', 'SEBlock3D']
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 2
+from functools import wraps
+
 import torch
 from torch import nn
 
 from .cnn import CNNBlock3D, CNNBlockConfig
+from ..docstrings import populate_docstring
 from ..utils.activation_checkpointing import ActivationCheckpointing
+from ..utils.custom_base_model import Field
 from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 4
 class SEBlock3DConfig(CNNBlockConfig):
-    dim: int
-    r: float
+    dim: int = Field(..., description="Number of input channels.")
+    r: float = Field(..., description="Reduction ratio for the number of channels in the SE block.")
 
-    kernel_size: int = 1
-    normalization: str = "batchnorm3d"
-    activation: str = "silu"
+    kernel_size: int = Field(1, description="Kernel size for the convolutional layers in the SE block.")
+    normalization: str = Field("batchnorm3d", description="Normalization layer to use in the SE block.")
+    activation: str = Field("silu", description="Activation function to use in the SE block.")
 
-    in_channels: None = None  # determined by dim and r
-    out_channels: None = None  # determined by dim and r
+    in_channels: None = Field(None, description="determined by dim and r")
+    out_channels: None = Field(None, description="determined by dim and r")
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 6
 class SEBlock3D(nn.Module):
+    @populate_docstring
     def __init__(self, config: SEBlock3DConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize an SEBlock3D block. Activation checkpointing level 2.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = SEBlock3DConfig.model_validate(config | kwargs)
@@ -64,7 +76,17 @@ class SEBlock3D(nn.Module):
 
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the SEBlock3D block.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [dim], z, y, x, [dim])
 
         x = rearrange_channels(x, channels_first, True)
@@ -82,5 +104,6 @@ class SEBlock3D(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)

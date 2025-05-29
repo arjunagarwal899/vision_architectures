@@ -54,7 +54,7 @@ class Attention3DWithMLPConfig(Attention3DMLPConfig, Attention3DConfig):
 class Attention1DMLP(nn.Module):
     @populate_docstring
     def __init__(self, config: Attention1DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
-        """Initialize an Attention1DMLP block.
+        """Initialize an Attention1DMLP block. Activation checkpointing level 2.
 
         Args:
             config: {CONFIG_INSTANCE_DOC}
@@ -116,7 +116,7 @@ class Attention1DMLP(nn.Module):
 class Attention3DMLP(Attention1DMLP):
     @populate_docstring
     def __init__(self, config: Attention3DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
-        """Initialize an Attention3DMLP block.
+        """Initialize an Attention3DMLP block. Activation checkpointing level 2.
 
         Args:
             config: {CONFIG_INSTANCE_DOC}
@@ -157,7 +157,7 @@ class Attention1DWithMLP(nn.Module):
         checkpointing_level: int = 0,
         **kwargs
     ):
-        """Initialize an Attention1DWithMLP block.
+        """Initialize an Attention1DWithMLP block. Activation checkpointing level 3.
 
         Args:
             config: {CONFIG_INSTANCE_DOC}
@@ -251,7 +251,7 @@ class Attention3DWithMLP(nn.Module):
         checkpointing_level: int = 0,
         **kwargs
     ):
-        """Initialize an Attention3DWithMLP block.
+        """Initialize an Attention3DWithMLP block. Activation checkpointing level 3.
 
         Args:
             config: {CONFIG_INSTANCE_DOC}
@@ -354,7 +354,7 @@ class Attention3DWithMLP(nn.Module):
 class TransformerEncoderBlock1D(Attention1DWithMLP):
     @populate_docstring
     def forward(self, qkv: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        """Forward pass of the TransformerEncoderBlock1D block.
+        """Forward pass of the TransformerEncoderBlock1D block. Activation checkpointing level 3.
 
         Args:
             qkv: {INPUT_1D_DOC} The same tensor is used for query, key, and value.
@@ -370,7 +370,7 @@ class TransformerEncoderBlock1D(Attention1DWithMLP):
 class TransformerEncoderBlock3D(Attention3DWithMLP):
     @populate_docstring
     def forward(self, qkv: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        """Forward pass of the TransformerEncoderBlock3D block.
+        """Forward pass of the TransformerEncoderBlock3D block. Activation checkpointing level 3.
 
         Args:
             qkv: {INPUT_3D_DOC} The same tensor is used for query, key, and value.
@@ -385,7 +385,7 @@ class TransformerEncoderBlock3D(Attention3DWithMLP):
 class TransformerDecoderBlock1D(nn.Module):
     @populate_docstring
     def __init__(self, config: Attention1DWithMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
-        """Initialize a TransformerDecoderBlock1D block.
+        """Initialize a TransformerDecoderBlock1D block. Activation checkpointing level 3.
 
         Args:
             config: {CONFIG_INSTANCE_DOC}
@@ -498,7 +498,7 @@ class TransformerDecoderBlock1D(nn.Module):
 class TransformerDecoderBlock3D(nn.Module):
     @populate_docstring
     def __init__(self, config: Attention3DWithMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
-        """Initialize a TransformerDecoderBlock3D block.
+        """Initialize a TransformerDecoderBlock3D block. Activation checkpointing level 3.
 
         Args:
             config: {CONFIG_INSTANCE_DOC}
