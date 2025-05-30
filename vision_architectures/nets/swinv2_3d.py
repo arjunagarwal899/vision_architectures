@@ -4,7 +4,7 @@
 __all__ = ['SwinV23DPatchMergingConfig', 'SwinV23DPatchSplittingConfig', 'SwinV23DStageConfig', 'SwinV23DDecoderConfig',
            'SwinV23DConfig', 'Swin3DMIMConfig', 'SwinV23DLayerLogitScale', 'SwinV23DLayer', 'SwinV23DBlock',
            'SwinV23DPatchMerging', 'SwinV23DPatchSplitting', 'SwinV23DStage', 'SwinV23DEncoder', 'SwinV23DDecoder',
-           'SwinV23DModel', 'SwinV23DReconstructionDecoder', 'SwinV23DMIM', 'SwinV23DSimMIM', 'SwinV23DVAEMIM']
+           'SwinV23D', 'SwinV23DReconstructionDecoder', 'SwinV23DMIM', 'SwinV23DSimMIM', 'SwinV23DVAEMIM']
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 2
 import numpy as np
@@ -550,7 +550,7 @@ class SwinV23DDecoder(nn.Module, PyTorchModelHubMixin):
         return self.checkpointing_level5(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/03_swinv2_3d.ipynb 29
-class SwinV23DModel(nn.Module, PyTorchModelHubMixin):
+class SwinV23D(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: SwinV23DConfig, checkpointing_level: int = 0):
         super().__init__()
 
@@ -653,7 +653,7 @@ class SwinV23DMIM(nn.Module):
         self.decoder_config = decoder_config
         self.mim_config = mim_config
 
-        self.swin = SwinV23DModel(swin_config)
+        self.swin = SwinV23D(swin_config)
         self.decoder = SwinV23DReconstructionDecoder(decoder_config)
 
         self.mask_token = nn.Parameter(torch.randn(1, swin_config.dim, 1, 1, 1))

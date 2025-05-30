@@ -25,10 +25,10 @@ Basic Usage Example:
 .. code-block:: python
 
    import torch
-   from vision_architectures.nets.vit_3d import ViT3DModel
+   from vision_architectures.nets.vit_3d import ViT3D
    
    # Create a 3D Vision Transformer model
-   model = ViT3DModel(
+   model = ViT3D(
         dim=768,
         num_heads=12,
         mlp_ratio=4,

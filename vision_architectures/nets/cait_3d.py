@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['CaiT3DStage1Config', 'CaiT3DStage2Config', 'CaiT3DConfig', 'CaiT3DAttentionLayer', 'CaiT3DStage1Layer',
-           'CaiT3DStage2Layer', 'CaiT3DStage1', 'CaiT3DStage2', 'CaiT3DStage2OnlyModel', 'CaiT3DModel']
+           'CaiT3DStage2Layer', 'CaiT3DStage1', 'CaiT3DStage2', 'CaiT3DStage2OnlyModel', 'CaiT3D']
 
 # %% ../../nbs/nets/05_cait_3d.ipynb 2
 import torch
@@ -244,7 +244,7 @@ class CaiT3DStage2OnlyModel(nn.Module, PyTorchModelHubMixin):
         return class_logits, class_embeddings, layer_outputs
 
 # %% ../../nbs/nets/05_cait_3d.ipynb 21
-class CaiT3DModel(nn.Module, PyTorchModelHubMixin):
+class CaiT3D(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: CaiT3DConfig):
         super().__init__()
 

@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['Swin3DPatchMergingConfig', 'Swin3DPatchSplittingConfig', 'Swin3DStageConfig', 'Swin3DConfig', 'Swin3DMIMConfig',
-           'Swin3DLayer', 'Swin3DBlock', 'Swin3DPatchMerging', 'Swin3DStage', 'Swin3DEncoder', 'Swin3DModel',
+           'Swin3DLayer', 'Swin3DBlock', 'Swin3DPatchMerging', 'Swin3DStage', 'Swin3DEncoder', 'Swin3D',
            'Swin3DMIMDecoder', 'Swin3DMIM']
 
 # %% ../../nbs/nets/01_swin_3d.ipynb 2
@@ -336,7 +336,7 @@ class Swin3DEncoder(nn.Module, PyTorchModelHubMixin):
         return hidden_states, stage_outputs, layer_outputs
 
 # %% ../../nbs/nets/01_swin_3d.ipynb 21
-class Swin3DModel(nn.Module, PyTorchModelHubMixin):
+class Swin3D(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config: Swin3DConfig):
         super().__init__()
 
@@ -430,7 +430,7 @@ class Swin3DMIM(nn.Module, PyTorchModelHubMixin):
 
         self.config = config
 
-        self.swin = Swin3DModel(config)
+        self.swin = Swin3D(config)
         self.decoder = Swin3DMIMDecoder(config)
 
         self.mask_token = nn.Parameter(torch.randn(1, config.dim, 1, 1, 1))

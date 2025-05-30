@@ -4,8 +4,8 @@
 __all__ = ['populate_and_validate_config', 'get_coords_grid', 'SymSwin3DMHSA', 'SymSwin3DLayerMLP', 'SymSwin3DLayer',
            'symmetry_attention_rearrange_forward', 'symmetry_attention_rearrange_backward', 'SymSwin3DBlock',
            'SymSwin3DPatchMerging', 'SymSwin3DStage', 'SymSwin3DEncoder', 'SymSwin3DPatchEmbeddings',
-           'get_3d_position_embeddings', 'embed_spacings_in_position_embeddings', 'SymSwin3DEmbeddings',
-           'SymSwin3DModel', 'SymSwin3DReconstructionDecoder', 'SymSwin3DMIM', 'SymSwin3DSimMIM', 'SymSwin3DVAEMIM']
+           'get_3d_position_embeddings', 'embed_spacings_in_position_embeddings', 'SymSwin3DEmbeddings', 'SymSwin3D',
+           'SymSwin3DReconstructionDecoder', 'SymSwin3DMIM', 'SymSwin3DSimMIM', 'SymSwin3DVAEMIM']
 
 # %% ../../nbs/nets/10_symswin3d.ipynb 2
 import numpy as np
@@ -657,7 +657,7 @@ class SymSwin3DEmbeddings(nn.Module):
         return embeddings
 
 # %% ../../nbs/nets/10_symswin3d.ipynb 40
-class SymSwin3DModel(nn.Module, PyTorchModelHubMixin):
+class SymSwin3D(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super().__init__()
 
@@ -742,7 +742,7 @@ class SymSwin3DMIM(nn.Module):
         self.decoder_config = decoder_config
         self.mim_config = mim_config
 
-        self.symswin = SymSwin3DModel(symswin_config)
+        self.symswin = SymSwin3D(symswin_config)
         self.decoder = SymSwin3DReconstructionDecoder(decoder_config)
 
         self.mask_token = nn.Parameter(torch.randn(1, symswin_config["dim"], 1, 1, 1))
