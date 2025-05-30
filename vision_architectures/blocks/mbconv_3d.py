@@ -4,29 +4,34 @@
 __all__ = ['MBConv3DConfig', 'MBConv3D']
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 2
+from functools import wraps
+
 import torch
 from torch import nn
 
 from .cnn import CNNBlock3D, CNNBlockConfig
 from .se import SEBlock3D
+from ..docstrings import populate_docstring
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.custom_base_model import model_validator
+from ..utils.custom_base_model import Field, model_validator
 from ..utils.rearrange import rearrange_channels
 from ..utils.residuals import Residual
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 4
 class MBConv3DConfig(CNNBlockConfig):
-    dim: int
-    out_dim: int | None = None
-    expansion_ratio: float = 6.0
-    se_reduction_ratio: float = 4.0
+    dim: int = Field(..., description="Input channel dimension of the block.")
+    out_dim: int | None = Field(
+        None, description="Output channel dimension of the block. If None, it will be set to `dim`."
+    )
+    expansion_ratio: float = Field(6.0, description="Expansion ratio for the block.")
+    se_reduction_ratio: float = Field(4.0, description="Squeeze-and-excitation reduction ratio.")
 
-    kernel_size: int = 3
-    activation: str = "relu"
-    normalization: str = "batchnorm3d"
+    kernel_size: int = Field(3, description="Kernel size for the convolutional layers.")
+    activation: str = Field("relu", description="Activation function to use in the block.")
+    normalization: str = Field("batchnorm3d", description="Normalization layer to use in the block.")
 
-    in_channels: None = None  # use dim instead
-    out_channels: None = None  # use expansion_ratio instead
+    in_channels: None = Field(None, description="Use dim instead")
+    out_channels: None = Field(None, description="Use expansion_ratio instead")
 
     @property
     def hidden_dim(self):
@@ -49,8 +54,19 @@ class MBConv3DConfig(CNNBlockConfig):
         return self
 
 # %% ../../nbs/blocks/05_mbconv_3d.ipynb 7
+@populate_docstring
 class MBConv3D(nn.Module):
+    """Mobile Inverted Residual Bottleneck Block. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: MBConv3DConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the MBConv3D block. Activation checkpointing level 2.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = MBConv3DConfig.model_validate(config | kwargs)
@@ -100,7 +116,17 @@ class MBConv3D(nn.Module):
 
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the MBConv3D block.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [dim], z, y, x, [dim])
 
         x = rearrange_channels(x, channels_first, True)
@@ -133,5 +159,6 @@ class MBConv3D(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
