@@ -8,4 +8,5 @@ numpy
 pre-commit
 pydantic
 safetensors
+scipy
 torch
