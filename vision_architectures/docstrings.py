@@ -3,7 +3,8 @@
 # %% auto 0
 __all__ = ['CHANNELS_FIRST_DOC', 'CONFIG_INSTANCE_DOC', 'CONFIG_KWARGS_DOC', 'CHECKPOINTING_LEVEL_DOC', 'INPUT_1D_DOC',
            'INPUT_3D_DOC', 'OUTPUT_1D_DOC', 'OUTPUT_3D_DOC', 'RELATIVE_POSITION_BIAS_DOC', 'LOGIT_SCALE_DOC',
-           'CLASS_DESCRIPTION_1D_DOC', 'CLASS_DESCRIPTION_2D_DOC', 'CLASS_DESCRIPTION_3D_DOC', 'populate_docstring']
+           'CLASS_DESCRIPTION_1D_DOC', 'CLASS_DESCRIPTION_2D_DOC', 'CLASS_DESCRIPTION_3D_DOC', 'SPACINGS_DOC',
+           'populate_docstring']
 
 # %% ../nbs/docstrings.ipynb 1
 CHANNELS_FIRST_DOC = "Whether the inputs are in channels first format `(B, C, ...)` or not `(B, ..., C)`."
@@ -25,6 +26,7 @@ LOGIT_SCALE_DOC = "Optional scaling factor for the attention logits."
 CLASS_DESCRIPTION_1D_DOC = "This class is designed for 1D input eg. language, etc."
 CLASS_DESCRIPTION_2D_DOC = "This class is designed for 2D input eg. natural images etc."
 CLASS_DESCRIPTION_3D_DOC = "This class is designed for 3D input eg. medical images, videos etc."
+SPACINGS_DOC = "Spacing information of shape `(B, 3)` of the input features."
 
 # %% ../nbs/docstrings.ipynb 2
 def populate_docstring(*args, **kwargs):
