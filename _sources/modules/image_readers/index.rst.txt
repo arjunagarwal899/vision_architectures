@@ -1,0 +1,9 @@
+Image Readers
+=============
+
+This section documents the image readers components.
+
+.. toctree::
+   :maxdepth: 1
+
+   safetensors_reader
