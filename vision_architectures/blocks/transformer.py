@@ -51,7 +51,10 @@ class Attention3DWithMLPConfig(Attention3DMLPConfig, Attention3DConfig):
     layer_norm_eps: float = Field(1e-6, description="Epsilon value for the layer normalization.")
 
 # %% ../../nbs/blocks/02_transformer.ipynb 6
+@populate_docstring
 class Attention1DMLP(nn.Module):
+    """The MLP that is usually used after performing attention. {CLASS_DESCRIPTION_1D_DOC}"""
+
     @populate_docstring
     def __init__(self, config: Attention1DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
         """Initialize an Attention1DMLP block. Activation checkpointing level 2.
@@ -113,7 +116,10 @@ class Attention1DMLP(nn.Module):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 8
+@populate_docstring
 class Attention3DMLP(Attention1DMLP):
+    """The MLP that is usually used after performing attention. {CLASS_DESCRIPTION_3D_DOC}"""
+
     @populate_docstring
     def __init__(self, config: Attention3DMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
         """Initialize an Attention3DMLP block. Activation checkpointing level 2.
@@ -147,7 +153,10 @@ class Attention3DMLP(Attention1DMLP):
         return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 10
+@populate_docstring
 class Attention1DWithMLP(nn.Module):
+    """An attention block with an MLP. {CLASS_DESCRIPTION_1D_DOC}"""
+
     @populate_docstring
     def __init__(
         self,
@@ -241,7 +250,10 @@ class Attention1DWithMLP(nn.Module):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 12
+@populate_docstring
 class Attention3DWithMLP(nn.Module):
+    """An attention block with an MLP. {CLASS_DESCRIPTION_3D_DOC}"""
+
     @populate_docstring
     def __init__(
         self,
@@ -351,7 +363,10 @@ class Attention3DWithMLP(nn.Module):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 14
+@populate_docstring
 class TransformerEncoderBlock1D(Attention1DWithMLP):
+    """A self attention transformer block. {CLASS_DESCRIPTION_1D_DOC}"""
+
     @populate_docstring
     def forward(self, qkv: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Forward pass of the TransformerEncoderBlock1D block. Activation checkpointing level 3.
@@ -367,7 +382,10 @@ class TransformerEncoderBlock1D(Attention1DWithMLP):
         return super().forward(qkv, qkv, qkv, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 16
+@populate_docstring
 class TransformerEncoderBlock3D(Attention3DWithMLP):
+    """A self attention transformer block. {CLASS_DESCRIPTION_3D_DOC}"""
+
     @populate_docstring
     def forward(self, qkv: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Forward pass of the TransformerEncoderBlock3D block. Activation checkpointing level 3.
@@ -382,7 +400,10 @@ class TransformerEncoderBlock3D(Attention3DWithMLP):
         return super().forward(qkv, qkv, qkv, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 18
+@populate_docstring
 class TransformerDecoderBlock1D(nn.Module):
+    """A cross attention transformer block. {CLASS_DESCRIPTION_1D_DOC}"""
+
     @populate_docstring
     def __init__(self, config: Attention1DWithMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
         """Initialize a TransformerDecoderBlock1D block. Activation checkpointing level 3.
@@ -495,7 +516,10 @@ class TransformerDecoderBlock1D(nn.Module):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 20
+@populate_docstring
 class TransformerDecoderBlock3D(nn.Module):
+    """A cross attention transformer block. {CLASS_DESCRIPTION_3D_DOC}"""
+
     @populate_docstring
     def __init__(self, config: Attention3DWithMLPConfig = {}, checkpointing_level: int = 0, **kwargs):
         """Initialize a TransformerDecoderBlock3D block. Activation checkpointing level 3.

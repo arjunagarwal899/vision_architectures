@@ -105,7 +105,11 @@ class MultiResCNNBlockConfig(CNNBlockConfig):
         return self
 
 # %% ../../nbs/blocks/04_cnn.ipynb 7
+@populate_docstring
 class _CNNBlock(nn.Module):
+    """A block to perform a sequence of convolution, activation, normalization, and dropout operations. Works for 2D as
+    well as 3D data."""
+
     @populate_docstring
     def __init__(
         self, spatial_dims: Literal[2, 3], config: CNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs
@@ -213,7 +217,11 @@ class _CNNBlock(nn.Module):
         return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 8
+@populate_docstring
 class CNNBlock3D(_CNNBlock):
+    """A block to perform a sequence of convolution, activation, normalization, and dropout operations.
+    {CLASS_DESCRIPTION_3D_DOC}"""
+
     @populate_docstring
     def __init__(self, config: CNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
         """Initialize the CNNBlock3D block. Activation checkpointing level 1.
@@ -226,7 +234,11 @@ class CNNBlock3D(_CNNBlock):
         super().__init__(3, config, checkpointing_level, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 11
+@populate_docstring
 class CNNBlock2D(_CNNBlock):
+    """A block to perform a sequence of convolution, activation, normalization, and dropout operations.
+    {CLASS_DESCRIPTION_2D_DOC}"""
+
     @populate_docstring
     def __init__(self, config: CNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
         """Initialize the CNNBlock2D block. Activation checkpointing level 1.
@@ -240,9 +252,22 @@ class CNNBlock2D(_CNNBlock):
 
 # %% ../../nbs/blocks/04_cnn.ipynb 15
 class _MultiResCNNBlock(nn.Module):
+    """A block to perform a multi-resolution convolution operation using the cascading convolutions trick. It uses three
+    different kernel sizes (3, 5, and 7) to capture features at multiple resolutions. The output channels are split
+    according to the specified filter ratios. The block also includes a residual connection."""
+
+    @populate_docstring
     def __init__(
         self, spatial_dims: Literal[2, 3], config: MultiResCNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs
     ):
+        """Initialize the MultiResCNNBlock block. Activation checkpointing level 2.
+
+        Args:
+            spatial_dims: Number of spatial dimensions (2 or 3). This is used to determine 2D vs 3D data
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = MultiResCNNBlockConfig.model_validate(config | kwargs)
@@ -286,7 +311,17 @@ class _MultiResCNNBlock(nn.Module):
 
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the MultiResCNNBlock block.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [in_channels], [z], y, x, [in_channels])
 
         x = rearrange_channels(x, channels_first, True)
@@ -313,26 +348,53 @@ class _MultiResCNNBlock(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 16
 class MultiResCNNBlock3D(_MultiResCNNBlock):
+    @populate_docstring
     def __init__(self, config: MultiResCNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the MultiResCNNBlock3D block. Activation checkpointing level 2.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__(3, config, checkpointing_level, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 18
 class MultiResCNNBlock2D(_MultiResCNNBlock):
+    @populate_docstring
     def __init__(self, config: MultiResCNNBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the MultiResCNNBlock2D block. Activation checkpointing level 2.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__(2, config, checkpointing_level, **kwargs)
 
 # %% ../../nbs/blocks/04_cnn.ipynb 21
 class TensorSplittingConv(nn.Module):
     """Convolution layer that operates on splits of a tensor on desired device and concatenates the results to give a
     lossless output. This is useful for large input tensors that cause intermediate buffers in the conv layer that
-    don't fit in memory."""
+    don't fit in memory. Works for both 2D and 3D convolutions."""
 
     def __init__(self, conv: nn.Module, num_splits: int | tuple[int, ...], optimize_num_splits: bool = True):
+        """Initialize the TensorSplittingConv layer.
+
+        Args:
+            conv: Convolution layer to be used for splitting. Must be either nn.Conv2d or nn.Conv3d.
+            num_splits: Number of splits for each spatial dimension. If an int is provided, it will be used for all
+                spatial dimensions. If a tuple is provided, it must have the same length as the number of spatial
+                dimensions.
+            optimize_num_splits: Whether to optimize the number of splits based on the input shape. An example of
+                optimization is provided below. Defaults to True.
+        """
         super().__init__()
 
         if isinstance(conv, nn.Conv2d):
@@ -371,7 +433,15 @@ class TensorSplittingConv(nn.Module):
         return tuple(context.tolist())
 
     def get_input_shape(self, input_shape: tuple[int, ...] | torch.Size | torch.Tensor) -> tuple[int, ...]:
-        """Get the input shape of the convolution layer."""
+        """Get the input shape of the convolution layer. This function removes any unnecesary dimensions and ensures
+        that the input shape is of length equal to the number of spatial dimensions.
+
+        Args:
+            input_shape: Shape of the input tensor. If a tensor is provided, its shape will be used.
+
+        Returns:
+            Tuple of the input shape for the convolution layer, with only the spatial dimensions.
+        """
         if isinstance(input_shape, torch.Tensor):
             input_shape = input_shape.shape
         if isinstance(input_shape, torch.Size):
@@ -412,7 +482,15 @@ class TensorSplittingConv(nn.Module):
 
     def pad_input_for_divisibility(self, x: torch.Tensor, num_splits: tuple[int, ...] = None) -> torch.Tensor:
         """Pad the input at the end of every spatial dimension such that it is perfectly divisible by the number of
-        splits."""
+        splits.
+
+        Args:
+            x: Input tensor of shape (batch_size, in_channels, [z], y, x).
+            num_splits: Number of splits for each spatial dimension. If None, the default num_splits will be used.
+
+        Returns:
+            Padded input tensor of shape (batch_size, in_channels, [z], y, x).
+        """
         if num_splits is None:
             num_splits = self.num_splits
         padding = [0, 0] * (x.ndim - self.spatial_dims)
@@ -449,7 +527,15 @@ class TensorSplittingConv(nn.Module):
     def get_split_stride(
         self, input_shape: tuple[int, ...] | torch.Size | torch.Tensor, num_splits: tuple[int, ...] = None
     ) -> tuple[int, ...]:
-        """Calculate the split stride for each dimension based on the input shape and context size."""
+        """Calculate the split stride for each dimension based on the input shape and context size.
+
+        Args:
+            input_shape: Shape of the input tensor. If a tensor is provided, its shape will be used.
+            num_splits: Number of splits for each spatial dimension. If None, the default num_splits will be used.
+
+        Returns:
+            Tuple of split strides for each dimension.
+        """
         input_shape = self.get_input_shape(input_shape)
         if num_splits is None:
             num_splits = self.num_splits
@@ -462,7 +548,14 @@ class TensorSplittingConv(nn.Module):
         return split_stride
 
     def pad_input_for_context(self, x: torch.Tensor) -> torch.Tensor:
-        """Pad the input with the context size for consistent merging."""
+        """Pad the input with the context size for consistent merging.
+
+        Args:
+            x: Input tensor of shape (batch_size, in_channels, [z], y, x).
+
+        Returns:
+            Padded input tensor of shape (batch_size, in_channels, [z], y, x).
+        """
         context = self.get_edge_context()
         padding = [0, 0] * (x.ndim - self.spatial_dims)
         for i in range(self.spatial_dims):
@@ -470,17 +563,20 @@ class TensorSplittingConv(nn.Module):
         x = F.pad(x, list(reversed(padding)))
         return x
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    @populate_docstring
+    def forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
         """Forward pass through the convolution layer with tensor splitting parallelism. Main convolution occurs on it's
              device, but the output is built on the input tensor's device.
 
         Args:
-            x: Input tensor of shape (batch_size, in_channels, [z], y, x).
+            x: {INPUT_3D_DOC}
 
         Returns:
-            Output tensor of shape (batch_size, out_channels, [z], y, x).
+            {OUTPUT_3D_DOC}
         """
         input_device = x.device
+
+        x = rearrange_channels(x, channels_first, True)
         B, DIMS = x.shape[0], x.shape[2:]  # (batch_size, in_channels, [z], y, x)
 
         # Optimize num_splits
@@ -543,6 +639,8 @@ class TensorSplittingConv(nn.Module):
 
             merged[tuple(merged_slices)] = output[tuple(output_slices)]
 
+        merged = rearrange_channels(merged, True, channels_first)
+
         return merged
 
     def extra_repr(self):
@@ -555,6 +653,22 @@ def add_tsp_to_module(
     num_splits_3d: int | tuple[int, int, int] = None,
     strict: bool = True,
 ) -> nn.Module:
+    """Recursively add TensorSplittingConv to the module for all Conv2d and Conv3d layers.
+
+    Args:
+        module: The module to modify.
+        num_splits_2d: Number of splits for 2D convolutions. If None, 2D convolutions will not be modified.
+        num_splits_3d: Number of splits for 3D convolutions. If None, 3D convolutions will not be modified.
+        strict: Whether to raise an error if a conversion fails. If False, it will log the error and continue.
+
+    Returns:
+        The modified module with TensorSplittingConv layers.
+
+    Raises:
+        ValueError: If both num_splits_2d and num_splits_3d are None.
+        Exception: If a conversion fails and strict is True.
+    """
+
     if num_splits_2d is None and num_splits_3d is None:
         raise ValueError("At least one of num_splits_2d or num_splits_3d must be provided.")
     for name, child in module.named_children():
@@ -583,6 +697,14 @@ def add_tsp_to_module(
 
 # %% ../../nbs/blocks/04_cnn.ipynb 25
 def remove_tsp_from_module(module: nn.Module) -> nn.Module:
+    """Recursively remove TensorSplittingConv from the module and replace it with the original convolution layer.
+
+    Args:
+        module: The module to modify.
+
+    Returns:
+        The modified module with TensorSplittingConv layers replaced by the original convolution layers.
+    """
     for name, child in module.named_children():
         if isinstance(child, TensorSplittingConv):
             setattr(module, name, child.conv.to(child.conv.weight.device))

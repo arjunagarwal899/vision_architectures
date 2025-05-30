@@ -28,7 +28,10 @@ class SEBlock3DConfig(CNNBlockConfig):
     out_channels: None = Field(None, description="determined by dim and r")
 
 # %% ../../nbs/blocks/03_se_3d.ipynb 6
+@populate_docstring
 class SEBlock3D(nn.Module):
+    """A Squeeze-and-Excitation (SE) block for 3D data. {CLASS_DESCRIPTION_3D_DOC}"""
+
     @populate_docstring
     def __init__(self, config: SEBlock3DConfig = {}, checkpointing_level: int = 0, **kwargs):
         """Initialize an SEBlock3D block. Activation checkpointing level 2.
