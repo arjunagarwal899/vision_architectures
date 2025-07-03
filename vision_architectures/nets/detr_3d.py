@@ -220,8 +220,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         reduction: str = "mean",
     ) -> torch.Tensor:
         """Bipartite matching loss for DETR. The classes are expected to optimize for a multi-class classification
-        problem. Expects raw logits in class predictions, not probabilities. Use ``logits_to_scores_fn=None`` in the
-        ``forward`` function to avoid applying any transformation.
+        problem. Expects raw logits in class predictions, not probabilities.
 
         Args:
             pred: Predicted bounding boxes and class scores. It should be of shape
