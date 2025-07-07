@@ -162,7 +162,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
     def _forward(
         self,
         embeddings: torch.Tensor,
-        spacings: torch.Tensor,
+        spacings: torch.Tensor | None = None,
         channels_first: bool = True,
         return_intermediates: bool = False,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor, list[torch.Tensor]]:
