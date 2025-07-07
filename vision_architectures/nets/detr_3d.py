@@ -251,7 +251,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 target[i] = torch.cat([target[i][:, :6], target[i][:, 6:].argmax(-1, keepdims=True)], dim=-1)
 
         # Perform hungarian matching
-        matched_indices = DETR3D._hungarian_matching(
+        matched_indices = DETR3D.hungarian_matching(
             pred, target, classification_cost_weight, bbox_l1_cost_weight, bbox_iou_cost_weight
         )
 
@@ -302,7 +302,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
 
     @torch.no_grad()
     @staticmethod
-    def _hungarian_matching(
+    def hungarian_matching(
         pred: torch.Tensor,
         target: list[torch.Tensor],
         classification_cost_weight: float = 1.0,
