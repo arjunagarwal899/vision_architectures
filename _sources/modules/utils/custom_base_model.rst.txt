@@ -1,0 +1,7 @@
+CustomBaseModel
+===============
+
+.. automodule:: vision_architectures.utils.custom_base_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

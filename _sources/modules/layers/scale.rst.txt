@@ -1,0 +1,7 @@
+Upsample / Downsample
+=====================
+
+.. automodule:: vision_architectures.layers.scale
+   :members:
+   :undoc-members:
+   :show-inheritance:
