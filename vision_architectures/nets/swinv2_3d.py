@@ -596,7 +596,7 @@ class SwinV23D(nn.Module, PyTorchModelHubMixin):
         #     embeddings = (embeddings * (1 - mask_patches)) + (mask_patches * mask_token)
 
         embeddings = self.absolute_position_embeddings(
-            embeddings, spacings=spacings, device=embeddings.device, crop_offsets=crop_offsets, channels_first=False
+            embeddings, spacings=spacings, crop_offsets=crop_offsets, channels_first=False
         )
         # (b, num_patches_z, num_patches_y, num_patches_x, dim)
 
