@@ -17,7 +17,7 @@ from ..blocks.transformer import Attention1DWithMLPConfig, TransformerDecoderBlo
 from ..docstrings import populate_docstring
 from ..layers.embeddings import AbsolutePositionEmbeddings3D, AbsolutePositionEmbeddings3DConfig
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.custom_base_model import CustomBaseModel, Field
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/06_detr_3d.ipynb 4
@@ -28,6 +28,12 @@ class DETRDecoderConfig(Attention1DWithMLPConfig):
 class DETRBBoxMLPConfig(CustomBaseModel):
     dim: int = Field(..., description="Dimension of the input features.")
     num_classes: int = Field(..., description="Number of classes for the bounding box predictions.")
+
+    @model_validator(mode="after")
+    def validate(self):
+        super().validate()
+        assert self.num_classes > 0, "Number of classes must be greater than zero. If not predicting classes, set to 1."
+        return self
 
 
 class DETR3DConfig(DETRDecoderConfig, DETRBBoxMLPConfig, AbsolutePositionEmbeddings3DConfig):
@@ -149,7 +155,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
 
         self.config = DETR3DConfig.model_validate(config | kwargs)
 
-        self.embeddings = AbsolutePositionEmbeddings3D(config)
+        self.position_embeddings = AbsolutePositionEmbeddings3D(config)
         self.pos_drop = nn.Dropout(self.config.drop_prob)
         self.num_possible_objects = self.config.num_objects
         self.object_queries = nn.Parameter(torch.randn(1, self.num_possible_objects, self.config.dim))
@@ -184,7 +190,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         embeddings = rearrange_channels(embeddings, channels_first, True)
         # (b, dim, num_tokens_z, num_tokens_y, num_tokens_x)
 
-        embeddings = self.embeddings(embeddings, spacings=spacings)
+        embeddings = self.position_embeddings(embeddings, spacings=spacings)
         embeddings = self.pos_drop(embeddings)
         # (b, dim, num_tokens_z, num_tokens_y, num_tokens_x)
 
