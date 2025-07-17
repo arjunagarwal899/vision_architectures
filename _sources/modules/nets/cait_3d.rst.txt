@@ -1,0 +1,7 @@
+CaiT3D
+======
+
+.. automodule:: vision_architectures.nets.cait_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

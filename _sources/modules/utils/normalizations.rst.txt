@@ -1,0 +1,7 @@
+Normalizations
+==============
+
+.. automodule:: vision_architectures.utils.normalizations
+   :members:
+   :undoc-members:
+   :show-inheritance:
