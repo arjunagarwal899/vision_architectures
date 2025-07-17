@@ -224,6 +224,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         bbox_l1_cost_weight: float = 1.0,
         bbox_iou_cost_weight: float = 1.0,
         reduction: str = "mean",
+        return_matching: bool = False,
     ) -> torch.Tensor:
         """Bipartite matching loss for DETR. The classes are expected to optimize for a multi-class classification
         problem. Expects raw logits in class predictions, not probabilities. Use ``logits_to_scores_fn=None`` in the
@@ -241,9 +242,13 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             bbox_l1_cost_weight: Weight for the bounding box L1 loss cost in hungarian matching.
             bbox_iou_cost_weight: Weight for the bounding box IoU cost in hungarian matching.
             reduction: Specifies the reduction to apply to the output.
+            return_matching: Whether or not to return the matched indices from the bipartite matching.
 
         Returns:
-            A tensor containing the bipartite matching loss with the shape depending on the `reduction` argument.
+            A tensor containing the bipartite matching loss with the shape depending on the `reduction` argument. If
+            `return_matching` is True, also returns a list of tuples containing matched indices for predictions and
+            targets. Each tuple is of the form `(pred_indices, target_indices)`, where `pred_indices` and
+            `target_indices` are lists of indices for the matched predictions and targets, respectively.
         """
         B = pred.shape[0]
 
@@ -265,11 +270,16 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         for i in range(B):
             pred_indices, target_indices = matched_indices[i]
 
+            # If either prediction or target has no objects, skip this batch element
+            if pred_indices == [] or target_indices == []:
+                losses.append(torch.tensor(0.0, device=pred.device))
+                continue
+
             matched_pred = pred[i][pred_indices]
             matched_target = target[i][target_indices]
 
-            pred_bboxes = matched_pred[:, :6]
-            target_bboxes = matched_target[:, :6]
+            pred_bboxes = matched_pred[:, :6].clone()
+            target_bboxes = matched_target[:, :6].clone()
 
             pred_classes = matched_pred[:, 6:]
             target_class_labels = matched_target[:, 6].long()
@@ -277,6 +287,9 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             # Compute losses for matched pairs
             # BBox L1 loss
             bbox_l1_loss = F.l1_loss(pred_bboxes, target_bboxes)
+
+            # For IOU calculation, it does not matter if bboxes are in actual pixel lengths or normalized based on
+            # image size, metric value will be the same.
 
             # BBox IOU loss
             bbox_iou_loss = 1 - DETR3D._generalized_bbox_iou(pred_bboxes, target_bboxes)
@@ -304,7 +317,10 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         else:
             raise ValueError(f"Invalid reduction mode: {reduction}")
 
-        return loss
+        return_value = [loss]
+        if return_matching:
+            return_value.append(matched_indices)
+        return return_value
 
     @torch.no_grad()
     @staticmethod
@@ -337,6 +353,11 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         for i in range(B):
             pred_bboxes = pred[i, :, :6]  # (num_objects, 6)
             target_bboxes = target[i][:, :6]  # (<=num_objects, 6)
+
+            # If either prediction or target has no objects, skip matching
+            if pred_bboxes.shape[0] == 0 or target_bboxes.shape[0] == 0:
+                matched_indices.append(([], []))
+                continue
 
             pred_class_logits = pred[i, :, 6:]  # (num_objects, num_classes)
             target_class_labels = target[i][:, 6].long()  # (<=num_objects,) this is in argmax encoding
