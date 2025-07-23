@@ -126,7 +126,7 @@ class DETRBBoxMLP(nn.Module):
 
         Returns:
             A tensor of shape (b, num_possible_objects, 1 objectness class + 6 bounding box parameters + num_classes)
-            containing the predicted bounding boxes and class scores.
+            containing the predicted bounding boxes and class scores. {BOUNDING_BOXES_FORMAT_DOC}
         """
         # object_embeddings: (b, num_possible_objects, dim)
 
@@ -182,7 +182,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
 
         Returns:
             A tuple containing bounding boxes, object embeddings, and layer outputs if return_intermediates is True.
-            Else, returns only the bounding boxes.
+            Else, returns only the bounding boxes. {BOUNDING_BOXES_FORMAT_DOC}
         """
         # embeddings: (b, [dim], num_tokens_z, num_tokens_y, num_tokens_x, [dim])
         # spacings: (b, 3)
@@ -225,7 +225,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         bbox_iou_cost_weight: float = 1.0,
         reduction: str = "mean",
         return_matching: bool = False,
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | list:
         """Bipartite matching loss for DETR. The classes are expected to optimize for a multi-class classification
         problem. Expects raw logits in class predictions, not probabilities. Use ``logits_to_scores_fn=None`` in the
         ``forward`` function to avoid applying any transformation.
@@ -337,7 +337,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             pred: Predicted bounding boxes and class scores. It should be of shape
                 `(B, num_objects, 6 + 1 + num_classes)`. Number of objects and number of classes will be inferred from
                 here.
-            target: Target bounding boxes and class scores. This is in argmax encoding.
+            target: Target bounding boxes and class scores. This is expected in argmax encoding or one-hot encoding.
             classification_cost_weight: Weight for the classification cost.
             bbox_l1_cost_weight: Weight for the bounding box L1 loss cost.
             bbox_iou_cost_weight: Weight for the bounding box IoU cost.
@@ -402,8 +402,8 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         """Compute the IoU loss between two matched sets of bounding boxes.
 
         Args:
-            pred_bbox: Predicted bounding box of shape `(num_boxes, 6)`.
-            target_bbox: Target bounding box of shape `(num_boxes, 6)`.
+            pred_bboxes: Predicted bounding boxes of shape `(num_boxes, 6)`. {BOUNDING_BOXES_FORMAT_DOC}
+            target_bboxes: Target bounding boxes of shape `(num_boxes, 6)`. {BOUNDING_BOXES_FORMAT_DOC}
 
         Returns:
             A tensor containing the IoU loss.
@@ -452,8 +452,8 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         """Compute the IoU loss between all combinations of predicted and target bounding boxes.
 
         Args:
-            pred_bboxes: Predicted bounding boxes of shape `(num_objects, 6)`.
-            target_bboxes: Target bounding boxes of shape `(<=num_objects, 6)`.
+            pred_bboxes: Predicted bounding boxes of shape `(num_objects, 6)`. {BOUNDING_BOXES_FORMAT_DOC}
+            target_bboxes: Target bounding boxes of shape `(<=num_objects, 6)`. {BOUNDING_BOXES_FORMAT_DOC}
 
         Returns:
             A tensor containing the IoU losses of all combinations.
