@@ -225,7 +225,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         bbox_iou_cost_weight: float = 1.0,
         reduction: str = "mean",
         return_matching: bool = False,
-    ) -> torch.Tensor | list:
+    ) -> torch.Tensor | tuple[torch.Tensor, list]:
         """Bipartite matching loss for DETR. The classes are expected to optimize for a multi-class classification
         problem. Expects raw logits in class predictions, not probabilities. Use ``logits_to_scores_fn=None`` in the
         ``forward`` function to avoid applying any transformation.
@@ -292,7 +292,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             # image size, metric value will be the same.
 
             # BBox IOU loss
-            bbox_iou_loss = 1 - DETR3D._generalized_bbox_iou(pred_bboxes, target_bboxes)
+            bbox_iou_loss = 1 - DETR3D._generalized_bbox_iou(pred_bboxes, target_bboxes).mean()
 
             # Classification loss
             class_loss = F.cross_entropy(pred_classes, target_class_labels)
@@ -317,10 +317,9 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         else:
             raise ValueError(f"Invalid reduction mode: {reduction}")
 
-        return_value = [loss]
         if return_matching:
-            return_value.append(matched_indices)
-        return return_value
+            return loss, matched_indices
+        return loss
 
     @torch.no_grad()
     @staticmethod
@@ -440,9 +439,9 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         enc_vol = enc_dims.prod(dim=1)
 
         iou = inter_vol / union_vol.clamp(min=1e-7)
-        giou = iou - (enc_vol - union_vol) / enc_vol.clamp(min=1e-7)
+        gious = iou - (enc_vol - union_vol) / enc_vol.clamp(min=1e-7)
 
-        return giou.mean()
+        return gious
 
     @staticmethod
     def _generalized_pairwise_bbox_iou(
@@ -463,8 +462,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         for i in range(pred_bboxes.shape[0]):
             row_ious = []
             for j in range(target_bboxes.shape[0]):
-                giou = DETR3D._generalized_bbox_iou(pred_bboxes[i : i + 1], target_bboxes[j : j + 1])
-                row_ious.append(giou)
+                row_ious.append(DETR3D._generalized_bbox_iou(pred_bboxes[i : i + 1], target_bboxes[j : j + 1]).mean())
 
             gious.append(torch.stack(row_ious))
 
