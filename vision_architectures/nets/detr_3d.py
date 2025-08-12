@@ -158,7 +158,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         self.position_embeddings = AbsolutePositionEmbeddings3D(config)
         self.pos_drop = nn.Dropout(self.config.drop_prob)
         self.num_possible_objects = self.config.num_objects
-        self.object_queries = nn.Parameter(torch.randn(1, self.num_possible_objects, self.config.dim))
+        self.object_queries = nn.Parameter(torch.randn(1, self.num_possible_objects, self.config.dim) * 0.01)
         self.decoder = DETRDecoder(config, checkpointing_level)
         self.bbox_mlp = DETRBBoxMLP(config)
 
@@ -268,40 +268,39 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
 
         losses = []
         for i in range(B):
+            batch_losses = {}
+
             pred_indices, target_indices = matched_indices[i]
 
-            # If either prediction or target has no objects, skip this batch element
-            if pred_indices == [] or target_indices == []:
-                losses.append(torch.tensor(0.0, device=pred.device))
-                continue
+            # Classification loss for ALL predictions
+            all_class_labels = torch.zeros_like(pred[i][:, 6], dtype=torch.long)
+            all_class_labels[pred_indices] = target[i][target_indices, 6].long()
+            all_pred_classes = pred[i][..., 6:]
+            batch_losses["classification_loss"] = F.cross_entropy(all_pred_classes, all_class_labels)
 
-            matched_pred = pred[i][pred_indices]
-            matched_target = target[i][target_indices]
+            # Calculate all other losses only if prediction and target have objects
+            if pred_indices != [] and target_indices != []:
+                matched_pred = pred[i][pred_indices]
+                matched_target = target[i][target_indices]
 
-            pred_bboxes = matched_pred[:, :6].clone()
-            target_bboxes = matched_target[:, :6].clone()
+                pred_bboxes = matched_pred[:, :6].clone()
+                target_bboxes = matched_target[:, :6].clone()
 
-            pred_classes = matched_pred[:, 6:]
-            target_class_labels = matched_target[:, 6].long()
+                # Compute losses for matched pairs
+                # BBox L1 loss
+                batch_losses["bbox_l1_loss"] = F.l1_loss(pred_bboxes, target_bboxes)
 
-            # Compute losses for matched pairs
-            # BBox L1 loss
-            bbox_l1_loss = F.l1_loss(pred_bboxes, target_bboxes)
+                # For IOU calculation, it does not matter if bboxes are in actual pixel lengths or normalized based on
+                # image size, metric value will be the same.
 
-            # For IOU calculation, it does not matter if bboxes are in actual pixel lengths or normalized based on
-            # image size, metric value will be the same.
-
-            # BBox IOU loss
-            bbox_iou_loss = 1 - DETR3D._generalized_bbox_iou(pred_bboxes, target_bboxes).mean()
-
-            # Classification loss
-            class_loss = F.cross_entropy(pred_classes, target_class_labels)
+                # BBox IOU loss
+                batch_losses["bbox_iou_loss"] = 1 - DETR3D._generalized_bbox_iou(pred_bboxes, target_bboxes).mean()
 
             # Total loss for this batch element
             total_loss = (
-                classification_cost_weight * class_loss
-                + bbox_l1_cost_weight * bbox_l1_loss
-                + bbox_iou_cost_weight * bbox_iou_loss
+                classification_cost_weight * batch_losses.get("classification_loss", 0.0)
+                + bbox_l1_cost_weight * batch_losses.get("bbox_l1_loss", 0.0)
+                + bbox_iou_cost_weight * batch_losses.get("bbox_iou_loss", 0.0)
             )
             losses.append(total_loss)
 
