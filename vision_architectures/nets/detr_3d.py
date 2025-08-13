@@ -133,8 +133,9 @@ class DETRBBoxMLP(nn.Module):
         bboxes = self.linear(object_embeddings)
         # (b, num_possible_objects, 6 + 1 + num_classes)
 
-        # Sigmoid the bounding box parameters
-        bboxes[:, :, :6] = bboxes[:, :, :6].sigmoid()
+        # Bound the bounding box parameters
+        bboxes[:, :, :3] = bboxes[:, :, :3].sigmoid()  # center coordinates should be in the bbox
+        bboxes[:, :, 3:6] = F.softplus(bboxes[:, :, 3:6])  # sizes should be positive but unbounded
 
         return bboxes
 
