@@ -329,9 +329,15 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             )
 
             # Add to losses
-            losses["classification_loss"].append(batch_losses.get("classification_loss", torch.tensor(torch.nan)))
-            losses["bbox_l1_loss"].append(batch_losses.get("bbox_l1_loss", torch.tensor(torch.nan)))
-            losses["bbox_iou_loss"].append(batch_losses.get("bbox_iou_loss", torch.tensor(torch.nan)))
+            losses["classification_loss"].append(
+                batch_losses.get("classification_loss", torch.tensor(torch.nan, device=pred.device)),
+            )
+            losses["bbox_l1_loss"].append(
+                batch_losses.get("bbox_l1_loss", torch.tensor(torch.nan, device=pred.device)),
+            )
+            losses["bbox_iou_loss"].append(
+                batch_losses.get("bbox_iou_loss", torch.tensor(torch.nan, device=pred.device)),
+            )
             losses["total_loss"].append(total_loss)
 
         # Stack batch losses and apply reduction
