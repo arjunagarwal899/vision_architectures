@@ -163,6 +163,8 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         self.decoder = DETRDecoder(config, checkpointing_level)
         self.bbox_mlp = DETRBBoxMLP(config)
 
+        self.class_prevalences = [None] * (self.config.num_classes + 1)  # used to weight cross entropy loss
+
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
     @populate_docstring
@@ -217,16 +219,18 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
     def forward(self, *args, **kwargs):
         return self.checkpointing_level4(self._forward, *args, **kwargs)
 
-    @staticmethod
     def bipartite_matching_loss(
+        self,
         pred: torch.Tensor,
         target: torch.Tensor | list[torch.Tensor],
         classification_cost_weight: float = 1.0,
         bbox_l1_cost_weight: float = 1.0,
         bbox_iou_cost_weight: float = 1.0,
+        weight_loss_based_on_prevalence: bool = True,
         reduction: str = "mean",
         return_matching: bool = False,
-    ) -> torch.Tensor | tuple[torch.Tensor, list]:
+        return_loss_components: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, list] | tuple[torch.Tensor, dict] | tuple[torch.Tensor, list, dict]:
         """Bipartite matching loss for DETR. The classes are expected to optimize for a multi-class classification
         problem. Expects raw logits in class predictions, not probabilities. Use ``logits_to_scores_fn=None`` in the
         ``forward`` function to avoid applying any transformation.
@@ -242,14 +246,18 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             classification_cost_weight: Weight for the classification cost in hungarian matching.
             bbox_l1_cost_weight: Weight for the bounding box L1 loss cost in hungarian matching.
             bbox_iou_cost_weight: Weight for the bounding box IoU cost in hungarian matching.
+            weight_loss_based_on_prevalence: Whether to weight the classification loss based on the prevalence of
+                each class in the dataset. If True, the loss will be weighted by the inverse prevalence of each class.
             reduction: Specifies the reduction to apply to the output.
             return_matching: Whether or not to return the matched indices from the bipartite matching.
+            return_loss_components: Whether or not to return the individual loss components.
 
         Returns:
             A tensor containing the bipartite matching loss with the shape depending on the `reduction` argument. If
             `return_matching` is True, also returns a list of tuples containing matched indices for predictions and
             targets. Each tuple is of the form `(pred_indices, target_indices)`, where `pred_indices` and
-            `target_indices` are lists of indices for the matched predictions and targets, respectively.
+            `target_indices` are lists of indices for the matched predictions and targets, respectively. If
+            `return_loss_components` is True, also returns a dict of each loss component reduced based on `reduction`.
         """
         B = pred.shape[0]
 
@@ -267,7 +275,21 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             pred, target, classification_cost_weight, bbox_l1_cost_weight, bbox_iou_cost_weight
         )
 
-        losses = []
+        # Update class prevalences and calculate cross entropy loss weights if applicable
+        self._update_class_prevalences(target)
+        if weight_loss_based_on_prevalence:
+            classification_loss_weights = self._get_cross_entropy_loss_weights(pred.device)
+        else:
+            classification_loss_weights = torch.ones(
+                (self.config.num_classes + 1,), dtype=torch.float32, device=pred.device
+            )
+
+        losses = {
+            "classification_loss": [],
+            "bbox_l1_loss": [],
+            "bbox_iou_loss": [],
+            "total_loss": [],
+        }
         for i in range(B):
             batch_losses = {}
 
@@ -277,7 +299,9 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             all_class_labels = torch.zeros_like(pred[i][:, 6], dtype=torch.long)
             all_class_labels[pred_indices] = target[i][target_indices, 6].long()
             all_pred_classes = pred[i][..., 6:]
-            batch_losses["classification_loss"] = F.cross_entropy(all_pred_classes, all_class_labels)
+            batch_losses["classification_loss"] = F.cross_entropy(
+                all_pred_classes, all_class_labels, weight=classification_loss_weights
+            )
 
             # Calculate all other losses only if prediction and target have objects
             if pred_indices != [] and target_indices != []:
@@ -303,23 +327,40 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 + bbox_l1_cost_weight * batch_losses.get("bbox_l1_loss", 0.0)
                 + bbox_iou_cost_weight * batch_losses.get("bbox_iou_loss", 0.0)
             )
-            losses.append(total_loss)
+
+            # Add to losses
+            losses["classification_loss"].append(batch_losses.get("classification_loss", torch.tensor(torch.nan)))
+            losses["bbox_l1_loss"].append(batch_losses.get("bbox_l1_loss", torch.tensor(torch.nan)))
+            losses["bbox_iou_loss"].append(batch_losses.get("bbox_iou_loss", torch.tensor(torch.nan)))
+            losses["total_loss"].append(total_loss)
 
         # Stack batch losses and apply reduction
-        loss = torch.stack(losses)
+        for key in losses:
+            loss = torch.stack(losses[key])
 
-        if reduction == "mean":
-            loss = loss.mean()
-        elif reduction == "sum":
-            loss = loss.sum()
-        elif reduction == "none":
-            pass
-        else:
-            raise ValueError(f"Invalid reduction mode: {reduction}")
+            if reduction == "mean":
+                loss = loss.nanmean()
+            elif reduction == "sum":
+                loss = loss.nansum()
+            elif reduction == "none" or reduction is None:
+                pass
+            else:
+                raise ValueError(f"Invalid reduction mode: {reduction}")
 
-        if return_matching:
-            return loss, matched_indices
-        return loss
+            losses[key] = loss
+
+        loss = losses["total_loss"]
+        losses.pop("total_loss", None)
+
+        match return_matching, return_loss_components:
+            case False, False:
+                return loss
+            case True, False:
+                return loss, matched_indices
+            case False, True:
+                return loss, losses
+            case True, True:
+                return loss, matched_indices, losses
 
     @torch.no_grad()
     @staticmethod
@@ -467,3 +508,61 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             gious.append(torch.stack(row_ious))
 
         return torch.stack(gious)
+
+    def _update_class_prevalences(self, target: list[torch.Tensor]):
+        """Update the class prevalences based on the classes present in the ground truth
+
+        Args:
+            target: A list of ground truth tensors, each of shape (num_objects, 7) where the last dimension contains the
+                bounding box class.
+        """
+        # Store the number of times each class has been encountered in this batch
+        class_counts = [0] * (self.config.num_classes + 1)
+        B = len(target)
+        for b in range(B):
+            # If there are more than self.config.num_objects targets, only the first self.config.num_objects will be
+            # considered
+            for c in target[b][: self.config.num_objects, -1].int():
+                class_counts[c] += 1
+
+            # For background class, prevalence is the number of extra bboxes that were predicted
+            class_counts[0] += max(0, self.config.num_objects - len(target[b]))
+            # max in case there are more target bboxes than self.config.num_objects
+
+        # Calculate prevalence of each class
+        new_prevalences = [count / sum(class_counts) for count in class_counts]
+
+        # Update current prevalences using EMA to allow for distribution shift in data
+        for i in range(self.config.num_classes + 1):
+            if self.class_prevalences[i] is None:
+                if new_prevalences[i] > 0:
+                    self.class_prevalences[i] = new_prevalences[i]
+                # otherwise let it stay None
+            else:
+                # update to new value using EMA
+                self.class_prevalences[i] = self.class_prevalences[i] * 0.99 + new_prevalences[i] * 0.01
+
+    def _get_cross_entropy_loss_weights(self, device=torch.device("cpu")) -> torch.Tensor:
+        """Get the weights for the cross entropy loss based on class prevalences
+
+        Returns:
+            A tensor containing the weights for the cross entropy loss of shape (num_classes + 1,).
+        """
+        # Get class prevalences and replace None with nan
+        class_prevalences = [
+            prevalence if prevalence is not None else torch.nan for prevalence in self.class_prevalences
+        ]
+
+        # Calculate weights as inverse of class prevalences
+        weights = 1 / torch.tensor(class_prevalences, dtype=torch.float32, device=device)
+
+        # Substitute nan values with mean and clamp weights to a limit
+        # Assumption: all classes are visited at least once in the dataset
+        mu, std = weights.nanmean(), weights[~weights.isnan()].std()
+        weights = weights.nan_to_num(mu)
+        weights = weights.clamp(mu - 3 * std, mu + 3 * std)
+
+        # Normalize weights to sum to (self.config.num_classes + 1)
+        weights = (self.config.num_classes + 1) * weights / weights.sum()
+
+        return weights
