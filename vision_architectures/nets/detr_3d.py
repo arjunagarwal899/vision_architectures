@@ -5,6 +5,7 @@ __all__ = ['DETRDecoderConfig', 'DETRBBoxMLPConfig', 'DETR3DConfig', 'DETRDecode
 
 # %% ../../nbs/nets/06_detr_3d.ipynb 2
 from functools import wraps
+from typing import Literal
 
 import torch
 from einops import rearrange, repeat
@@ -28,6 +29,7 @@ class DETRDecoderConfig(Attention1DWithMLPConfig):
 class DETRBBoxMLPConfig(CustomBaseModel):
     dim: int = Field(..., description="Dimension of the input features.")
     num_classes: int = Field(..., description="Number of classes for the bounding box predictions.")
+    bbox_size_activation: Literal["sigmoid", "softplus"] = "sigmoid"
 
     @model_validator(mode="after")
     def validate(self):
@@ -135,7 +137,10 @@ class DETRBBoxMLP(nn.Module):
 
         # Bound the bounding box parameters
         bboxes[:, :, :3] = bboxes[:, :, :3].sigmoid()  # center coordinates should be in the bbox
-        bboxes[:, :, 3:6] = F.softplus(bboxes[:, :, 3:6])  # sizes should be positive but unbounded
+        if self.config.bbox_size_activation == "sigmoid":
+            bboxes[:, :, 3:6] = bboxes[:, :, 3:6].sigmoid()  # sizes should be between 0 and 1
+        elif self.config.bbox_size_activation == "softplus":
+            bboxes[:, :, 3:6] = F.softplus(bboxes[:, :, 3:6])  # sizes should be positive but unbounded
 
         return bboxes
 
