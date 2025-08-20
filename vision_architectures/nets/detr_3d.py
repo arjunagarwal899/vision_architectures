@@ -13,10 +13,15 @@ from huggingface_hub import PyTorchModelHubMixin
 from scipy.optimize import linear_sum_assignment
 from torch import nn
 from torch.nn import functional as F
+from torch.nn.utils.rnn import pad_sequence
 
 from ..blocks.transformer import Attention1DWithMLPConfig, TransformerDecoderBlock1D
 from ..docstrings import populate_docstring
 from ..layers.embeddings import AbsolutePositionEmbeddings3D, AbsolutePositionEmbeddings3DConfig
+from vision_architectures.losses.class_balanced_cross_entropy_loss import (
+    ClassBalancedCrossEntropyLoss,
+    ClassBalancedCrossEntropyLossConfig,
+)
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
@@ -29,7 +34,13 @@ class DETRDecoderConfig(Attention1DWithMLPConfig):
 class DETRBBoxMLPConfig(CustomBaseModel):
     dim: int = Field(..., description="Dimension of the input features.")
     num_classes: int = Field(..., description="Number of classes for the bounding box predictions.")
-    bbox_size_activation: Literal["sigmoid", "softplus"] = "sigmoid"
+    bbox_size_activation: Literal["sigmoid", "softplus"] = Field(
+        "sigmoid",
+        description=(
+            'Activation function for the bounding box size. "sigmoid" for normalized coordinates, "softplus" '
+            "for absolute coordinates."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate(self):
@@ -41,6 +52,23 @@ class DETRBBoxMLPConfig(CustomBaseModel):
 class DETR3DConfig(DETRDecoderConfig, DETRBBoxMLPConfig, AbsolutePositionEmbeddings3DConfig):
     num_objects: int = Field(..., description="Maximum number of objects to detect.")
     drop_prob: float = Field(0.0, description="Dropout probability for input embeddings.")
+    classification_loss_fn: (
+        Literal["cross_entropy", "class_balanced_cross_entropy"] | dict | ClassBalancedCrossEntropyLossConfig
+    ) = Field("cross_entropy", description="Loss function for bbox classification.")
+
+    @model_validator(mode="after")
+    def validate(self):
+        super().validate()
+
+        # Create an object of ClassBalancedCrossEntropyLossConfig if applicable
+        if self.classification_loss_fn == "class_balanced_cross_entropy":
+            self.classification_loss_fn = ClassBalancedCrossEntropyLossConfig(num_classes=self.num_classes + 1)
+        elif isinstance(self.classification_loss_fn, dict):
+            self.classification_loss_fn = ClassBalancedCrossEntropyLossConfig.model_validate(
+                self.classification_loss_fn
+            )
+
+        return self
 
 # %% ../../nbs/nets/06_detr_3d.ipynb 7
 class DETRDecoder(nn.Module, PyTorchModelHubMixin):
@@ -146,7 +174,7 @@ class DETRBBoxMLP(nn.Module):
 
         return bboxes
 
-# %% ../../nbs/nets/06_detr_3d.ipynb 12
+# %% ../../nbs/nets/06_detr_3d.ipynb 13
 class DETR3D(nn.Module, PyTorchModelHubMixin):
     """DETR 3D model. Also implements bipartite matching loss which is essential for DETR training."""
 
@@ -170,7 +198,11 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         self.decoder = DETRDecoder(config, checkpointing_level)
         self.bbox_mlp = DETRBBoxMLP(config)
 
-        self.class_prevalences = [None] * (self.config.num_classes + 1)  # used to weight cross entropy loss
+        self.class_balanced_cross_entropy_loss = None
+        if isinstance(self.config.classification_loss_fn, ClassBalancedCrossEntropyLossConfig):
+            self.class_balanced_cross_entropy_loss = ClassBalancedCrossEntropyLoss(
+                config=self.config.classification_loss_fn
+            )
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
@@ -233,7 +265,6 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         classification_cost_weight: float = 1.0,
         bbox_l1_cost_weight: float = 1.0,
         bbox_iou_cost_weight: float = 1.0,
-        weight_loss_based_on_prevalence: bool = True,
         reduction: str = "mean",
         return_matching: bool = False,
         return_loss_components: bool = False,
@@ -253,8 +284,6 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             classification_cost_weight: Weight for the classification cost in hungarian matching.
             bbox_l1_cost_weight: Weight for the bounding box L1 loss cost in hungarian matching.
             bbox_iou_cost_weight: Weight for the bounding box IoU cost in hungarian matching.
-            weight_loss_based_on_prevalence: Whether to weight the classification loss based on the prevalence of
-                each class in the dataset. If True, the loss will be weighted by the inverse prevalence of each class.
             reduction: Specifies the reduction to apply to the output.
             return_matching: Whether or not to return the matched indices from the bipartite matching.
             return_loss_components: Whether or not to return the individual loss components.
@@ -282,14 +311,8 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             pred, target, classification_cost_weight, bbox_l1_cost_weight, bbox_iou_cost_weight
         )
 
-        # Update class prevalences and calculate cross entropy loss weights if applicable
+        # Update class prevalences in class balanced cross entropy loss
         self._update_class_prevalences(target)
-        if weight_loss_based_on_prevalence:
-            classification_loss_weights = self._get_cross_entropy_loss_weights(pred.device)
-        else:
-            classification_loss_weights = torch.ones(
-                (self.config.num_classes + 1,), dtype=torch.float32, device=pred.device
-            )
 
         losses = {
             "classification_loss": [],
@@ -306,9 +329,12 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             all_class_labels = torch.zeros_like(pred[i][:, 6], dtype=torch.long)
             all_class_labels[pred_indices] = target[i][target_indices, 6].long()
             all_pred_classes = pred[i][..., 6:]
-            batch_losses["classification_loss"] = F.cross_entropy(
-                all_pred_classes, all_class_labels, weight=classification_loss_weights
-            )
+            if self.class_balanced_cross_entropy_loss is None:
+                batch_losses["classification_loss"] = F.cross_entropy(all_pred_classes, all_class_labels)
+            else:
+                batch_losses["classification_loss"] = self.class_balanced_cross_entropy_loss(
+                    all_pred_classes, all_class_labels, update_class_prevalences=False
+                )
 
             # Calculate all other losses only if prediction and target have objects
             if pred_indices != [] and target_indices != []:
@@ -529,53 +555,15 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             target: A list of ground truth tensors, each of shape (num_objects, 7) where the last dimension contains the
                 bounding box class.
         """
-        # Store the number of times each class has been encountered in this batch
-        class_counts = [0] * (self.config.num_classes + 1)
-        B = len(target)
-        for b in range(B):
-            # If there are more than self.config.num_objects targets, only the first self.config.num_objects will be
-            # considered
-            for c in target[b][: self.config.num_objects, -1].int():
-                class_counts[c] += 1
-
-            # For background class, prevalence is the number of extra bboxes that were predicted
-            class_counts[0] += max(0, self.config.num_objects - len(target[b]))
-            # max in case there are more target bboxes than self.config.num_objects
-
-        # Calculate prevalence of each class
-        new_prevalences = [count / sum(class_counts) for count in class_counts]
-
-        # Update current prevalences using EMA to allow for distribution shift in data
-        for i in range(self.config.num_classes + 1):
-            if self.class_prevalences[i] is None:
-                if new_prevalences[i] > 0:
-                    self.class_prevalences[i] = new_prevalences[i]
-                # otherwise let it stay None
-            else:
-                # update to new value using EMA
-                self.class_prevalences[i] = self.class_prevalences[i] * 0.99 + new_prevalences[i] * 0.01
-
-    def _get_cross_entropy_loss_weights(self, device=torch.device("cpu")) -> torch.Tensor:
-        """Get the weights for the cross entropy loss based on class prevalences
-
-        Returns:
-            A tensor containing the weights for the cross entropy loss of shape (num_classes + 1,).
-        """
-        # Get class prevalences and replace None with nan
-        class_prevalences = [
-            prevalence if prevalence is not None else torch.nan for prevalence in self.class_prevalences
-        ]
-
-        # Calculate weights as inverse of class prevalences
-        weights = 1 / torch.tensor(class_prevalences, dtype=torch.float32, device=device)
-
-        # Substitute nan values with mean and clamp weights to a limit
-        # Assumption: all classes are visited at least once in the dataset
-        mu, std = weights.nanmean(), weights[~weights.isnan()].std()
-        weights = weights.nan_to_num(mu)
-        weights = weights.clamp(mu - 3 * std, mu + 3 * std)
-
-        # Normalize weights to sum to (self.config.num_classes + 1)
-        weights = (self.config.num_classes + 1) * weights / weights.sum()
-
-        return weights
+        if self.class_balanced_cross_entropy_loss is not None:
+            # Note that target classes will not be in order here. But since counts are all that matters, this doesn't
+            # affect the results
+            target_classes = pad_sequence(target, batch_first=True)[..., -1].long()
+            if target_classes.shape[-1] > self.config.num_objects:
+                # If there are more than self.config.num_objects targets, only the first self.config.num_objects will be
+                # considered
+                target_classes = target_classes[..., : self.config.num_objects]
+            elif target_classes.shape[-1] < self.config.num_objects:
+                # If there are less than self.config.num_objects targets, pad with background class
+                target_classes = F.pad(target_classes, (0, self.config.num_objects - target_classes.shape[-1]), value=0)
+            self.class_balanced_cross_entropy_loss.update_class_prevalences(target_classes)

@@ -146,6 +146,9 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         weights = weights.nan_to_num(mu)
         weights = weights.clamp(mu - 3 * std, mu + 3 * std)
 
+        # Add failsafe just in case nans are still present
+        weights = weights.nan_to_num(1.0)
+
         # Normalize weights to sum to self.config.num_classes
         weights = self.config.num_classes * weights / weights.sum()
 
