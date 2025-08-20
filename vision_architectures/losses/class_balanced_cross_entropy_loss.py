@@ -50,7 +50,7 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         self.class_prevalences = [None] * self.config.num_classes
         # Initialized with None as we don't know the initial class prevalence estimates.
 
-    def _update_class_prevalences(self, target: torch.Tensor):
+    def update_class_prevalences(self, target: torch.Tensor):
         """Update the running class-prevalence estimates from a target tensor.
 
         The method counts class occurrences in the provided target, converts counts
@@ -133,8 +133,12 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         # Get class prevalences
         class_prevalences = self.get_class_prevalences(device)
 
+        # If there were no class prevalences, then all weights will be nan; handle this
+        if class_prevalences.isnan().all():
+            class_prevalences = class_prevalences.nan_to_num(1.0)
+
         # Calculate weights as inverse of class prevalences
-        weights = 1 / torch.tensor(class_prevalences, dtype=torch.float32, device=device)
+        weights = 1 / class_prevalences
 
         # Substitute nan values with mean and clamp weights to a limit
         # Assumption: all classes are visited at least once in the dataset
@@ -148,7 +152,13 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         return weights
 
     def forward(
-        self, input: torch.Tensor, target: torch.Tensor, return_class_weights: bool = False, *args, **kwargs
+        self,
+        input: torch.Tensor,
+        target: torch.Tensor,
+        update_class_prevalences: bool = True,
+        return_class_weights: bool = False,
+        *args,
+        **kwargs
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Compute class-balanced cross entropy.
 
@@ -162,6 +172,8 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
                 to the same non-channel shape expected by torch.nn.functional.cross_entropy.
             target: Integer class indices with shape matching input without the channel
                 dimension, e.g., (N, ...) with values in [0, C-1].
+            update_class_prevalences: If True, update the internal class prevalence estimates
+                using the provided targets.
             return_class_weights: If True, also return the per-class weight tensor used
                 for this call.
             *args, **kwargs: Additional keyword args forwarded to F.cross_entropy
@@ -172,7 +184,8 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
             If True: a tuple (loss, class_weights).
         """
         # Update class prevalences
-        self._update_class_prevalences(target)
+        if update_class_prevalences:
+            self.update_class_prevalences(target)
 
         # Get class weights
         class_weights = self.get_class_weights(input.device)
