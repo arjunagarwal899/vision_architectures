@@ -142,7 +142,9 @@ class DETRBBoxMLP(nn.Module):
 
         self.config = DETRBBoxMLPConfig.model_validate(config | kwargs)
 
-        self.linear = nn.Linear(self.config.dim, 6 + 1 + self.config.num_classes)
+        # Keeping bbox and classification heads separate so that bias-init/clipping/freezing can be done if needed
+        self.bbox_head = nn.Linear(self.config.dim, 6)
+        self.class_head = nn.Linear(self.config.dim, 1 + self.config.num_classes)
 
     @populate_docstring
     def forward(
@@ -160,17 +162,18 @@ class DETRBBoxMLP(nn.Module):
         """
         # object_embeddings: (b, num_possible_objects, dim)
 
-        bboxes = self.linear(object_embeddings)
+        bbox_parameters: torch.Tensor = self.bbox_head(object_embeddings)
+        class_logits: torch.Tensor = self.class_head(object_embeddings)
         # (b, num_possible_objects, 6 + 1 + num_classes)
 
         # Bound the bounding box parameters
-        centers, sizes, logits = bboxes[:, :, :3], bboxes[:, :, 3:6], bboxes[:, :, 6:]
+        centers, sizes = bbox_parameters[:, :, :3], bbox_parameters[:, :, 3:6]
         centers = centers.sigmoid()  # center coordinates should be in the bbox
         if self.config.bbox_size_activation == "sigmoid":
             sizes = sizes.sigmoid()  # sizes should be between 0 and 1
         elif self.config.bbox_size_activation == "softplus":
             sizes = F.softplus(sizes)  # sizes should be positive but unbounded
-        bboxes = torch.cat([centers, sizes, logits], dim=-1)
+        bboxes = torch.cat([centers, sizes, class_logits], dim=-1)
 
         return bboxes
 
