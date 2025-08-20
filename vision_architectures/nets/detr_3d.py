@@ -136,11 +136,13 @@ class DETRBBoxMLP(nn.Module):
         # (b, num_possible_objects, 6 + 1 + num_classes)
 
         # Bound the bounding box parameters
-        bboxes[:, :, :3] = bboxes[:, :, :3].sigmoid()  # center coordinates should be in the bbox
+        centers, sizes, logits = bboxes[:, :, :3], bboxes[:, :, 3:6], bboxes[:, :, 6:]
+        centers = centers.sigmoid()  # center coordinates should be in the bbox
         if self.config.bbox_size_activation == "sigmoid":
-            bboxes[:, :, 3:6] = bboxes[:, :, 3:6].sigmoid()  # sizes should be between 0 and 1
+            sizes = sizes.sigmoid()  # sizes should be between 0 and 1
         elif self.config.bbox_size_activation == "softplus":
-            bboxes[:, :, 3:6] = F.softplus(bboxes[:, :, 3:6])  # sizes should be positive but unbounded
+            sizes = F.softplus(sizes)  # sizes should be positive but unbounded
+        bboxes = torch.cat([centers, sizes, logits], dim=-1)
 
         return bboxes
 
