@@ -50,7 +50,8 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         self.class_prevalences = [None] * self.config.num_classes
         # Initialized with None as we don't know the initial class prevalence estimates.
 
-    def update_class_prevalences(self, target: torch.Tensor):
+    @torch.no_grad()
+    def update_class_prevalences(self, target: torch.Tensor, ignore_index: float = -100.0):
         """Update the running class-prevalence estimates from a target tensor.
 
         The method counts class occurrences in the provided target, converts counts
@@ -61,9 +62,13 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
             target: A tensor of integer class indices with any shape, typically
                 (N,) or (N, ...) for segmentation. Values outside
                 [0, num_classes-1] are ignored.
+            ignore_index: A class index to ignore during updates.
         """
         # Count the number of times each class is encountered
         class_counts = Counter(target.flatten().int().tolist())
+
+        # Remove ignore_index if present
+        class_counts.pop(ignore_index, None)
 
         # Remove those counts that exceed the number of classes that are being tracked
         class_counts = {k: v for k, v in class_counts.items() if k < self.config.num_classes}
@@ -88,6 +93,7 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
                     1 - decay
                 )
 
+    @torch.no_grad()
     def get_class_prevalences(self, device=torch.device("cpu")) -> torch.Tensor:
         """Return the current vector of class prevalences as a tensor.
 
@@ -113,6 +119,7 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
 
         return class_prevalences
 
+    @torch.no_grad()
     def get_class_weights(self, device=torch.device("cpu")) -> torch.Tensor:
         """Compute per-class weights as the inverse of prevalences with safeguards.
 
