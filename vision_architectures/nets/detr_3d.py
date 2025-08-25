@@ -52,6 +52,14 @@ class DETRBBoxMLPConfig(CustomBaseModel):
 class DETR3DConfig(DETRDecoderConfig, DETRBBoxMLPConfig, AbsolutePositionEmbeddings3DConfig):
     num_objects: int = Field(..., description="Maximum number of objects to detect.")
     drop_prob: float = Field(0.0, description="Dropout probability for input embeddings.")
+    classification_cost_fn: Literal["softmax", "log_softmax"] = Field(
+        "softmax",
+        description=(
+            "Method used to compute classification cost in Hungarian matching. While softmax is the default (as per "
+            "the paper), log_sofmtax is encouraged as the final bipartite matching loss calculation uses cross entropy "
+            "loss which performs log_softmax and NLLLoss internally making log_softmax more apt."
+        ),
+    )
     classification_loss_fn: (
         Literal["cross_entropy", "class_balanced_cross_entropy"] | dict | ClassBalancedCrossEntropyLossConfig
     ) = Field("cross_entropy", description="Loss function for bbox classification.")
@@ -267,7 +275,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         target: torch.Tensor | list[torch.Tensor],
         classification_cost_weight: float = 1.0,
         bbox_l1_cost_weight: float = 1.0,
-        bbox_iou_cost_weight: float = 1.0,
+        bbox_giou_cost_weight: float = 1.0,
         reduction: str = "mean",
         return_matching: bool = False,
         return_loss_components: bool = False,
@@ -286,7 +294,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 the exact same as in `pred`, or it should be 1 argmax (one-cold) decoding.
             classification_cost_weight: Weight for the classification cost in hungarian matching.
             bbox_l1_cost_weight: Weight for the bounding box L1 loss cost in hungarian matching.
-            bbox_iou_cost_weight: Weight for the bounding box IoU cost in hungarian matching.
+            bbox_giou_cost_weight: Weight for the bounding box IoU cost in hungarian matching.
             reduction: Specifies the reduction to apply to the output.
             return_matching: Whether or not to return the matched indices from the bipartite matching.
             return_loss_components: Whether or not to return the individual loss components.
@@ -310,8 +318,8 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 target[i] = torch.cat([target[i][:, :6], target[i][:, 6:].argmax(-1, keepdims=True)], dim=-1)
 
         # Perform hungarian matching
-        matched_indices = DETR3D.hungarian_matching(
-            pred, target, classification_cost_weight, bbox_l1_cost_weight, bbox_iou_cost_weight
+        matched_indices = self.hungarian_matching(
+            pred, target, classification_cost_weight, bbox_l1_cost_weight, bbox_giou_cost_weight
         )
 
         # Update class prevalences in class balanced cross entropy loss
@@ -320,7 +328,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         losses = {
             "classification_loss": [],
             "bbox_l1_loss": [],
-            "bbox_iou_loss": [],
+            "bbox_giou_loss": [],
             "total_loss": [],
         }
         for i in range(B):
@@ -355,13 +363,13 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 # image size, metric value will be the same.
 
                 # BBox IOU loss
-                batch_losses["bbox_iou_loss"] = 1 - DETR3D._generalized_bbox_iou(pred_bboxes, target_bboxes).mean()
+                batch_losses["bbox_giou_loss"] = 1 - DETR3D._generalized_bbox_iou(pred_bboxes, target_bboxes).mean()
 
             # Total loss for this batch element
             total_loss = (
                 classification_cost_weight * batch_losses.get("classification_loss", 0.0)
                 + bbox_l1_cost_weight * batch_losses.get("bbox_l1_loss", 0.0)
-                + bbox_iou_cost_weight * batch_losses.get("bbox_iou_loss", 0.0)
+                + bbox_giou_cost_weight * batch_losses.get("bbox_giou_loss", 0.0)
             )
 
             # Add to losses
@@ -371,8 +379,8 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             losses["bbox_l1_loss"].append(
                 batch_losses.get("bbox_l1_loss", torch.tensor(torch.nan, device=pred.device)),
             )
-            losses["bbox_iou_loss"].append(
-                batch_losses.get("bbox_iou_loss", torch.tensor(torch.nan, device=pred.device)),
+            losses["bbox_giou_loss"].append(
+                batch_losses.get("bbox_giou_loss", torch.tensor(torch.nan, device=pred.device)),
             )
             losses["total_loss"].append(total_loss)
 
@@ -405,13 +413,13 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 return loss, matched_indices, losses
 
     @torch.no_grad()
-    @staticmethod
     def hungarian_matching(
+        self,
         pred: torch.Tensor,
         target: list[torch.Tensor],
         classification_cost_weight: float = 1.0,
         bbox_l1_cost_weight: float = 1.0,
-        bbox_iou_cost_weight: float = 1.0,
+        bbox_giou_cost_weight: float = 1.0,
     ) -> list[tuple[list[int], list[int]]]:
         """Hungarian matching between predictions and targets.
 
@@ -422,7 +430,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             target: Target bounding boxes and class scores. This is expected in argmax encoding or one-hot encoding.
             classification_cost_weight: Weight for the classification cost.
             bbox_l1_cost_weight: Weight for the bounding box L1 loss cost.
-            bbox_iou_cost_weight: Weight for the bounding box IoU cost.
+            bbox_giou_cost_weight: Weight for the bounding box IoU cost.
 
         Returns:
             A list of tuples containing matched indices for predictions and targets. Each tuple is of the form
@@ -447,7 +455,10 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             # ----- Cost matrix calculation -----
 
             # Classification cost
-            pred_class_probabilities = F.softmax(pred_class_logits, dim=-1)
+            if self.config.classification_cost_fn == "softmax":
+                pred_class_probabilities = F.softmax(pred_class_logits, dim=-1)
+            elif self.config.classification_cost_fn == "log_softmax":
+                pred_class_probabilities = F.log_softmax(pred_class_logits, dim=-1)
             # (num_objects, num_classes)
 
             classification_cost = -pred_class_probabilities[:, target_class_labels]
@@ -458,14 +469,14 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             # (num_objects, <=num_objects)
 
             # IOU cost for bounding boxes
-            bbox_iou_cost = 1 - DETR3D._generalized_pairwise_bbox_iou(pred_bboxes, target_bboxes)
+            bbox_giou_cost = 1 - DETR3D._generalized_pairwise_bbox_iou(pred_bboxes, target_bboxes)
             # (num_objects, <=num_objects)
 
             # Total cost matrix
             cost_matrix = (
                 classification_cost_weight * classification_cost
                 + bbox_l1_cost_weight * bbox_l1_cost
-                + bbox_iou_cost_weight * bbox_iou_cost
+                + bbox_giou_cost_weight * bbox_giou_cost
             )
             # (num_objects, <=num_objects)
 
@@ -477,6 +488,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         return matched_indices
 
     @staticmethod
+    @populate_docstring
     def _generalized_bbox_iou(
         pred_bboxes: torch.Tensor,
         target_bboxes: torch.Tensor,
@@ -527,6 +539,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         return gious
 
     @staticmethod
+    @populate_docstring
     def _generalized_pairwise_bbox_iou(
         pred_bboxes: torch.Tensor,
         target_bboxes: torch.Tensor,
@@ -543,11 +556,11 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         # Compute pairwise IoU
         gious = []
         for i in range(pred_bboxes.shape[0]):
-            row_ious = []
+            row_gious = []
             for j in range(target_bboxes.shape[0]):
-                row_ious.append(DETR3D._generalized_bbox_iou(pred_bboxes[i : i + 1], target_bboxes[j : j + 1]).mean())
+                row_gious.append(DETR3D._generalized_bbox_iou(pred_bboxes[i : i + 1], target_bboxes[j : j + 1]).mean())
 
-            gious.append(torch.stack(row_ious))
+            gious.append(torch.stack(row_gious))
 
         return torch.stack(gious)
 
