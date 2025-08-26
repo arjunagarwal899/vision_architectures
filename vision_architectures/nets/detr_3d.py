@@ -290,13 +290,25 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         self,
         pred: torch.Tensor,
         target: torch.Tensor | list[torch.Tensor],
+        intermediate_preds: list[torch.Tensor] | None = None,
         classification_cost_weight: float = 1.0,
         bbox_l1_cost_weight: float = 1.0,
         bbox_giou_cost_weight: float = 1.0,
+        matched_indices: tuple[list[int], list[int]] | None = None,
+        update_class_prevalences: bool = True,
         reduction: str = "mean",
         return_matching: bool = False,
         return_loss_components: bool = False,
-    ) -> torch.Tensor | tuple[torch.Tensor, list] | tuple[torch.Tensor, dict] | tuple[torch.Tensor, list, dict]:
+    ) -> (
+        torch.Tensor  # just loss
+        | list[torch.Tensor]  # main loss plus auxiliary losses
+        | tuple[torch.Tensor, tuple]  # loss with matching
+        | tuple[list[torch.Tensor], tuple]  # main+auxiliary losses with matching
+        | tuple[torch.Tensor, dict[str, torch.Tensor]]  # loss with loss components
+        | tuple[list[torch.Tensor], list[dict[str, torch.Tensor]]]  # main+auxiliary losses with loss components
+        | tuple[torch.Tensor, tuple, dict[str, torch.Tensor]]  # loss, matching, loss components
+        | tuple[list[torch.Tensor], tuple, list[dict[str, torch.Tensor]]]  # all losses, matching, all loss components
+    ):
         """Bipartite matching loss for DETR. The classes are expected to optimize for a multi-class classification
         problem. Expects raw logits in class predictions, not probabilities. Use ``logits_to_scores_fn=None`` in the
         ``forward`` function to avoid applying any transformation.
@@ -309,19 +321,35 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 the corresponding batch element in ``pred`` and therefore should have a length of `B`. Each tensor
                 should have less than or equal to the number of objects in `pred`. The number of classes can either be
                 the exact same as in `pred`, or it should be 1 argmax (one-cold) decoding.
-            classification_cost_weight: Weight for the classification cost in hungarian matching.
-            bbox_l1_cost_weight: Weight for the bounding box L1 loss cost in hungarian matching.
-            bbox_giou_cost_weight: Weight for the bounding box IoU cost in hungarian matching.
+            intermediate_preds: A list of any intermediate decoder outputs to use for auxiliary losses. If provided,
+                returned loss values become a list instead of single values. The matching used is the one used for the
+                final prediction i.e. `pred`.
+            classification_cost_weight: Weight for the classification cost in hungarian matching. Only used when
+                matched_indices is None.
+            bbox_l1_cost_weight: Weight for the bounding box L1 loss cost in hungarian matching. Only used when
+                matched_indices is None.
+            bbox_giou_cost_weight: Weight for the bounding box IoU cost in hungarian matching. Only used when
+                matched_indices is None.
+            matched_indices: Hungarian matching is done only if this is None, else this is used to match pred and target
+                boxes. Useful when calculating auxiliary losses with intermediate layers of DETR3D.
+            update_class_prevalences: Whether or not to update class prevalences in the class balanced cross entropy
+                loss. Useful when calculating auxiliary losses with intermediate layers of DETR3D.
             reduction: Specifies the reduction to apply to the output.
             return_matching: Whether or not to return the matched indices from the bipartite matching.
             return_loss_components: Whether or not to return the individual loss components.
 
         Returns:
-            A tensor containing the bipartite matching loss with the shape depending on the `reduction` argument. If
-            `return_matching` is True, also returns a list of tuples containing matched indices for predictions and
+            The first element is always the main loss that has been calculated. If no `intermediate_preds` were
+            provided, a tensor containing the bipartite matching loss with the shape depending on the `reduction`
+            argument is present, else it is a list of the same for all preds provided with the first one being the main
+            pred.
+
+            If `return_matching` is True, also returns a list of tuples containing matched indices for predictions and
             targets. Each tuple is of the form `(pred_indices, target_indices)`, where `pred_indices` and
-            `target_indices` are lists of indices for the matched predictions and targets, respectively. If
-            `return_loss_components` is True, also returns a dict of each loss component reduced based on `reduction`.
+            `target_indices` are lists of indices for the matched predictions and targets, respectively.
+
+            If `return_loss_components` is True, also returns a dict of each loss component reduced based on
+            `reduction`. If `intermediate_preds` were also provided, it is a list of the same.
         """
         B = pred.shape[0]
 
@@ -335,99 +363,124 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 target[i] = torch.cat([target[i][:, :6], target[i][:, 6:].argmax(-1, keepdims=True)], dim=-1)
 
         # Perform hungarian matching
-        matched_indices = self.hungarian_matching(
-            pred, target, classification_cost_weight, bbox_l1_cost_weight, bbox_giou_cost_weight
-        )
+        if matched_indices is None:
+            matched_indices = self.hungarian_matching(
+                pred, target, classification_cost_weight, bbox_l1_cost_weight, bbox_giou_cost_weight
+            )
 
         # Update class prevalences in class balanced cross entropy loss
-        self._update_class_prevalences(target)
+        if update_class_prevalences:
+            self._update_class_prevalences(target)
 
-        losses = {
-            "classification_loss": [],
-            "bbox_l1_loss": [],
-            "bbox_giou_loss": [],
-            "total_loss": [],
-        }
-        for i in range(B):
-            batch_losses = {}
+        # Convert intermediate preds to a list if not provided
+        if intermediate_preds is None:
+            intermediate_preds = []
 
-            pred_indices, target_indices = matched_indices[i]
+        # Run all intermediate preds through the bbox mlp to get outputs
+        for i in range(len(intermediate_preds)):
+            intermediate_preds[i] = self.bbox_mlp(intermediate_preds[i])
 
-            # Classification loss for ALL predictions
-            all_class_labels = torch.zeros_like(pred[i][:, 6], dtype=torch.long)
-            all_class_labels[pred_indices] = target[i][target_indices, 6].long()
-            all_pred_classes = pred[i][..., 6:]
-            if self.class_balanced_cross_entropy_loss is None:
-                batch_losses["classification_loss"] = F.cross_entropy(all_pred_classes, all_class_labels)
-            else:
-                batch_losses["classification_loss"] = self.class_balanced_cross_entropy_loss(
-                    all_pred_classes, all_class_labels, update_class_prevalences=False
+        # Get a combined list of all preds
+        all_preds = [pred] + intermediate_preds
+
+        # Calculate losses for all preds
+        loss = []
+        loss_components = []
+        for pred in all_preds:  # pred is overwritten here
+            batch_loss_components = {
+                "classification_loss": [],
+                "bbox_l1_loss": [],
+                "bbox_giou_loss": [],
+                "total_loss": [],
+            }
+            for i in range(B):
+                batch_losses = {}
+
+                pred_indices, target_indices = matched_indices[i]
+
+                # Classification loss for ALL predictions
+                all_class_labels = torch.zeros_like(pred[i][:, 6], dtype=torch.long)
+                all_class_labels[pred_indices] = target[i][target_indices, 6].long()
+                all_pred_classes = pred[i][..., 6:]
+                if self.class_balanced_cross_entropy_loss is None:
+                    batch_losses["classification_loss"] = F.cross_entropy(all_pred_classes, all_class_labels)
+                else:
+                    batch_losses["classification_loss"] = self.class_balanced_cross_entropy_loss(
+                        all_pred_classes, all_class_labels, update_class_prevalences=False
+                    )
+
+                # Calculate all other losses only if prediction and target have objects
+                if pred_indices != [] and target_indices != []:
+                    matched_pred = pred[i][pred_indices]
+                    matched_target = target[i][target_indices]
+
+                    pred_bboxes = matched_pred[:, :6].clone()
+                    target_bboxes = matched_target[:, :6].clone()
+
+                    # Compute losses for matched pairs
+                    # BBox L1 loss
+                    batch_losses["bbox_l1_loss"] = F.l1_loss(pred_bboxes, target_bboxes)
+
+                    # For IOU calculation, it does not matter if bboxes are in actual pixel lengths or normalized based on
+                    # image size, metric value will be the same.
+
+                    # BBox IOU loss
+                    batch_losses["bbox_giou_loss"] = 1 - DETR3D.generalized_bbox_iou(pred_bboxes, target_bboxes).mean()
+
+                # Total loss for this batch element
+                total_loss = (
+                    classification_cost_weight * batch_losses.get("classification_loss", 0.0)
+                    + bbox_l1_cost_weight * batch_losses.get("bbox_l1_loss", 0.0)
+                    + bbox_giou_cost_weight * batch_losses.get("bbox_giou_loss", 0.0)
                 )
 
-            # Calculate all other losses only if prediction and target have objects
-            if pred_indices != [] and target_indices != []:
-                matched_pred = pred[i][pred_indices]
-                matched_target = target[i][target_indices]
+                # Add to losses
+                batch_loss_components["classification_loss"].append(
+                    batch_losses.get("classification_loss", torch.tensor(torch.nan, device=pred.device)),
+                )
+                batch_loss_components["bbox_l1_loss"].append(
+                    batch_losses.get("bbox_l1_loss", torch.tensor(torch.nan, device=pred.device)),
+                )
+                batch_loss_components["bbox_giou_loss"].append(
+                    batch_losses.get("bbox_giou_loss", torch.tensor(torch.nan, device=pred.device)),
+                )
+                batch_loss_components["total_loss"].append(total_loss)
 
-                pred_bboxes = matched_pred[:, :6].clone()
-                target_bboxes = matched_target[:, :6].clone()
+            # Stack batch losses and apply reduction
+            for key in batch_loss_components:
+                batch_loss_component = torch.stack(batch_loss_components[key])
 
-                # Compute losses for matched pairs
-                # BBox L1 loss
-                batch_losses["bbox_l1_loss"] = F.l1_loss(pred_bboxes, target_bboxes)
+                if reduction == "mean":
+                    batch_loss_component = batch_loss_component.nanmean()
+                elif reduction == "sum":
+                    batch_loss_component = batch_loss_component.nansum()
+                elif reduction == "none" or reduction is None:
+                    pass
+                else:
+                    raise ValueError(f"Invalid reduction mode: {reduction}")
 
-                # For IOU calculation, it does not matter if bboxes are in actual pixel lengths or normalized based on
-                # image size, metric value will be the same.
+                batch_loss_components[key] = batch_loss_component
 
-                # BBox IOU loss
-                batch_losses["bbox_giou_loss"] = 1 - DETR3D.generalized_bbox_iou(pred_bboxes, target_bboxes).mean()
+            loss.append(batch_loss_components.pop("total_loss"))
+            loss_components.append(batch_loss_components)
 
-            # Total loss for this batch element
-            total_loss = (
-                classification_cost_weight * batch_losses.get("classification_loss", 0.0)
-                + bbox_l1_cost_weight * batch_losses.get("bbox_l1_loss", 0.0)
-                + bbox_giou_cost_weight * batch_losses.get("bbox_giou_loss", 0.0)
-            )
+        # Finalize return value
+        if len(loss) == 1:
+            loss = loss[0]
+            loss_components = loss_components[0]
 
-            # Add to losses
-            losses["classification_loss"].append(
-                batch_losses.get("classification_loss", torch.tensor(torch.nan, device=pred.device)),
-            )
-            losses["bbox_l1_loss"].append(
-                batch_losses.get("bbox_l1_loss", torch.tensor(torch.nan, device=pred.device)),
-            )
-            losses["bbox_giou_loss"].append(
-                batch_losses.get("bbox_giou_loss", torch.tensor(torch.nan, device=pred.device)),
-            )
-            losses["total_loss"].append(total_loss)
+        return_value = [loss]
+        if return_matching:
+            return_value.append(matched_indices)
+        if return_loss_components:
+            return_value.append(loss_components)
 
-        # Stack batch losses and apply reduction
-        for key in losses:
-            loss = torch.stack(losses[key])
+        if len(return_value) == 1:
+            return_value = return_value[0]
+        else:
+            return_value = tuple(return_value)
 
-            if reduction == "mean":
-                loss = loss.nanmean()
-            elif reduction == "sum":
-                loss = loss.nansum()
-            elif reduction == "none" or reduction is None:
-                pass
-            else:
-                raise ValueError(f"Invalid reduction mode: {reduction}")
-
-            losses[key] = loss
-
-        loss = losses["total_loss"]
-        losses.pop("total_loss", None)
-
-        match return_matching, return_loss_components:
-            case False, False:
-                return loss
-            case True, False:
-                return loss, matched_indices
-            case False, True:
-                return loss, losses
-            case True, True:
-                return loss, matched_indices, losses
+        return return_value
 
     @torch.no_grad()
     def hungarian_matching(
