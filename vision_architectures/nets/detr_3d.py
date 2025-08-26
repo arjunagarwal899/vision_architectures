@@ -241,6 +241,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         spacings: torch.Tensor | None = None,
         channels_first: bool = True,
         return_intermediates: bool = False,
+        process_intermediates: bool = True,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor, list[torch.Tensor]]:
         """Forward pass of the DETR3D.
 
@@ -249,6 +250,8 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
             spacings: {SPACINGS_DOC}
             channels_first: {CHANNELS_FIRST_DOC}
             return_intermediates: If True, also returns the outputs of all layers. Defaults to False.
+            process_intermediates: If True, passes the layer outputs through the bbox_mlp too. Requires
+                `return_intermediates` to be True too.
 
         Returns:
             A tuple containing bounding boxes, object embeddings, and layer outputs if return_intermediates is True.
@@ -278,6 +281,9 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         # (b, num_possible_objects, 6 + 1 + num_classes)
 
         if return_intermediates:
+            if process_intermediates:
+                for i in range(len(layer_outputs)):
+                    layer_outputs[i] = self.bbox_mlp(layer_outputs[i])
             return bboxes, object_embeddings, layer_outputs
 
         return bboxes
@@ -372,16 +378,10 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         if update_class_prevalences:
             self._update_class_prevalences(target)
 
-        # Convert intermediate preds to a list if not provided
-        if intermediate_preds is None:
-            intermediate_preds = []
-
-        # Run all intermediate preds through the bbox mlp to get outputs
-        for i in range(len(intermediate_preds)):
-            intermediate_preds[i] = self.bbox_mlp(intermediate_preds[i])
-
         # Get a combined list of all preds
-        all_preds = [pred] + intermediate_preds
+        all_preds = [pred]
+        if intermediate_preds is not None:
+            all_preds += intermediate_preds
 
         # Calculate losses for all preds
         loss = []
