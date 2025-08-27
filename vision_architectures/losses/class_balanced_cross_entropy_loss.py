@@ -51,7 +51,7 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         # Initialized with None as we don't know the initial class prevalence estimates.
 
     @torch.no_grad()
-    def update_class_prevalences(self, target: torch.Tensor, ignore_index: float = -100.0):
+    def update_class_prevalences(self, target: torch.Tensor, ignore_index: int = -100):
         """Update the running class-prevalence estimates from a target tensor.
 
         The method counts class occurrences in the provided target, converts counts
@@ -82,13 +82,12 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         # Update current prevalences using EMA to allow for distribution shift in data
         decay = self.config.ema_decay
         for i in range(self.config.num_classes):
-            if self.class_prevalences[i] is None:
-                # if encountered for the first time
-                if new_prevalences.get(i, 0.0) > 0.0:
-                    self.class_prevalences[i] = new_prevalences.get(i, 0.0)
-                # otherwise let it stay None
-            else:
-                # update to new value using EMA
+            # when encountered for the first time, assume each class was equally prevalent at the start
+            if self.class_prevalences[i] is None and i in new_prevalences:
+                self.class_prevalences[i] = 1 / self.config.num_classes
+
+            # update to the new value using EMA
+            if self.class_prevalences[i] is not None:
                 self.class_prevalences[i] = self.class_prevalences[i] * decay + new_prevalences.get(i, 0.0) * (
                     1 - decay
                 )
@@ -150,7 +149,7 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         # Substitute nan values with mean and clamp weights to a limit
         # Assumption: all classes are visited at least once in the dataset
         mu, std = weights.nanmean(), weights[~weights.isnan()].std()
-        weights = weights.nan_to_num(mu)
+        weights = weights.nan_to_num(nan=mu, posinf=mu, neginf=mu)
         weights = weights.clamp(mu - 3 * std, mu + 3 * std)
 
         # Add failsafe just in case nans are still present
@@ -195,7 +194,7 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         """
         # Update class prevalences
         if update_class_prevalences:
-            self.update_class_prevalences(target)
+            self.update_class_prevalences(target, kwargs.get("ignore_index", -100))
 
         # Get class weights
         class_weights = self.get_class_weights(input.device)
