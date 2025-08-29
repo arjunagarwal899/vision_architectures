@@ -163,27 +163,27 @@ class Splitter:
 
         return x
 
-    def split(self, x: torch.Tensor) -> Generator[torch.Tensor, None, None]:
+    def split(self, x: torch.Tensor) -> Generator[tuple[torch.Tensor, torch.Tensor], None, None]:
         """Split the input tensor into smaller tensors using the config.
 
         Args:
-            x: The input tensor.
+            x: The input tensor. Any arbitrary shape is acceptable as long as there are at least `split_dims`
+                dimensions. The last `split_dims` dimensions are split.
 
         Yields:
-            A tensor of shape (*split_size) for each split.
+            A tensor of shape (*split_size) for each split and it's corresponding position in the input.
         """
         input_shape = x.shape
         x = self.expand(x)
         positions = self.get_positions(input_shape)
 
-        splits = []
         for position in positions:
             starts = position.tolist()
             ends = [start + size for start, size in zip(starts, self.config.split_size)]
 
             slices = [slice(None)] * (x.ndim - self.config.split_dims)
             slices += [slice(starts[d], ends[d]) for d in range(self.config.split_dims)]
-            yield x[tuple(slices)]
+            yield x[tuple(slices)], position
 
     @wraps(split)
     def __call__(self, *args, **kwargs):

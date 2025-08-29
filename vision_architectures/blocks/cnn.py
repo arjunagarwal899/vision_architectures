@@ -603,23 +603,23 @@ class TensorSplittingConv(nn.Module):
             stride=split_stride,
             extend_mode=None,  # Padding has been handled here for better control
         )
-        positions = splitter.get_positions(x)
         x = splitter(x)
         # (num_splits, batch_size, in_channels, [z1], y1, x1)
 
         # Run the convolution on each split
         outputs: list[torch.Tensor] = []
-        for x_split in x:
+        for x_split, position in x:
             x_split = x_split.to(self.conv.weight.device)
             x_split = self.conv(x_split)
             x_split = x_split.to(input_device)
-            outputs.append(x_split)
-        # list of len num_splits, each of shape (batch_size, out_channels, [z1], y1, x1)
+            outputs.append((x_split, position))
+        # list of len num_splits, each of a tuple with the split of shape (batch_size, out_channels, [z1], y1, x1) and
+        # the position as a tensor
 
         # Merge the outputs
         context = self.get_edge_context()
-        merged = torch.empty((B, outputs[0].shape[1], *DIMS), device=input_device)
-        for output, position in zip(outputs, positions):
+        merged = torch.empty((B, outputs[0][0].shape[1], *DIMS), device=input_device)
+        for output, position in outputs:
             merged_slices = [slice(None), slice(None)]  # To track the coordinates where the output will be placed
             output_slices = [slice(None), slice(None)]  # To track the actual output that should be placed
             for i in range(self.spatial_dims):
