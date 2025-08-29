@@ -1,0 +1,16 @@
+API Reference
+=============
+
+This section provides detailed API documentation for all modules in the Vision Architectures library.
+
+.. toctree::
+   :maxdepth: 2
+
+   blocks/index
+   image_readers/index
+   layers/index
+   losses/index
+   nets/index
+   schedulers/index
+   transforms/index
+   utils/index

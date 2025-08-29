@@ -1,0 +1,7 @@
+Pipeline Parallelism
+====================
+
+.. automodule:: vision_architectures.utils.pipeline_parallelism
+   :members:
+   :undoc-members:
+   :show-inheritance:

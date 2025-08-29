@@ -1,0 +1,21 @@
+Nets
+====
+
+This section documents the nets components.
+
+.. toctree::
+   :maxdepth: 1
+
+   detr_3d
+   cait_3d
+   vit_3d
+   perceiver_3d
+   unetr_3d_decoder
+   maxvit_3d
+   swin_3d
+   fpn_3d
+   fpn_2d
+   upernet_3d
+   swinv2_3d
+   symswin_3d
+   upernet_2d
