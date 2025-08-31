@@ -158,7 +158,7 @@ class Attention3DMLP(Attention1DMLP):
 
     @wraps(_forward)
     def forward(self, *args, **kwargs):
-        return self.checkpointing_level1(self._forward, *args, **kwargs)
+        return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/blocks/02_transformer.ipynb 10
 @populate_docstring
@@ -662,7 +662,7 @@ class TransformerDecoderBlock3D(nn.Module):
         v2: torch.Tensor | None = None,
         channels_first: bool = True
     ) -> torch.Tensor:
-        """Forward pass of the TransformerDecoderBlock1D block.
+        """Forward pass of the TransformerDecoderBlock3D block.
 
         Args:
             q: {INPUT_3D_DOC} The query tensor used for self-attention. Either this or `q1` should be provided.

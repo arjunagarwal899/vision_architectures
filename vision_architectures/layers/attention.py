@@ -244,7 +244,6 @@ class Attention3D(Attention1D):
         Constraints:
             - d_q * h_q * w_q = d_k * h_k * w_k
         """
-
         if channels_first:
             z_q, y_q, x_q = query.shape[2:5]
             forward_pattern = "b d z y x -> b (z y x) d"
