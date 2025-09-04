@@ -10,3 +10,4 @@ pydantic
 safetensors
 scipy
 torch
+torchmetrics

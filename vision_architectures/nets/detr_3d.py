@@ -1070,3 +1070,6 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
                 # If there are less than self.config.num_objects targets, pad with background class
                 target_classes = F.pad(target_classes, (0, self.config.num_objects - target_classes.shape[-1]), value=0)
             self.class_balanced_cross_entropy_loss.update_class_prevalences(target_classes)
+
+
+# TODO: Implement mAP and mAR calculation
