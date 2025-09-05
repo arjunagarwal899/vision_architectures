@@ -8,8 +8,9 @@ __all__ = ['map_mar', 'mean_average_precision_recall', 'MeanAveragePrecisionReca
 from typing import Literal
 
 import torch
-from monai.data.box_utils import box_iou
 from torchmetrics import Metric
+
+from ..utils.bounding_boxes import get_tps_fps_fns, sort_by_first_column_descending
 
 # %% ../../nbs/metrics/01_detection.ipynb 6
 def mean_average_precision_mean_average_recall(
@@ -91,10 +92,9 @@ def mean_average_precision_mean_average_recall(
         for target_bbox, target_class in zip(target_bboxes, target_classes)
     ), "Each target must have the same number of bounding boxes."
 
-    # Split everything based on different classes
+    # Split everything based on different classes. Calculate confidence scores as well.
     pred_bboxes_by_class = [[] for _ in range(num_classes)]
-    pred_objectness_probabilities_by_class = [[] for _ in range(num_classes)]
-    pred_class_probabilities_by_class = [[] for _ in range(num_classes)]
+    pred_confidences_scores_by_class = [[] for _ in range(num_classes)]
     target_bboxes_by_class = [[] for _ in range(num_classes)]
     for b in range(B):
         pred_classes = torch.argmax(pred_class_probabilities[b], dim=-1)
@@ -106,69 +106,50 @@ def mean_average_precision_mean_average_recall(
             # (NT,)
 
             pred_bboxes_by_class[c].append(pred_bboxes[b][pred_classes_mask])
-            pred_objectness_probabilities_by_class[c].append(pred_objectness_probabilities[b][pred_classes_mask])
-            pred_class_probabilities_by_class[c].append(pred_class_probabilities[b][pred_classes_mask])
+            pred_confidences_scores_by_class[c].append(
+                pred_objectness_probabilities[b][pred_classes_mask]
+                * pred_class_probabilities[b][pred_classes_mask][:, c]
+            )
             # (NP,)
 
             target_bboxes_by_class[c].append(target_bboxes[b][target_classes_mask])
             # (NT,)
 
-    # Helper function to sort a tensor in descending order based on values in first column
-    def _sort_by_first_column_descending(tensor: torch.Tensor) -> torch.Tensor:
-        return tensor[torch.argsort(tensor[:, 0], descending=True)]
+    # Limit number of bounding boxes per image if applicable
+    if max_bboxes_per_image is not None:
+        for b in range(B):
+            _confidence_scores = []
+            for c in range(num_classes):
+                if pred_bboxes_by_class[c][b].numel() > 0:
+                    _confidence_scores.append(
+                        torch.stack(
+                            [
+                                pred_confidences_scores_by_class[c][b],
+                                torch.arange(
+                                    pred_confidences_scores_by_class[c][b].shape[0], device=pred_bboxes[b].device
+                                ),
+                                torch.full_like(pred_confidences_scores_by_class[c][b], c),
+                            ],
+                            dim=-1,
+                        )
+                    )
+            if len(_confidence_scores) == 0:
+                continue
+            _confidence_scores = torch.cat(_confidence_scores, dim=0)
+            # (NC, 3)
 
-    # Calculate IOUs for all prediction and target bounding box pairs for each class
-    # Also calculate confidence scores for each prediction bounding box along with index
-    # Also track number of target boxes for each class
-    ious = [[] for _ in range(num_classes)]
-    confidence_scores = [[] for _ in range(num_classes)]
-    num_target_boxes = [0 for _ in range(num_classes)]
-    for b in range(B):
-        for c in range(num_classes):
-            _ious = box_iou(pred_bboxes_by_class[c][b], target_bboxes_by_class[c][b])
-            # (NP, NT)
-
-            _confidence_scores = (
-                pred_objectness_probabilities_by_class[c][b] * pred_class_probabilities_by_class[c][b][:, c]
-            )
-            _batch_index = torch.full_like(_confidence_scores, b)
-            _offset_index = torch.arange(len(_confidence_scores), device=_confidence_scores.device)
-            _confidence_scores = torch.stack([_confidence_scores, _batch_index, _offset_index], dim=-1)
-            # (NP, 3) -> (confidence_score, batch_index, offset_index)
-
-            ious[c].append(_ious)
-            confidence_scores[c].append(_confidence_scores)
-            num_target_boxes[c] += target_bboxes_by_class[c][b].shape[0]
-
-        # Limit number of bounding boxes per image if applicable
-        if max_bboxes_per_image is not None:
-            all_confidences = torch.cat(
-                [
-                    torch.cat(
-                        [
-                            confidence_scores[c][b],  # (NC, 3)
-                            torch.full_like(confidence_scores[c][b][:, :1], c),  # (NC, 1)
-                        ],
-                        dim=-1,
-                    )  # (NC, 4)
-                    for c in range(num_classes)
-                ],
-                dim=0,
-            )
-            if all_confidences.shape[0] > max_bboxes_per_image:
-                all_confidences = _sort_by_first_column_descending(all_confidences)
-                topk_confidences = all_confidences[:max_bboxes_per_image]
-                # (max_bboxes_per_image, 4)
+            if _confidence_scores.shape[0] > max_bboxes_per_image:
+                _confidence_scores = sort_by_first_column_descending(_confidence_scores)
+                topk_confidences = _confidence_scores[:max_bboxes_per_image]
+                # (max_bboxes_per_image, 3)
                 for c in range(num_classes):
-                    class_mask = topk_confidences[:, 3] == c
+                    class_mask = topk_confidences[:, 2] == c
                     # (max_bboxes_per_image,)
-                    confidence_scores[c][b] = topk_confidences[class_mask][:, :3]
-                    # (N_class, 3)
-
-    # Concatenate confidence scores and sort them in descending order for each class
-    for c in range(num_classes):
-        confidence_scores[c] = torch.cat(confidence_scores[c], dim=0)
-        confidence_scores[c] = _sort_by_first_column_descending(confidence_scores[c])
+                    offsets_to_keep = topk_confidences[class_mask][:, 1].long()
+                    pred_bboxes_by_class[c][b] = pred_bboxes_by_class[c][b][offsets_to_keep]
+                    # (NP', 4) or (NP', 6)
+                    pred_confidences_scores_by_class[c][b] = pred_confidences_scores_by_class[c][b][offsets_to_keep]
+                    # (NP',)
 
     # For each IOU threshold, calculate average precision and average recall
     average_precisions = {}
@@ -178,48 +159,27 @@ def mean_average_precision_mean_average_recall(
         class_average_precisions = {}
         class_average_recalls = {}
         for c in range(num_classes):
-            if num_target_boxes[c] == 0:
-                # If no target boxes for this class, skip it
+            # If no target boxes for this class, skip it
+            if all(target_bbox.numel() == 0 for target_bbox in target_bboxes_by_class[c]):
                 class_average_precisions[c + 1] = float("nan")
                 class_average_recalls[c + 1] = float("nan")
                 continue
 
-            matched_target_indices = [set() for _ in range(B)]
-            tps, fps, fns = 0, 0, num_target_boxes[c]
-            precisions, recalls = [], []
-
-            # In descending order, update tp, fp, fn and calculate precision and recall at each step
-            for confidence_score, b, pred_offset in confidence_scores[c]:
-                if confidence_score < min_confidence_threshold:
-                    # Do not consider this and following predictions if confidence score is below threshold
-                    break
-
-                b, pred_offset = int(b), int(pred_offset)
-
-                pred_ious = ious[c][b][pred_offset]
-                # (NT,)
-
-                if pred_ious.numel() > 0:
-                    if matched_target_indices[b]:
-                        # Exclude already matched target boxes
-                        pred_ious[list(matched_target_indices[b])] = -1.0
-                    # Exclude target boxes below IOU threshold
-                    pred_ious[pred_ious < iou_threshold] = -1.0
-
-                if pred_ious.numel() == 0 or pred_ious.amax() < 0.0:
-                    # No valid target box to match with
-                    fps += 1
-                else:
-                    target_offset = pred_ious.argmax().item()
-                    matched_target_indices[b].add(target_offset)
-                    tps += 1
-                    fns -= 1
-
-                precisions.append(tps / (tps + fps) if (tps + fps) > 0 else 1.0)
-                recalls.append(tps / (tps + fns) if (tps + fns) > 0 else 0.0)
-
-            precisions = torch.tensor(precisions)
-            recalls = torch.tensor(recalls)
+            _, _, _, intermediate_counts = get_tps_fps_fns(
+                pred_bboxes=pred_bboxes_by_class[c],
+                pred_confidence_scores=pred_confidences_scores_by_class[c],
+                target_bboxes=target_bboxes_by_class[c],
+                iou_threshold=iou_threshold,
+                matching_method="coco",
+                min_confidence_threshold=min_confidence_threshold,
+                max_bboxes_per_image=max_bboxes_per_image,
+                return_intermediate_counts=True,
+            )
+            intermediate_counts = torch.tensor(intermediate_counts, device=pred_bboxes[0].device, dtype=torch.float32)
+            # (NC, 3) where the first column is TP, second is FP and third is FN for each prediction considered
+            precisions = intermediate_counts[:, 0] / (intermediate_counts[:, 0] + intermediate_counts[:, 1] + 1e-8)
+            recalls = intermediate_counts[:, 0] / (intermediate_counts[:, 0] + intermediate_counts[:, 2] + 1e-8)
+            # (NC,), (NC,)
 
             # Precision envelope: P_interp(r) = max_{r' >= r} P(r')
             enveloped_precisions = precisions.clone()

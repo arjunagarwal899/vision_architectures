@@ -4,9 +4,10 @@
 __all__ = ['sort_by_first_column_descending', 'get_tps_fps_fns']
 
 # %% ../../nbs/utils/11_bounding_boxes.ipynb 2
+from typing import Literal
+
 import torch
 from monai.data.box_utils import box_iou
-from typing import Literal
 from scipy.optimize import linear_sum_assignment
 
 # %% ../../nbs/utils/11_bounding_boxes.ipynb 6
@@ -94,7 +95,7 @@ def get_tps_fps_fns(
             hungarian_matchings.append(_matching)
 
     matched_target_indices = [set() for _ in range(B)]
-    tps, fps, fns = set(), set(), set([(b, i) for b in range(B) for i in range(len(target_bboxes[b]))])
+    tps, fps, fns = set(), set(), {(b, i) for b in range(B) for i in range(len(target_bboxes[b]))}
 
     # In descending order, update tp, fp, fn and calculate precision and recall at each step
     intermediate_counts = []
