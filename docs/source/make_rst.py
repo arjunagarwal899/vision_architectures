@@ -11,6 +11,7 @@ def title_from_module_name(module_name):
         "activation_checkpointing": "ActivationCheckpointing",
         "activations": "Activations",
         "attention": "Attention",
+        "bounding_boxes": "Bounding Boxes",
         "cait_3d": "CaiT3D",
         "class_balanced_cross_entropy_loss": "ClassBalancedCrossEntropyLoss",
         "cnn": "CNN",
