@@ -2,7 +2,8 @@
 
 # %% auto 0
 __all__ = ['map_mar', 'mean_average_precision_recall', 'MeanAveragePrecisionRecall', 'mean_average_precision_mean_average_recall',
-           'MeanAveragePrecisionMeanAverageRecall', 'MeanAveragePrecision', 'MeanAverageRecall']
+           'MeanAveragePrecisionMeanAverageRecall', 'MeanAveragePrecision', 'MeanAverageRecall', 'AveragePrecision',
+           'AverageRecall']
 
 # %% ../../nbs/metrics/01_detection.ipynb 2
 from typing import Literal
@@ -15,8 +16,7 @@ from ..utils.bounding_boxes import get_tps_fps_fns, sort_by_first_column_descend
 # %% ../../nbs/metrics/01_detection.ipynb 6
 def mean_average_precision_mean_average_recall(
     pred_bboxes: list[torch.Tensor],
-    pred_objectness_probabilities: list[torch.Tensor] | None,
-    pred_class_probabilities: list[torch.Tensor],
+    pred_confidence_scores: list[torch.Tensor],
     target_bboxes: list[torch.Tensor],
     target_classes: list[torch.Tensor],
     iou_thresholds: list[float] = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
@@ -30,11 +30,9 @@ def mean_average_precision_mean_average_recall(
     Args:
         pred_bboxes: A list of length B containing tensors of shape (NP, 4) or (NP, 6) containing the predicted bounding
             box parameters in xyxy or xyzxyz format.
-        pred_objectness_probabilities: A list of length B containing tensors of shape (NP,) containing the predicted
-            objectness probabilities for the corresponding bounding boxes. This can be set to None in which case only
-            the class probabilities are considered.
-        pred_class_probabilities: A list of length B containing tensors of shape (NP, num_classes) containing the
-            predicted class probabilities for the corresponding bounding boxes.
+        pred_confidence_scores: A list of length B containing tensors of shape (NP, 1+num_classes) containing the
+            predicted confidence scores for each class. Note that the first column corresponds to the "no-object" class,
+            and bounding boxes which fall in this category are ignored.
         target_bboxes: A list of length B containing tensors of shape (NT, 4) or (NT, 6) containing the target bounding
             box parameters in xyxy or xyzxyz format.
         target_classes: A list of length B containing tensors of shape (NT,) containing the target class labels for the
@@ -55,38 +53,23 @@ def mean_average_precision_mean_average_recall(
     """
     # Set some globaly used variables
     B = len(pred_bboxes)
-    num_classes = pred_class_probabilities[0].shape[-1]
-
-    if pred_objectness_probabilities is None:
-        pred_objectness_probabilities = [
-            torch.ones_like(pred_class_probability[:, 0]) for pred_class_probability in pred_class_probabilities
-        ]
+    num_classes = pred_confidence_scores[0].shape[-1] - 1
 
     # Some basic tests
-    assert (
-        len(pred_bboxes)
-        == len(pred_objectness_probabilities)
-        == len(pred_class_probabilities)
-        == len(target_bboxes)
-        == len(target_classes)
-        == B
-    ), (
-        f"All input lists must have the same length. Got lengths: {len(pred_bboxes)}, "
-        f"{len(pred_objectness_probabilities)}, {len(pred_class_probabilities)}, {len(target_bboxes)}, "
-        f"{len(target_classes)}."
+    assert len(pred_bboxes) == len(pred_confidence_scores) == len(target_bboxes) == len(target_classes) == B, (
+        f"All input lists must have the same length. Got lengths: {len(pred_bboxes)}, {len(pred_confidence_scores)}, "
+        f"{len(target_bboxes)}, {len(target_classes)}."
     )
     assert all(
-        pred_bbox.shape[0] == pred_objectness_probability.shape[0] == pred_class_probability.shape[0]
-        for pred_bbox, pred_objectness_probability, pred_class_probability in zip(
-            pred_bboxes, pred_objectness_probabilities, pred_class_probabilities
-        )
+        pred_bbox.shape[0] == pred_confidence_score.shape[0]
+        for pred_bbox, pred_confidence_score in zip(pred_bboxes, pred_confidence_scores)
     ), "Each prediction input list element must have the same number of bounding boxes."
     assert all(
         pred_bbox.shape[1] == 4 or pred_bbox.shape[1] == 6 for pred_bbox in pred_bboxes
     ), "Prediction bounding boxes must have shape (NP, 4) or (NP, 6)."
     assert all(
-        pred_class_probability.shape[1] == num_classes for pred_class_probability in pred_class_probabilities
-    ), "Prediction class probabilities must have shape (NP, num_classes)."
+        pred_confidence_score.shape[-1] == num_classes + 1 for pred_confidence_score in pred_confidence_scores
+    ), "Prediction class probabilities must have shape (NP, 1 + num_classes)."
     assert all(
         target_bbox.shape[0] == target_class.shape[0]
         for target_bbox, target_class in zip(target_bboxes, target_classes)
@@ -97,19 +80,17 @@ def mean_average_precision_mean_average_recall(
     pred_confidences_scores_by_class = [[] for _ in range(num_classes)]
     target_bboxes_by_class = [[] for _ in range(num_classes)]
     for b in range(B):
-        pred_classes = torch.argmax(pred_class_probabilities[b], dim=-1)
+        pred_classes = torch.argmax(pred_confidence_scores[b], dim=-1)
         # (NP,)
+
         for c in range(num_classes):
-            pred_classes_mask = pred_classes == c
+            pred_classes_mask = pred_classes == (c + 1)
             # (NP,)
             target_classes_mask = target_classes[b] == (c + 1)
             # (NT,)
 
             pred_bboxes_by_class[c].append(pred_bboxes[b][pred_classes_mask])
-            pred_confidences_scores_by_class[c].append(
-                pred_objectness_probabilities[b][pred_classes_mask]
-                * pred_class_probabilities[b][pred_classes_mask][:, c]
-            )
+            pred_confidences_scores_by_class[c].append(pred_confidence_scores[b][pred_classes_mask][:, c + 1])
             # (NP,)
 
             target_bboxes_by_class[c].append(target_bboxes[b][target_classes_mask])
@@ -246,30 +227,26 @@ class MeanAveragePrecisionMeanAverageRecall(Metric):
         self.max_bboxes_per_image = max_bboxes_per_image
 
         self.add_state("pred_bboxes", [], dist_reduce_fx=None, persistent=False)
-        self.add_state("pred_objectness_probabilities", [], dist_reduce_fx=None, persistent=False)
-        self.add_state("pred_class_probabilities", [], dist_reduce_fx=None, persistent=False)
+        self.add_state("pred_confidence_scores", [], dist_reduce_fx=None, persistent=False)
         self.add_state("target_bboxes", [], dist_reduce_fx=None, persistent=False)
         self.add_state("target_classes", [], dist_reduce_fx=None, persistent=False)
 
     def update(
         self,
         pred_bboxes: list[torch.Tensor],
-        pred_objectness_probabilities: list[torch.Tensor],
-        pred_class_probabilities: list[torch.Tensor],
+        pred_confidence_scores: list[torch.Tensor],
         target_bboxes: list[torch.Tensor],
         target_classes: list[torch.Tensor],
     ):
         self.pred_bboxes.extend(pred_bboxes)
-        self.pred_objectness_probabilities.extend(pred_objectness_probabilities)
-        self.pred_class_probabilities.extend(pred_class_probabilities)
+        self.pred_confidence_scores.extend(pred_confidence_scores)
         self.target_bboxes.extend(target_bboxes)
         self.target_classes.extend(target_classes)
 
     def compute(self):
         return mean_average_precision_mean_average_recall(
             self.pred_bboxes,
-            self.pred_objectness_probabilities,
-            self.pred_class_probabilities,
+            self.pred_confidence_scores,
             self.target_bboxes,
             self.target_classes,
             iou_thresholds=self.iou_thresholds,
@@ -303,3 +280,19 @@ class MeanAverageRecall(MeanAveragePrecisionMeanAverageRecall):
 
     def forward(self, *args, **kwargs):
         return super().forward(*args, return_metrics="mar_only", **kwargs)
+
+# %% ../../nbs/metrics/01_detection.ipynb 16
+class AveragePrecision(MeanAveragePrecision):
+    """Calculate the COCO average precision (AP) for object detection."""
+
+    def __init__(self, iou_threshold: float, *args, **kwargs):
+        iou_thresholds = [iou_threshold]
+        super().__init__(iou_thresholds=iou_thresholds, *args, **kwargs)
+
+# %% ../../nbs/metrics/01_detection.ipynb 17
+class AverageRecall(MeanAverageRecall):
+    """Calculate the COCO average recall (AR) for object detection."""
+
+    def __init__(self, iou_threshold: float, *args, **kwargs):
+        iou_thresholds = [iou_threshold]
+        super().__init__(iou_thresholds=iou_thresholds, *args, **kwargs)
