@@ -10,7 +10,7 @@ from typing import Literal
 import torch
 from torchmetrics import Metric
 
-from ..utils.bounding_boxes import get_tps_fps_fns, sort_by_first_column_descending
+from ..utils.bounding_boxes import _IndexedConfidenceScore, get_tps_fps_fns
 
 # %% ../../nbs/metrics/01_detection.ipynb 6
 def mean_average_precision_mean_average_recall(
@@ -50,15 +50,20 @@ def mean_average_precision_mean_average_recall(
         If `return_intermediates` is True, also returns two dictionaries containing the average precision and average
         recall for each class at each IoU threshold.
     """
+    # Some basic tests
+    assert len(pred_bboxes) == len(pred_confidence_scores) == len(target_bboxes) == len(target_classes), (
+        f"All input lists must have the same length. Got lengths: {len(pred_bboxes)}, {len(pred_confidence_scores)}, "
+        f"{len(target_bboxes)}, {len(target_classes)}."
+    )
+    assert all(
+        pred_confidence_score.ndim == 2 for pred_confidence_score in pred_confidence_scores
+    ), "Each prediction confidence score input list element must be a 2D tensor."
+
     # Set some globaly used variables
     B = len(pred_bboxes)
     num_classes = pred_confidence_scores[0].shape[-1] - 1
 
-    # Some basic tests
-    assert len(pred_bboxes) == len(pred_confidence_scores) == len(target_bboxes) == len(target_classes) == B, (
-        f"All input lists must have the same length. Got lengths: {len(pred_bboxes)}, {len(pred_confidence_scores)}, "
-        f"{len(target_bboxes)}, {len(target_classes)}."
-    )
+    # Continue tests
     assert all(
         pred_bbox.shape[0] == pred_confidence_score.shape[0]
         for pred_bbox, pred_confidence_score in zip(pred_bboxes, pred_confidence_scores)
@@ -73,6 +78,12 @@ def mean_average_precision_mean_average_recall(
         target_bbox.shape[0] == target_class.shape[0]
         for target_bbox, target_class in zip(target_bboxes, target_classes)
     ), "Each target must have the same number of bounding boxes."
+    assert all(
+        target_bbox.shape[1] == 4 or target_bbox.shape[1] == 6 for target_bbox in target_bboxes
+    ), "Target bounding boxes must have shape (NT, 4) or (NT, 6)."
+    assert all(
+        (target_class >= 0).all() and (target_class <= num_classes).all() for target_class in target_classes
+    ), f"Target class labels must be between 0 and {num_classes} inclusive."
 
     # Split everything based on different classes.
     pred_bboxes_by_class = [[] for _ in range(num_classes)]
@@ -101,34 +112,33 @@ def mean_average_precision_mean_average_recall(
             _confidence_scores = []
             for c in range(num_classes):
                 if pred_bboxes_by_class[c][b].numel() > 0:
-                    _confidence_scores.append(
-                        torch.stack(
-                            [
-                                pred_confidences_scores_by_class[c][b],
-                                torch.arange(
-                                    pred_confidences_scores_by_class[c][b].shape[0], device=pred_bboxes[b].device
-                                ),
-                                torch.full_like(pred_confidences_scores_by_class[c][b], c),
-                            ],
-                            dim=-1,
+                    _confidence_scores.extend(
+                        _IndexedConfidenceScore.from_batch(
+                            pred_confidences_scores_by_class[c][b], batch_index=b, class_index=c
                         )
                     )
             if len(_confidence_scores) == 0:
                 continue
-            _confidence_scores = torch.cat(_confidence_scores, dim=0)
-            # (NC, 3)
 
-            if _confidence_scores.shape[0] > max_bboxes_per_image:
-                _confidence_scores = sort_by_first_column_descending(_confidence_scores)
+            if len(_confidence_scores) > max_bboxes_per_image:
+                _confidence_scores = sorted(_confidence_scores, reverse=True)
                 topk_confidences = _confidence_scores[:max_bboxes_per_image]
-                # (max_bboxes_per_image, 3)
                 for c in range(num_classes):
-                    class_mask = topk_confidences[:, 2] == c
-                    # (max_bboxes_per_image,)
-                    offsets_to_keep = topk_confidences[class_mask][:, 1].long()
-                    pred_bboxes_by_class[c][b] = pred_bboxes_by_class[c][b][offsets_to_keep]
+                    topk_confidences_with_class = [x for x in topk_confidences if x.class_index == c]
+
+                    pred_bboxes_by_class[c][b] = torch.stack(
+                        [pred_bboxes_by_class[c][b][x.offset_index] for x in topk_confidences_with_class],
+                        dim=0,
+                        dtype=pred_bboxes_by_class[c][b].dtype,
+                        device=pred_bboxes_by_class[c][b].device,
+                    )
                     # (NP', 4) or (NP', 6)
-                    pred_confidences_scores_by_class[c][b] = pred_confidences_scores_by_class[c][b][offsets_to_keep]
+                    pred_confidences_scores_by_class[c][b] = torch.stack(
+                        [x.score for x in topk_confidences_with_class],
+                        dim=0,
+                        dtype=pred_confidences_scores_by_class[c][b].dtype,
+                        device=pred_confidences_scores_by_class[c][b].device,
+                    )
                     # (NP',)
 
     # For each IOU threshold, calculate average precision and average recall
@@ -152,7 +162,7 @@ def mean_average_precision_mean_average_recall(
                 iou_threshold=iou_threshold,
                 matching_method="coco",
                 min_confidence_threshold=min_confidence_threshold,
-                max_bboxes_per_image=max_bboxes_per_image,
+                max_bboxes_per_image=None,  # As this has already been done across classes
                 return_intermediate_counts=True,
             )
             intermediate_counts = torch.tensor(intermediate_counts, device=pred_bboxes[0].device, dtype=torch.float32)
@@ -212,6 +222,8 @@ class _MeanAveragePrecisionMeanAverageRecallBase(Metric):
         average_precision_num_points: int = 101,
         min_confidence_threshold: float = 0.0,
         max_bboxes_per_image: int | None = 100,
+        *args,
+        **kwargs
     ):
         """Initialize the MeanAveragePrecisionMeanAverageRecall metric.
 
@@ -223,7 +235,7 @@ class _MeanAveragePrecisionMeanAverageRecallBase(Metric):
             max_bboxes_per_image: Maximum number of bounding boxes to consider per image. If more are present, only the
                 top `max_bboxes_per_image` boxes based on confidence scores are considered.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.iou_thresholds = iou_thresholds
         self.average_precision_num_points = average_precision_num_points
