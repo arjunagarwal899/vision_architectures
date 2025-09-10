@@ -975,7 +975,7 @@ class DETR3D(nn.Module, PyTorchModelHubMixin):
         union_vol = pred_vol + target_vol - inter_vol
 
         # IOU
-        ious = inter_vol / union_vol.clamp(min=1e-7)
+        ious = inter_vol / union_vol.clamp(min=1e-5)
 
         return ious
 

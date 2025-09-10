@@ -196,7 +196,7 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
         relative_coords_table = get_coords_grid(relative_limits).float()
         for i in range(3):
             relative_coords_table[i] = (relative_coords_table[i] - (grid_size[0] - 1)) / (
-                grid_size[0] - 1 + 1e-8  # small value added to ensure there is no NaN when window size is 1
+                grid_size[0] - 1 + 1e-5  # small value added to ensure there is no NaN when window size is 1
             )
         relative_coords_table = rearrange(
             relative_coords_table,

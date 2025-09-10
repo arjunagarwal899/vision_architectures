@@ -188,7 +188,7 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
         target: torch.Tensor,
         reduction="mean",
         ignore_index: int = -100,
-        smooth: float = 1e-8,
+        smooth: float = 1e-5,
     ):
         """
         Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
@@ -222,7 +222,7 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
         target: torch.Tensor,
         reduction="mean",
         ignore_index: int = -100,
-        smooth: float = 1e-8,
+        smooth: float = 1e-5,
     ):
         """
         Both prediction and target should be of the form (batch_size, num_classes, depth, width, height).
@@ -255,7 +255,7 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
         weight_dsc=1.0,
         weight_ce=1.0,
         ignore_index=-100,
-        smooth: float = 1e-8,
+        smooth: float = 1e-5,
         return_components=False,
     ):
         """

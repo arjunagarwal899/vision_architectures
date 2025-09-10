@@ -167,8 +167,12 @@ def mean_average_precision_mean_average_recall(
             )
             intermediate_counts = torch.tensor(intermediate_counts, device=pred_bboxes[0].device, dtype=torch.float32)
             # (NC, 3) where the first column is TP, second is FP and third is FN for each prediction considered
-            precisions = intermediate_counts[:, 0] / (intermediate_counts[:, 0] + intermediate_counts[:, 1] + 1e-8)
-            recalls = intermediate_counts[:, 0] / (intermediate_counts[:, 0] + intermediate_counts[:, 2] + 1e-8)
+            precisions = (intermediate_counts[:, 0] + 1e-5) / (
+                intermediate_counts[:, 0] + intermediate_counts[:, 1] + 1e-5
+            )
+            recalls = (intermediate_counts[:, 0] + 1e-5) / (
+                intermediate_counts[:, 0] + intermediate_counts[:, 2] + 1e-5
+            )
             # (NC,) each
 
             # Precision envelope: P_interp(r) = max_{r' >= r} P(r')

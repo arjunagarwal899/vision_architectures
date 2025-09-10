@@ -227,7 +227,7 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
 
         # Normalize EMA vectors by cluster size
         n = self.cluster_size.sum()
-        cluster_size = (self.cluster_size + 1e-6) / (n + self.config.num_vectors * 1e-6) * n
+        cluster_size = (self.cluster_size + 1e-5) / (n + self.config.num_vectors * 1e-5) * n
 
         # Normalize codebook vectors using Laplace smoothing
         normalized_vectors = self.ema_vectors / cluster_size.unsqueeze(1)
