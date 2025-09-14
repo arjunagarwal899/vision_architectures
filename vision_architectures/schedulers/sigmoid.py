@@ -57,6 +57,17 @@ class SigmoidScheduler:
         scaled_y = self.min_y + y * (self.max_y - self.min_y)
         return scaled_y
 
+    def __repr__(self):
+        return (
+            "SigmoidScheduler(\n"
+            f"  min_y={self.min_y}\n"
+            f"  max_y={self.max_y}\n"
+            f"  min_x={self.min_x}\n"
+            f"  max_x={self.max_x}\n"
+            f"  num_steps={self.num_steps}\n"
+            ")"
+        )
+
 # %% ../../nbs/schedulers/01_sigmoid.ipynb 7
 class SigmoidLR(LRScheduler):
     def __init__(

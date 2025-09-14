@@ -58,6 +58,19 @@ class SineScheduler:
             raise ValueError("Call set_wavelength first")
         self.x = self.x + 1
 
+    def __repr__(self):
+        _repr = (
+            "SineScheduler(\n"
+            f"  start_value={self.start_value},\n"
+            f"  max_value={self.max_value},\n"
+            f"  decay={self.decay},\n"
+        )
+        if self.wavelength is not None:
+            _repr += f"  wavelength={self.wavelength}\n"
+        _repr += ")"
+
+        return _repr
+
 # %% ../../nbs/schedulers/03_cyclic.ipynb 9
 class SineLR(LRScheduler):
     def __init__(self, optimizer, start_lr, max_lr, wavelength, decay, last_epoch=-1, verbose="deprecated"):
@@ -196,6 +209,20 @@ class CyclicAnnealingScheduler:
         if self.x >= self.num_annealing_steps[self.phase.name.lower()]:
             self.x = 0
             self.set_next_phase()
+
+    def __repr__(self):
+        _repr = (
+            "CyclicAnnealingScheduler(\n"
+            f"  start_value={self.start_value},\n"
+            f"  max_value={self.max_value},\n"
+            f"  up_annealing_steps={self.num_annealing_steps['up']},\n"
+            f"  top_fixed_steps={self.num_annealing_steps['top']},\n"
+            f"  down_annealing_steps={self.num_annealing_steps['down']},\n"
+            f"  bottom_fixed_steps={self.num_annealing_steps['bottom']},\n"
+            ")"
+        )
+
+        return _repr
 
 # %% ../../nbs/schedulers/03_cyclic.ipynb 16
 class CyclicAnnealingLR(LRScheduler):

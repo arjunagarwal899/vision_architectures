@@ -21,6 +21,7 @@ def title_from_module_name(module_name):
         "cyclic": "Cyclic",
         "detection": "Detection",
         "detr_3d": "DETR3D",
+        "ema": "Exponential Moving Average (EMA)",
         "embeddings": "Embeddings",
         "fpn_2d": "FPN2D",
         "fpn_3d": "FPN3D",
