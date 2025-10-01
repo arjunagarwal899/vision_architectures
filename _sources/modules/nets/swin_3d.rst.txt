@@ -1,0 +1,7 @@
+Swin3D
+======
+
+.. automodule:: vision_architectures.nets.swin_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

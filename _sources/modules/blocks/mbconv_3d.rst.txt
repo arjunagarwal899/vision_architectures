@@ -1,0 +1,7 @@
+MBConv3D
+========
+
+.. automodule:: vision_architectures.blocks.mbconv_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

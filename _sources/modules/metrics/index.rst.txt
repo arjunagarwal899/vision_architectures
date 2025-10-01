@@ -1,0 +1,9 @@
+Metrics
+=======
+
+This section documents the metrics components.
+
+.. toctree::
+   :maxdepth: 1
+
+   detection

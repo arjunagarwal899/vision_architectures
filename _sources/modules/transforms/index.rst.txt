@@ -1,0 +1,12 @@
+Transforms
+==========
+
+This section documents the transforms components.
+
+.. toctree::
+   :maxdepth: 1
+
+   croppad
+   clipping
+   spatial
+   resize

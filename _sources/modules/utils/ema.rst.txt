@@ -1,0 +1,7 @@
+Exponential Moving Average (EMA)
+================================
+
+.. automodule:: vision_architectures.utils.ema
+   :members:
+   :undoc-members:
+   :show-inheritance:
