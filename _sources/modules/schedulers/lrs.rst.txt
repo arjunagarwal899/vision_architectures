@@ -1,0 +1,7 @@
+Learning Rate Schedulers
+========================
+
+.. automodule:: vision_architectures.schedulers.lrs
+   :members:
+   :undoc-members:
+   :show-inheritance:
