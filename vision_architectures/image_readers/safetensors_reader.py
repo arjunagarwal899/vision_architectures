@@ -14,12 +14,21 @@ from safetensors import safe_open
 class SafetensorsReader(ImageReader):
     def __init__(
         self,
-        image_key: str = "images",
-        spacing_key: str | None = "spacing",
+        image_key: str,
+        spacing_key: str | None = None,
         other_keys: set[str] | None = None,
         add_channel_dim: bool = True,
         dtype=torch.float32,
     ):
+        """Reader for Safetensors image files.
+
+        Args:
+            iamge_key: Key to access the image tensor in the safetensors file.
+            spacing_key: Key to access the spacing tensor in the safetensors file. Leave blank if not applicable.
+            other_keys: Set of keys to access other tensors in the safetensors file. Leave blank if not applicable.
+            add_channel_dim: Whether to add a channel dimension to the image tensor.
+            dtype: Desired data type for the image tensor.
+        """
         self.image_key = image_key
         self.spacing_key = spacing_key
         self.other_keys = other_keys
@@ -27,9 +36,11 @@ class SafetensorsReader(ImageReader):
         self.dtype = dtype
 
     def verify_suffix(self, filename):
+        """Ensure the file has a supported safetensors suffix."""
         return is_supported_format(filename, ["safetensors"])
 
     def read(self, filepath) -> dict[str, torch.Tensor | Any]:
+        """Read image data from a safetensors file."""
         if isinstance(filepath, (list, tuple)):
             return [self.read(fp) for fp in filepath]
 
@@ -41,6 +52,7 @@ class SafetensorsReader(ImageReader):
         return {"image": image, "spacing": spacing, "others": others}
 
     def get_data(self, datapoint):
+        """Extract and process image data from the datapoint."""
         datapoint = datapoint[0]
 
         image = datapoint["image"].to(self.dtype)
@@ -56,6 +68,7 @@ class SafetensorsReader(ImageReader):
 
     @staticmethod
     def _spacing_to_affine(spacing):
+        """Convert spacing tensor to affine matrix according to Metatensor notation."""
         if spacing is None:
             spacing = torch.ones(3)
         return torch.diag(torch.cat([spacing, torch.zeros(1)]))

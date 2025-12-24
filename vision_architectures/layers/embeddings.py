@@ -18,6 +18,7 @@ from einops import rearrange, repeat
 from torch import nn
 
 from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
+from ..docstrings import populate_docstring
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
@@ -25,10 +26,11 @@ from ..utils.rearrange import rearrange_channels
 # %% ../../nbs/layers/02_embeddings.ipynb 4
 class RelativePositionEmbeddings3DConfig(CustomBaseModel):
     num_heads: int = Field(..., description="Number of query attention heads")
-    grid_size: tuple[int, int, int]
+    grid_size: tuple[int, int, int] = Field(..., description="Size of entire patch matrix.")
 
     @property
     def num_patches(self) -> int:
+        """Number of patches."""
         return np.prod(self.grid_size)
 
     @model_validator(mode="before")
@@ -48,12 +50,13 @@ class RelativePositionEmbeddings3DConfig(CustomBaseModel):
 
 
 class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
-    dim: int | None = None
-    grid_size: tuple[int, int, int] | None = None
-    learnable: bool = False
+    dim: int | None = Field(None, description="Dimension of the position embeddings")
+    grid_size: tuple[int, int, int] | None = Field(None, description="Size of entire patch matrix.")
+    learnable: bool = Field(False, description="Whether the position embeddings are learnable.")
 
     @property
     def num_patches(self) -> int:
+        """Number of patches."""
         return np.prod(self.grid_size)
 
     @model_validator(mode="before")
@@ -76,9 +79,9 @@ class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
 
 
 class AbsolutePositionEmbeddings1DConfig(CustomBaseModel):
-    dim: int | None = None
-    length: int | None = None
-    learnable: bool = False
+    dim: int | None = Field(None, description="Dimension of the position embeddings")
+    length: int | None = Field(None, description="Length of the sequence.")
+    learnable: bool = Field(False, description="Whether the position embeddings are learnable.")
 
     @model_validator(mode="after")
     def validate(self):
@@ -89,10 +92,10 @@ class AbsolutePositionEmbeddings1DConfig(CustomBaseModel):
 
 
 class PatchEmbeddings3DConfig(CNNBlockConfig):
-    patch_size: tuple[int, int, int]
-    in_channels: int
-    dim: int
-    norm_layer: str = "layernorm"
+    patch_size: tuple[int, int, int] = Field(..., description="Size of the patches to extract from the input.")
+    in_channels: int = Field(..., description="Number of input channels.")
+    dim: int = Field(..., description="Dimension of the embeddings.")
+    norm_layer: str = Field("layernorm", description="Normalization layer to use.")
 
     out_channels: None = None
     kernel_size: None = None
@@ -106,6 +109,14 @@ class PatchEmbeddings3DConfig(CNNBlockConfig):
 
 # %% ../../nbs/layers/02_embeddings.ipynb 7
 def get_coords_grid(grid_size: tuple[int, int, int]) -> torch.Tensor:
+    """Get a coordinate grid of shape (3, d, h, w) for a given grid size.
+
+    Args:
+        grid_size: Size of the grid (d, h, w).
+
+    Returns:
+        A tensor of shape (3, d, h, w) containing the coordinates.
+    """
     d, h, w = grid_size
 
     grid_d = torch.arange(d, dtype=torch.int32)
@@ -119,8 +130,19 @@ def get_coords_grid(grid_size: tuple[int, int, int]) -> torch.Tensor:
     return grid
 
 # %% ../../nbs/layers/02_embeddings.ipynb 8
+@populate_docstring
 class RelativePositionEmbeddings3D(nn.Module):
+    """Learnable 3D Relative Position Embeddings. This can be passed directly to the attention layers.
+    {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: RelativePositionEmbeddings3DConfig = {}, **kwargs):
+        """Initialize RelativePositionEmbeddings3D.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = RelativePositionEmbeddings3DConfig.model_validate(config | kwargs)
@@ -155,7 +177,12 @@ class RelativePositionEmbeddings3D(nn.Module):
         self.relative_position_index = relative_position_index.flatten()
         # (num_patches, num_patches)
 
-    def forward(self):
+    def forward(self) -> torch.Tensor:
+        """Get relative position embeddings as specified by the config.
+
+        Returns:
+            A tensor of shape (1, num_heads, num_patches, num_patches) containing the relative position embeddings.
+        """
         relative_position_embeddings = self.relative_position_bias_table[:, self.relative_position_index].contiguous()
         # (num_heads, num_patches, num_patches)
         relative_position_embeddings = relative_position_embeddings.reshape(
@@ -170,8 +197,20 @@ class RelativePositionEmbeddings3D(nn.Module):
         return relative_position_embeddings
 
 # %% ../../nbs/layers/02_embeddings.ipynb 10
+@populate_docstring
 class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
+    """3D Relative Position Embeddings obtained from a meta network (inspired by SwinV2). This can be passed directly
+    to the attention layers. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: RelativePositionEmbeddings3DConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize RelativePositionEmbeddings3DMetaNetwork.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = RelativePositionEmbeddings3DConfig.model_validate(config | kwargs)
@@ -230,7 +269,12 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
-    def get_relative_position_embeddings_table(self):
+    def get_relative_position_embeddings_table(self) -> torch.Tensor:
+        """Get the relative position embeddings table from the meta network.
+
+        Returns:
+            A tensor of shape (num_patches, num_heads) containing the relative position embeddings table.
+        """
         # (num_patches_z, num_patches_y, num_patches_x, 3)
         relative_position_embeddings_table: torch.Tensor = self.cpb_mlp(self.relative_coords_table)
         # (num_patches_z, num_patches_y, num_patches_x, num_heads)
@@ -238,7 +282,12 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
         # (num_patches, num_heads)
         return relative_position_embeddings_table
 
-    def forward(self):
+    def forward(self) -> torch.Tensor:
+        """Get relative position embeddings as specified by the config.
+
+        Returns:
+            A tensor of shape (num_heads, num_patches, num_patches) containing the relative position embeddings.
+        """
         relative_position_embeddings_table = self.checkpointing_level1(self.get_relative_position_embeddings_table)
         # (num_patches, num_heads)
         relative_position_embeddings = relative_position_embeddings_table[self.relative_position_index]
@@ -259,13 +308,27 @@ class RelativePositionEmbeddings3DMetaNetwork(nn.Module):
 RelativePositionEmbeddings = Union[RelativePositionEmbeddings3D, RelativePositionEmbeddings3DMetaNetwork]
 
 # %% ../../nbs/layers/02_embeddings.ipynb 13
+@populate_docstring
 def get_sinusoidal_embeddings_3d(
     dim: int,
     grid_size: tuple[int, int, int],
     spacing: tuple[float, float, float] = (1.0, 1.0, 1.0),
-    crop_offset: tuple[int, int, int] = None,  # Used if the embeddings required are of a crop of a larger image
+    crop_offset: tuple[int, int, int] = None,
     channels_first: bool = True,
 ) -> torch.Tensor:
+    """Get 3D sinusoidal position embeddings.
+
+    Args:
+        dim: Embedding dimension. Must be divisible by 6.
+        grid_size: Size of the patch grid (d, h, w).
+        spacing: Spacing between patches in each dimension. Useful for medical images.
+        crop_offset: Used if the embeddings required are of a crop of a larger image. If provided, the grid coordinates
+            will be offset accordingly.
+        channels_first: {CHANNELS_FIRST_DOC}
+
+    Returns:
+        {OUTPUT_3D_DOC}
+    """
     if dim % 6 != 0:
         raise ValueError("dim must be divisible by 6")
 
@@ -320,8 +383,19 @@ def get_sinusoidal_embeddings_3d(
 get_absolute_position_embeddings_3d = get_sinusoidal_embeddings_3d
 
 # %% ../../nbs/layers/02_embeddings.ipynb 14
+@populate_docstring
 class AbsolutePositionEmbeddings3D(nn.Module):
+    """3D Absolute Position Embeddings. May or may not learnable. These have to be applied on the input manually and
+    cannot be passed to attention layers directly. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: AbsolutePositionEmbeddings3DConfig = {}, **kwargs):
+        """Initialize AbsolutePositionEmbeddings3D.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = AbsolutePositionEmbeddings3DConfig.model_validate(config | kwargs)
@@ -337,14 +411,29 @@ class AbsolutePositionEmbeddings3D(nn.Module):
                 get_absolute_position_embeddings_3d(dim, grid_size), requires_grad=learnable
             )
 
+    @populate_docstring
     def forward(
         self,
         x: torch.Tensor,
         embedding_type: Literal["add", "concat"] = "add",
         spacings: torch.Tensor = None,
         channels_first: bool = True,
-        crop_offsets: torch.Tensor | None = None,  # Used if the embeddings required are of a crop of a larger image
-    ):
+        crop_offsets: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Apply absolute position embeddings to the input tensor.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            embedding_type: Type of embedding to apply. 'add' to add the position embeddings to the input,
+                'concat' to concatenate them along the channel dimension.
+            spacings: {SPACINGS_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+            crop_offsets: Used if the embeddings required are of a crop of a larger image. If provided, the grid
+                coordinates will be offset accordingly.
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         assert x.ndim == 5, "Input tensor must be of shape (b, [d], z, y, x, [d])"
         # Check if sufficient information has been provided
         if self.position_embeddings is None:
@@ -416,6 +505,15 @@ class AbsolutePositionEmbeddings3D(nn.Module):
 
 # %% ../../nbs/layers/02_embeddings.ipynb 17
 def get_specific_sinusoidal_embeddings_1d(dim: int, indices: torch.Tensor) -> torch.Tensor:
+    """Get 1D sinusoidal position embeddings for specific indices.
+
+    Args:
+        dim: Embedding dimension. Must be divisible by 2.
+        indices: Indices for which to get the embeddings. Shape: (length,).
+
+    Returns:
+        A tensor of shape (1, length, dim) containing the position embeddings.
+    """
     if dim % 2 != 0:
         raise ValueError("dim must be divisible by 2")
 
@@ -446,6 +544,16 @@ def get_specific_sinusoidal_embeddings_1d(dim: int, indices: torch.Tensor) -> to
 
 
 def get_sinusoidal_embeddings_1d(dim: int, length: int, device=torch.device("cpu")) -> torch.Tensor:
+    """Get 1D sinusoidal position embeddings.
+
+    Args:
+        dim: Embedding dimension. Must be divisible by 2.
+        length: Length of the sequence.
+        device: Device to create the embeddings on.
+
+    Returns:
+        A tensor of shape (1, length, dim) containing the position embeddings.
+    """
     # Create position / timestep indices
     indices = torch.arange(length, dtype=torch.int32, device=device)
     # (length,)
@@ -458,8 +566,19 @@ get_all_timestep_embeddings_1d = get_sinusoidal_embeddings_1d
 get_absolute_position_embeddings_1d = get_sinusoidal_embeddings_1d
 
 # %% ../../nbs/layers/02_embeddings.ipynb 19
+@populate_docstring
 class AbsolutePositionEmbeddings1D(nn.Module):
+    """1D Absolute Position Embeddings. May or may not learnable. These have to be applied on the input manually and
+    cannot be passed to attention layers directly. {CLASS_DESCRIPTION_1D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: AbsolutePositionEmbeddings1DConfig = {}, **kwargs):
+        """Initialize AbsolutePositionEmbeddings1D.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = AbsolutePositionEmbeddings1DConfig.model_validate(config | kwargs)
@@ -475,11 +594,22 @@ class AbsolutePositionEmbeddings1D(nn.Module):
                 get_absolute_position_embeddings_1d(dim, length), requires_grad=learnable
             )
 
+    @populate_docstring
     def forward(
         self,
         x: torch.Tensor,
         embedding_type: Literal["add", "concat"] = "add",
-    ):
+    ) -> torch.Tensor:
+        """Apply absolute position embeddings to the input tensor.
+
+        Args:
+            x: {INPUT_1D_DOC}
+            embedding_type: Type of embedding to apply. 'add' to add the position embeddings to the input,
+                'concat' to concatenate them along the last dimension.
+
+        Returns:
+            {OUTPUT_1D_DOC}
+        """
         assert x.ndim == 3, "Input tensor must be of shape (b, length, dim)"
         # Check if sufficient information has been provided
         if self.position_embeddings is None:
@@ -518,8 +648,19 @@ class AbsolutePositionEmbeddings1D(nn.Module):
         return x
 
 # %% ../../nbs/layers/02_embeddings.ipynb 22
+@populate_docstring
 class PatchEmbeddings3D(CNNBlock3D):
+    """3D Patch Embeddings using a convolutional layer. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: PatchEmbeddings3DConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize PatchEmbeddings3D.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         self.config = PatchEmbeddings3DConfig.model_validate(config | kwargs)
         config = self.config.model_dump() | {
             "kernel_size": self.config.get("patch_size"),

@@ -4,30 +4,38 @@
 __all__ = ['Attention1DConfig', 'Attention3DConfig', 'Attention1D', 'Attention3D']
 
 # %% ../../nbs/layers/01_attention.ipynb 2
-from functools import partial
+from functools import partial, wraps
 
 import torch
 import torch.nn.functional as F
 from einops import rearrange
 from torch import nn
 
+from ..docstrings import populate_docstring
 from .embeddings import RelativePositionEmbeddings
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/layers/01_attention.ipynb 4
 class Attention1DConfig(CustomBaseModel):
-    dim: int | tuple[int, int]
+    dim: int | tuple[int, int] = Field(
+        ...,
+        description=(
+            "Dimension of the input features. If tuple, (dim_qk, dim_v). "
+            "Otherwise it is assumed to be dim of both qk and v.",
+        ),
+    )
     num_heads: int = Field(..., description="Number of query heads")
-    ratio_q_to_kv_heads: int = 1
-    logit_scale_learnable: bool = False
-    attn_drop_prob: float = 0.0
-    proj_drop_prob: float = 0.0
+    ratio_q_to_kv_heads: int = Field(1, description="Ratio of query heads to key/value heads. Useful for MQA/GQA.")
+    logit_scale_learnable: bool = Field(False, description="Whether the logit scale is learnable.")
+    attn_drop_prob: float = Field(0.0, description="Dropout probability for attention weights.")
+    proj_drop_prob: float = Field(0.0, description="Dropout probability for the projection layer.")
     max_attention_batch_size: int = Field(
         -1,
         description=(
             "Runs attention by splitting the inputs into chunks of this size. 0 means no chunking. "
-            "Useful for large inputs during inference."
+            "Useful for large inputs during inference. (This happens along batch dimension)."
         ),
     )
 
@@ -77,11 +85,13 @@ class Attention3DConfig(Attention1DConfig):
     pass
 
 # %% ../../nbs/layers/01_attention.ipynb 6
+@populate_docstring
 class Attention1D(nn.Module):
-    """Performs attention (MHA, GQA, and MQA) on 1D sequences"""
+    """Performs attention (MHA, GQA, and MQA) on 1D sequences. {CLASS_DESCRIPTION_1D_DOC}"""
 
     _warn_relative_position_bias: bool = True
 
+    @populate_docstring
     def __init__(
         self,
         config: Attention1DConfig = {},
@@ -90,6 +100,16 @@ class Attention1D(nn.Module):
         checkpointing_level: int = 0,
         **kwargs
     ):
+        """Initializes the Attention1D module.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            relative_position_bias: Relative position embeddings to be considered during attention. Should be callable.
+            logit_scale: Logit scale to be used for attention. If None, it will be initialized based on per-head
+                dimension.
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = Attention1DConfig.model_validate(config | kwargs)
@@ -128,14 +148,22 @@ class Attention1D(nn.Module):
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
     def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
-        """
-        Parameters: T => number of tokens, b => batch size
-            - query: (b, T_q, dim_qk)
-            - key: (b, T_kv, dim_qk)
-            - value: (b, T_kv, dim_v)
+        """Forward pass of the Attention1D module.
+
+        Terminology: T => number of tokens, b => batch size
+
+        Args:
+            query: Tensor of shape (b, T_q, dim_qk) representing the input to the query matrix.
+            key: Tensor of shape (b, T_kv, dim_qk) representing the input to the key matrix.
+            value: Tensor of shape (b, T_kv, dim_v) representing the input to the value matrix.
+
+        Returns:
+            Tensor of shape (b, T_q, dim_qk) representing output tokens.
         """
 
         def get_final_query_key_value(query, key, value):
+            """Computing query, key, and value tokens after passing to the weight matrices. Useful for activation
+            checkpointing"""
             query = self.W_q(query)
             key = self.W_k(key)
             value = self.W_v(value)
@@ -201,6 +229,7 @@ class Attention1D(nn.Module):
         # (b, T, dim_qk)
 
         def get_final_output(output):
+            """Computing final output after projection. Useful for activation checkpointing"""
             output = self.proj(output)
             output = self.proj_drop(output)
             return output
@@ -210,11 +239,15 @@ class Attention1D(nn.Module):
 
         return output
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/layers/01_attention.ipynb 8
+@populate_docstring
 class Attention3D(Attention1D):
+    """Performs attention (MHA, GQA, and MQA) on 3D sequences. {CLASS_DESCRIPTION_3D_DOC}"""
+
     _warn_relative_position_bias: bool = False
 
     def __init__(
@@ -227,6 +260,7 @@ class Attention3D(Attention1D):
     ):
         super().__init__(config, relative_position_bias, logit_scale, checkpointing_level, **kwargs)
 
+    @populate_docstring
     def _forward(
         self,
         query: torch.Tensor,
@@ -234,34 +268,45 @@ class Attention3D(Attention1D):
         value: torch.Tensor,
         channels_first: bool = True,
     ):
-        """
-        Parameters: z => depth, y => height, x => width, b => batch size
-            - query: (b, [dim_qk], z_q, y_q, x_q, [dim_qk])
-            - key: (b, [dim_qk], z_k, y_k, x_k, [dim_qk])
-            - value: (b, [dim_v], z_k, y_k, x_k, [dim_v])
-            - channels_first: if True, BCDHW expected, else BDHWC
+        """Forward pass of the Attention3D module.
+
+        Terminology: z => depth, y => height, x => width, b => batch size
+
+        Args:
+            query: Tensor of shape (b, [dim_qk], z_q, y_q, x_q, [dim_qk]) representing the input to the query matrix.
+            key: Tensor of shape (b, [dim_qk], z_kv, y_kv, x_kv, [dim_qk]) representing the input to the key matrix.
+            value: Tensor of shape (b, [dim_v], z_kv, y_kv, x_kv, [dim_v]) representing the input to the value matrix.
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            Tensor of shape (b, [dim_qk], z_q, y_q, x_q, [dim_qk]) representing output tokens.
 
         Constraints:
-            - d_q * h_q * w_q = d_k * h_k * w_k
+            z_q * y_q * x_q = z_kv * y_kv * x_kv
         """
-        if channels_first:
-            z_q, y_q, x_q = query.shape[2:5]
-            forward_pattern = "b d z y x -> b (z y x) d"
-            reverse_pattern = "b (z y x) d -> b d z y x"
-        else:
-            z_q, y_q, x_q = query.shape[1:4]
-            forward_pattern = "b z y x d -> b (z y x) d"
-            reverse_pattern = "b (z y x) d -> b z y x d"
+        query = rearrange_channels(query, channels_first, False)
+        key = rearrange_channels(key, channels_first, False)
+        value = rearrange_channels(value, channels_first, False)
+        # Each is now (b, z, y, x, d)
 
-        query = rearrange(query, forward_pattern).contiguous()
-        key = rearrange(key, forward_pattern).contiguous()
-        value = rearrange(value, forward_pattern).contiguous()
+        z_q, y_q, x_q = query.shape[1:4]
+
+        query = rearrange(query, "b z y x d -> b (z y x) d").contiguous()
+        key = rearrange(key, "b z y x d -> b (z y x) d").contiguous()
+        value = rearrange(value, "b z y x d -> b (z y x) d").contiguous()
+        # Each is now (b, T, d)
 
         output = super()._forward(query, key, value)
+        # (b, T, d)
 
-        output = rearrange(output, reverse_pattern, z=z_q, y=y_q, x=x_q).contiguous()
+        output = rearrange(output, "b (z y x) d -> b z y x d", z=z_q, y=y_q, x=x_q).contiguous()
+        # (b, z, y, x, d)
+
+        output = rearrange_channels(output, False, channels_first)
+        # (b, [d], z, y, x, [d])
 
         return output
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
