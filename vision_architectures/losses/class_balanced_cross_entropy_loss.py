@@ -135,7 +135,6 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
         Returns:
             Tensor of shape (num_classes,) containing normalized class weights.
         """
-
         # Get class prevalences
         class_prevalences = self.get_class_prevalences(device)
 

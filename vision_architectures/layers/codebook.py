@@ -10,27 +10,42 @@ from einops import rearrange
 from huggingface_hub import PyTorchModelHubMixin
 from torch import nn
 
-from ..utils.custom_base_model import CustomBaseModel
+from ..docstrings import populate_docstring
+from ..utils.custom_base_model import CustomBaseModel, Field, computed_field
 
 # %% ../../nbs/layers/03_codebook.ipynb 4
 class CodebookConfig(CustomBaseModel):
-    num_vectors: int
-    dim: int
+    num_vectors: int = Field(..., description="Number of vectors in the codebook")
+    dim: int = Field(..., description="Dimension of each vector in the codebook")
 
-    revive_dead_vectors_after_n_steps: int = 100  # 0 means never revive
+    revive_dead_vectors_after_n_steps: int = Field(
+        100, description="Number of steps after which a vector is declared dead and is revived (0 means never revive)"
+    )
 
-    ema_decay: float | None = 0.99
+    ema_decay: float | None = Field(0.99, description="EMA decay rate for updating codebook vectors")
+
+    @computed_field(description="Whether to use EMA for updating codebook vectors")
+    @property
+    def use_ema(self) -> bool:
+        return self.ema_decay is not None and self.ema_decay > 0.0
 
 # %% ../../nbs/layers/03_codebook.ipynb 6
 class Codebook(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, config: CodebookConfig = {}, use_ema: bool = True, **kwargs):
+    """Codebook that can be used for vector quantization. This implementation maintains the vectors in distributed
+    settings. It also supports exponential moving average (EMA) updates of the codebook vectors as well as reviving
+    dead vectors."""
+
+    @populate_docstring
+    def __init__(self, config: CodebookConfig = {}, **kwargs):
+        """Initialize the Codebook.
+
+        Args:
+            config: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = CodebookConfig.model_validate(config | kwargs)
-
-        self.use_ema = use_ema
-        if self.use_ema:
-            assert self.config.ema_decay is not None, "ema_decay must be provided if use_ema is True"
 
         num_vectors = self.config.num_vectors
         dim = self.config.dim
@@ -51,7 +66,7 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         self.generator = torch.Generator()
         self.generator_initalized = False
 
-        if self.use_ema:
+        if self.config.use_ema:
             self.decay = self.config.ema_decay
 
             # EMA cluster size tracking
@@ -65,7 +80,15 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
             self.ema_vectors: torch.Tensor
 
     @torch.no_grad()
-    def calculate_perplexity(self, indices: torch.Tensor):
+    def calculate_perplexity(self, indices: torch.Tensor) -> torch.Tensor:
+        """Calculate perplexity of the codebook usage.
+
+        Args:
+            indices: Indices of the codebook vectors chosen for each input vector.
+
+        Returns:
+            Perplexity of the codebook usage.
+        """
         # Get mapping of which BS vector chose which codebook vector
         encodings = self._one_hot_indices(indices)
         # Calculate average number of times each codebook vector was chosen
@@ -74,17 +97,38 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
         return perplexity
 
-    def calculate_losses(self, x: torch.Tensor, z: torch.Tensor):
+    def calculate_losses(self, x: torch.Tensor, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Calculate codebook and commitment losses.
+
+        Args:
+            x: Input vectors. Should be of shape (BS, C) where BS is a combination of batch and spatial/temporal
+                dimensions.
+            z: Quantized vectors. Should be of shape (BS, C).
+
+        Returns:
+            codebook_loss: Codebook loss.
+            commitment_loss: Commitment loss.
+        """
         commitment_loss = torch.mean((z - x.detach()) ** 2)
-        if self.use_ema:
+        if self.config.use_ema:
             codebook_loss = torch.zeros_like(commitment_loss)
         else:
             codebook_loss = torch.mean((z.detach() - x) ** 2)
         return codebook_loss, commitment_loss
 
-    def quantize(self, x: torch.Tensor):
-        # x: (BS, C)  where BS is a combination of batch and spatial/temporal dimensions
+    def quantize(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Quantize the input vectors using the codebook and return along with losses and perplexity.
 
+        Args:
+            x: Input vectors to be quantized. Should be of shape (BS, C) where BS is a combination of batch and
+                spatial/temporal dimensions.
+
+        Returns:
+            z: Quantized vectors of shape (BS, C).
+            codebook_loss: Codebook loss.
+            commitment_loss: Commitment loss.
+            perplexity: Perplexity of the codebook usage.
+        """
         # Compute distances
         distances = torch.cdist(x, self.vectors.weight)
         # (BS, num_vectors)
@@ -98,7 +142,7 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         # (BS, C)
 
         # Perform EMA
-        if self.training and self.use_ema:
+        if self.training and self.config.use_ema:
             self._perform_ema(x, indices)
 
         # Loss calculations
@@ -118,6 +162,8 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         return z, codebook_loss, commitment_loss, perplexity
 
     def revive_dead_vectors(self):
+        """Revive dead vectors in the codebook by replacing them with noised commonly used vectors."""
+
         assert self.training, "revive_dead_vectors should only be called during training"
         revive_vector_mask = self.stale_counter >= self.config.revive_dead_vectors_after_n_steps
         if not revive_vector_mask.any():
@@ -148,12 +194,28 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         self.usage_counter[revive_vector_mask] = 0
         self.stale_counter[revive_vector_mask] = 0
 
-        if self.use_ema:
+        if self.config.use_ema:
             # Also update the EMA buffers for these vectors
             self.ema_vectors.data[revive_vector_mask] = noised_selected_vectors
             self.cluster_size.data[revive_vector_mask] = 0
 
-    def forward(self, x: torch.Tensor, channels_first: bool = None):
+    def forward(
+        self, x: torch.Tensor, channels_first: bool = None
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Quantize the input tensor using the codebook. Update the codebook vectors if using EMA. Revive dead vectors
+        if applicable..
+
+        Args:
+            x: Input tensor to be quantized. Should be of shape (B, ..., C) if channels_first is False, (B, C, ...) if
+                channels_first is True or None with ndim != 3, else (B, T, C) if channels_first is None and ndim == 3.
+            channels_first: Whether the input tensor has channels as the first dimension after batch dimension.
+
+        Returns:
+            z: Quantized tensor of the same shape as input.
+            codebook_loss: Codebook loss.
+            commitment_loss: Commitment loss.
+            perplexity: Perplexity of the codebook usage.
+        """
         #  If channels_first is None: x: (B, T, C) if ndim == 3, else (B, C, ...)
         #  If channels_first is True: x: (B, C, ...)
         #  If channels_first is False: x: (B, ..., C)
@@ -179,13 +241,13 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
             backward_pattern = "(b s) c -> b s c"
 
         # Flatten input
-        x = rearrange(x, forward_pattern)
+        x = rearrange(x, forward_pattern).contiguous()
         # (BS, C)
 
         z, codebook_loss, commitment_loss, perplexity = self.quantize(x)
 
         # Return back to original shape
-        z = rearrange(z, backward_pattern, b=B).reshape(shape)
+        z = rearrange(z, backward_pattern, b=B).contiguous().reshape(shape)
         # (x.shape)
 
         if self.training and self.config.revive_dead_vectors_after_n_steps > 0:
@@ -194,6 +256,7 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         return z, codebook_loss, commitment_loss, perplexity
 
     def _initialize_generator(self):
+        """Initialize the random number generator to have the same seed across all devices."""
         assert not self.generator_initalized, "Generator has already been initialized"
         seed = torch.randint(0, 2**32, (1,))
         if dist.is_initialized():
@@ -202,6 +265,13 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         self.generator_initalized = True
 
     def _perform_ema(self, x: torch.Tensor, indices: torch.Tensor):
+        """Perform EMA update of the codebook vectors.
+
+        Args:
+            x: Input vectors. Should be of shape (BS, C) where BS is a combination of batch and spatial/temporal
+                dimensions.
+            indices: Indices of the codebook vectors chosen for each input vector. Should be of shape (BS,).
+        """
         # Create one-hot encodings for the selected indices
         encodings = self._one_hot_indices(indices)
 
@@ -233,12 +303,14 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         normalized_vectors = self.ema_vectors / cluster_size.unsqueeze(1)
         self.vectors.weight.data = normalized_vectors
 
-    def _one_hot_indices(self, indices: torch.Tensor):
+    def _one_hot_indices(self, indices: torch.Tensor) -> torch.Tensor:
+        """Convert indices to one-hot encodings."""
         encodings = torch.zeros(indices.shape[0], self.config.num_vectors, device=indices.device)
         encodings.scatter_(1, indices.unsqueeze(1), 1)
         return encodings
 
     def _update_counters(self, indices):
+        """Update usage and stale counters based on the indices used in the current batch."""
         # Create a tensor which counts the number of times a vector has been used
         used_vector_indices, counts = torch.unique(indices, return_counts=True)
         usage_counter_increment = torch.zeros_like(self.usage_counter)
@@ -264,7 +336,7 @@ class Codebook(nn.Module, PyTorchModelHubMixin):
         self.stale_counter += stale_counter_increment
         self.stale_counter[usage_counter_increment > 0] = 0
 
-    def _estimate_codebook_distance(self, max_sample=500):
+    def _estimate_codebook_distance(self, max_sample=500) -> torch.Tensor:
         """Estimate mean distance between codebook vectors"""
         with torch.no_grad():
             vectors_weight = self.vectors.weight

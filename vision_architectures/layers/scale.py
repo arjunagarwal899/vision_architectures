@@ -4,26 +4,36 @@
 __all__ = ['PixelShuffleScaleConfig', 'PixelShuffleUpsample3D', 'PixelShuffleDownsample3D']
 
 # %% ../../nbs/layers/05_scale.ipynb 2
+from functools import wraps
+
 import torch
 from einops import rearrange
 from torch import nn
 
 from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
+from ..docstrings import populate_docstring
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import Field
 from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/layers/05_scale.ipynb 4
 class PixelShuffleScaleConfig(CNNBlockConfig):
-    """
-    Configuration class for scaling using PixelShuffle method.
-    """
-
     scale_factor: int = Field(2, description="Scale factor for upsampling / downsampling.")
 
 # %% ../../nbs/layers/05_scale.ipynb 6
+@populate_docstring
 class PixelShuffleUpsample3D(nn.Module):
+    """Pixel Shuffle Upsampling layer for 3D data. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: PixelShuffleScaleConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initializes the PixelShuffleUpsample3D layer.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: Additional keyword arguments for configuration.
+        """
         super().__init__()
 
         self.config = PixelShuffleScaleConfig.model_validate(config | kwargs)
@@ -34,7 +44,17 @@ class PixelShuffleUpsample3D(nn.Module):
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
+    @populate_docstring
     def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the PixelShuffleUpsample3D layer.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [in_channels], z, y, x, [in_channels])
 
         x = rearrange_channels(x, channels_first, True)
@@ -56,12 +76,24 @@ class PixelShuffleUpsample3D(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level1(self._forward, *args, **kwargs)
 
 # %% ../../nbs/layers/05_scale.ipynb 9
+@populate_docstring
 class PixelShuffleDownsample3D(nn.Module):
+    """Pixel Shuffle Downsampling layer for 3D data. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: PixelShuffleScaleConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initializes the PixelShuffleDownsample3D layer.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: Additional {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = PixelShuffleScaleConfig.model_validate(config | kwargs)
@@ -72,7 +104,17 @@ class PixelShuffleDownsample3D(nn.Module):
 
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
 
+    @populate_docstring
     def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Forward pass of the PixelShuffleDownsample3D layer.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [in_channels], z, y, x, [in_channels])
 
         x = rearrange_channels(x, channels_first, True)
@@ -94,5 +136,6 @@ class PixelShuffleDownsample3D(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level1(self._forward, *args, **kwargs)
