@@ -57,6 +57,8 @@ class AbsolutePositionEmbeddings3DConfig(CustomBaseModel):
     @property
     def num_patches(self) -> int:
         """Number of patches."""
+        if self.grid_size is None:
+            return None
         return np.prod(self.grid_size)
 
     @model_validator(mode="before")
@@ -664,6 +666,8 @@ class PatchEmbeddings3D(CNNBlock3D):
         self.config = PatchEmbeddings3DConfig.model_validate(config | kwargs)
         config = self.config.model_dump() | {
             "kernel_size": self.config.get("patch_size"),
+            "stride": self.config.get("patch_size"),
+            "padding": 0,
             "out_channels": self.config.get("dim"),
         }
         super().__init__(config, checkpointing_level, **kwargs)

@@ -34,7 +34,7 @@ class CNNBlockConfig(CustomBaseModel):
     padding: int | tuple[int, ...] | str = Field(
         "same", description="Padding for the convolution. Can be 'same' or an integer/tuple of integers."
     )
-    stride: int = Field(1, description="Stride for the convolution")
+    stride: int | tuple[int, ...] = Field(1, description="Stride for the convolution")
     conv_kwargs: dict[str, Any] = Field({}, description="Additional keyword arguments for the convolution layer")
     transposed: bool = Field(False, description="Whether to perform ConvTranspose instead of Conv")
 

@@ -4,7 +4,7 @@
 __all__ = ['CHANNELS_FIRST_DOC', 'CONFIG_INSTANCE_DOC', 'CONFIG_KWARGS_DOC', 'CHECKPOINTING_LEVEL_DOC', 'INPUT_1D_DOC',
            'INPUT_3D_DOC', 'OUTPUT_1D_DOC', 'OUTPUT_3D_DOC', 'RELATIVE_POSITION_BIAS_DOC', 'LOGIT_SCALE_DOC',
            'CLASS_DESCRIPTION_1D_DOC', 'CLASS_DESCRIPTION_2D_DOC', 'CLASS_DESCRIPTION_3D_DOC', 'SPACINGS_DOC',
-           'BOUNDING_BOXES_FORMAT_DOC', 'populate_docstring']
+           'RETURN_INTERMEDIATES_DOC', 'BOUNDING_BOXES_FORMAT_DOC', 'populate_docstring']
 
 # %% ../nbs/docstrings.ipynb 1
 CHANNELS_FIRST_DOC = "Whether the inputs are in channels first format `(B, C, ...)` or not `(B, ..., C)`."
@@ -23,10 +23,11 @@ OUTPUT_1D_DOC = "Tensor of shape `(B, T, C)` representing the output features."
 OUTPUT_3D_DOC = "Tensor of shape `(B, C, Z, Y, X)` or `(B, Z, Y, X, C)` representing the output features."
 RELATIVE_POSITION_BIAS_DOC = "Relative position embeddings for the attention mechanism."
 LOGIT_SCALE_DOC = "Optional scaling factor for the attention logits."
-CLASS_DESCRIPTION_1D_DOC = "This class is designed for 1D input eg. language, etc."
+CLASS_DESCRIPTION_1D_DOC = "This class is designed for 1D input eg. language, patchified images, etc."
 CLASS_DESCRIPTION_2D_DOC = "This class is designed for 2D input eg. natural images etc."
 CLASS_DESCRIPTION_3D_DOC = "This class is designed for 3D input eg. medical images, videos etc."
 SPACINGS_DOC = "Spacing information of shape `(B, 3)` of the input features."
+RETURN_INTERMEDIATES_DOC = "Return intermediate outputs such as layer/block/stage outputs."
 
 BOUNDING_BOXES_FORMAT_DOC = (
     "The bounding boxes are in the format (z_center, y_center, x_center, z_size, y_size, x_size), where the centers "

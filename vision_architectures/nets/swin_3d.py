@@ -385,7 +385,7 @@ class Swin3DBlock(nn.Module):
         Args:
             hidden_states: {INPUT_3D_DOC}
             channels_first: {CHANNELS_FIRST_DOC}
-            return_intermediates: Whether to return the intermediate layer outputs.
+            return_intermediates: {RETURN_INTERMEDIATES_DOC}
 
         Returns:
             {OUTPUT_3D_DOC}. If return_intermediates is True, also returns a list of intermediate layer outputs. Note
@@ -598,7 +598,7 @@ class Swin3DStage(nn.Module):
         Args:
             hidden_states: {INPUT_3D_DOC}
             channels_first: {CHANNELS_FIRST_DOC}
-            return_intermediates: Whether to return the intermediate layer outputs.
+            return_intermediates: {RETURN_INTERMEDIATES_DOC}
 
         Returns:
             {OUTPUT_3D_DOC}. If return_intermediates is True, also returns a list of intermediate layer outputs. Note
@@ -664,7 +664,7 @@ class Swin3DEncoderDecoderBase(nn.Module, PyTorchModelHubMixin):
         Args:
             hidden_states: {INPUT_3D_DOC}
             channels_first: {CHANNELS_FIRST_DOC}
-            return_intermediates: Whether to return the intermediate layer outputs.
+            return_intermediates: {RETURN_INTERMEDIATES_DOC}
 
         Returns:
             {OUTPUT_3D_DOC}. If return_intermediates is True, also returns a list of intermediate layer outputs. Note
@@ -766,7 +766,7 @@ class Swin3DEncoderWithPatchEmbeddings(nn.Module, PyTorchModelHubMixin):
             crop_offsets: Used if the embeddings required are of a crop of a larger image. If provided, the grid
                 coordinates will be offset accordingly.
             channels_first: {CHANNELS_FIRST_DOC}
-            return_intermediates: Whether to return the intermediate layer outputs.
+            return_intermediates: {RETURN_INTERMEDIATES_DOC}
 
         Returns:
             {OUTPUT_3D_DOC}. If `return_intermediates` is True, also returns the intermediate stage outputs and layer
