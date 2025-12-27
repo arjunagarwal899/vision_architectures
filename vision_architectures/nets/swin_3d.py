@@ -60,7 +60,7 @@ class Swin3DPatchSplittingConfig(CustomBaseModel):
 
     @computed_field(description="Factor by which the dimension is decreased after splitting")
     @property
-    def out_dim_ratio(self) -> float:
+    def in_dim_ratio(self) -> float:
         return self.in_dim / self.out_dim
 
     @model_validator(mode="before")
@@ -123,6 +123,10 @@ class Swin3DBlockConfig(Attention3DWithMLPConfig):
             return self.dim
         return self.out_dim
 
+    @property
+    def out_dim_ratio(self) -> float:
+        return self.get_out_dim() / self.get_in_dim()
+
     def populate(self):
         """Populate the in_dim and out_dim of patch_splitting and patch_merging based on the stage's in_dim, dim,
         out_dim."""
@@ -181,6 +185,7 @@ class Swin3DEncoderDecoderConfig(CustomBaseModel):
 
     @model_validator(mode="after")
     def validate(self):
+        super().validate()
         self.populate()
 
         # Ensure there is at least one stage
@@ -202,6 +207,9 @@ class Swin3DEncoderDecoderConfig(CustomBaseModel):
             )
 
         return self
+
+    def get_out_dim_ratios(self):
+        return [stage.out_dim_ratio for stage in self.stages]
 
 
 class Swin3DEncoderWithPatchEmbeddingsConfig(Swin3DEncoderDecoderConfig):
