@@ -95,7 +95,7 @@ class SwinV23DLayer(Swin3DLayer):
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__(config, checkpointing_level, **kwargs)
 
@@ -130,7 +130,7 @@ class SwinV23DBlock(Swin3DBlock):
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__(config, checkpointing_level, **kwargs)
 
@@ -224,7 +224,7 @@ class SwinV23DEncoderDecoderBase(Swin3DEncoderDecoderBase, PyTorchModelHubMixin)
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__(config, checkpointing_level, **kwargs)
 
@@ -274,7 +274,7 @@ class SwinV23DEncoderWithPatchEmbeddings(Swin3DEncoderWithPatchEmbeddings, PyTor
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__(config, checkpointing_level, **kwargs)
 

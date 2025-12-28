@@ -254,7 +254,7 @@ class Swin3DLayer(nn.Module):
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__()
 
@@ -367,7 +367,7 @@ class Swin3DBlock(nn.Module):
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__()
 
@@ -643,7 +643,7 @@ class Swin3DEncoderDecoderBase(nn.Module, PyTorchModelHubMixin):
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__()
 
@@ -732,7 +732,7 @@ class Swin3DEncoderWithPatchEmbeddings(nn.Module, PyTorchModelHubMixin):
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__()
 

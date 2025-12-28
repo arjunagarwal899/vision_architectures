@@ -132,7 +132,7 @@ class UNetR3DDecoder(nn.Module, PyTorchModelHubMixin):
         Args:
             config: {CONFIG_INSTANCE_DOC}
             checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
-            kwargs: {CONFIG_KWARGS_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
         """
         super().__init__()
 
