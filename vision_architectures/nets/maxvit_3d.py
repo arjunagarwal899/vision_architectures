@@ -5,12 +5,15 @@ __all__ = ['MaxViT3DStem0Config', 'MaxViT3DBlockConfig', 'MaxViT3DStemConfig', '
            'MaxViT3DBlockAttention', 'MaxViT3DGridAttention', 'MaxViT3DBlock', 'MaxViT3DStem', 'MaxViT3DEncoder']
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 2
+from functools import wraps
+
 import torch
 from torch import nn
 
 from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
 from ..blocks.mbconv_3d import MBConv3D, MBConv3DConfig
 from ..blocks.transformer import Attention3DWithMLPConfig
+from ..docstrings import populate_docstring
 from .swinv2_3d import SwinV23DLayer
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
@@ -18,32 +21,34 @@ from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 4
 class MaxViT3DStem0Config(CNNBlockConfig):
-    in_channels: int
-    kernel_size: int = 3
-    dim: int
-    depth: int = 2
+    in_channels: int = Field(..., description="Number of input channels")
+    kernel_size: int = Field(3, description="Kernel size for the convolutional layers in the stem")
+    dim: int = Field(..., description="Hidden dimension of the stem")
+    depth: int = Field(2, description="Number of convolutional layers in the stem", ge=1)
 
     out_channels: None = Field(None, description="This is defined by dim")
 
 
 class MaxViT3DBlockConfig(MBConv3DConfig, Attention3DWithMLPConfig):
-    window_size: tuple[int, int, int]
-    modify_dims: bool = False  # Used in the last block of stems
-    out_dim_ratio: int = 2  # Used only if modify_dims is True
+    window_size: tuple[int, int, int] = Field(..., description="Size of the window to apply attention over")
+    out_dim_ratio: int = Field(
+        2, description="Ratio of the output dimension to the input dimension. Used only in the last block of stems"
+    )
 
 
 class MaxViT3DStemConfig(MaxViT3DBlockConfig):
-    depth: int
+    depth: int = Field(..., description="Number of blocks in the stem")
 
 
 class MaxViT3DEncoderConfig(CustomBaseModel):
-    stem0: MaxViT3DStem0Config
-    stems: list[MaxViT3DStemConfig]
+    stem0: MaxViT3DStem0Config = Field(..., description="Configuration for the stem0")
+    stems: list[MaxViT3DStemConfig] = Field(..., description="Configurations for the remaining stems")
 
     @model_validator(mode="after")
     def validate(self):
         super().validate()
         assert self.stem0.dim == self.stems[0].dim, "Stem0 dim should be equal to the first stem dim"
+        assert len(self.stems) >= 1
         for i in range(1, len(self.stems)):
             assert (
                 self.stems[i - 1].dim * self.stems[i - 1].out_dim_ratio == self.stems[i].dim
@@ -51,8 +56,19 @@ class MaxViT3DEncoderConfig(CustomBaseModel):
         return self
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 6
+@populate_docstring
 class MaxViT3DStem0(nn.Module):
+    """Stem0 for MaxViT3D. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: MaxViT3DStem0Config = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the MaxViT3DStem0 block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = MaxViT3DStem0Config.model_validate(config | kwargs)
@@ -80,7 +96,17 @@ class MaxViT3DStem0(nn.Module):
 
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Pass the input through the stem0. Downsamples the input 2x along each dimension
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [in_channels], z, y, x, [in_channels])
 
         x = rearrange_channels(x, channels_first, True)
@@ -95,12 +121,14 @@ class MaxViT3DStem0(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 8
+@populate_docstring
 class MaxViT3DBlockAttention(SwinV23DLayer):
-    pass
+    """Perform windowed attention on the input tensor. {CLASS_DESCRIPTION_3D_DOC}"""
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 10
 class MaxViT3DGridAttention(SwinV23DLayer):
@@ -150,7 +178,7 @@ class MaxViT3DGridAttention(SwinV23DLayer):
     """
 
     @staticmethod
-    def _get_rearrange_patterns():
+    def _get_rearrange_patterns() -> tuple[str, str]:
         forward_pattern = (
             "b (window_size_z num_windows_z) (window_size_y num_windows_y) (window_size_x num_windows_x) dim -> "
             "(b num_windows_z num_windows_y num_windows_x) window_size_z window_size_y window_size_x dim "
@@ -162,15 +190,28 @@ class MaxViT3DGridAttention(SwinV23DLayer):
         return forward_pattern, reverse_pattern
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 12
+@populate_docstring
 class MaxViT3DBlock(nn.Module):
-    def __init__(self, config: MaxViT3DBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
+    """MaxViT3D block."""
+
+    @populate_docstring
+    def __init__(
+        self, config: MaxViT3DBlockConfig = {}, modify_dims: bool = False, checkpointing_level: int = 0, **kwargs
+    ):
+        """Initialize MaxViT3D block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = MaxViT3DBlockConfig.model_validate(config | kwargs)
 
         mbconv_kwargs = {}
         out_dim = self.config.dim
-        if self.config.modify_dims:
+        if modify_dims:
             out_dim = self.config.dim * self.config.out_dim_ratio
             mbconv_kwargs["stride"] = 2
             mbconv_kwargs["padding"] = 1
@@ -186,7 +227,17 @@ class MaxViT3DBlock(nn.Module):
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Pass the input through the block.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [dim], z, y, x, [dim])
 
         x = self.mbconv(x, channels_first)  # this runs in channels_first format internally
@@ -205,14 +256,27 @@ class MaxViT3DBlock(nn.Module):
 
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level3(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 15
+@populate_docstring
 class MaxViT3DStem(nn.Module):
+    """Implementation of a group of MaxViT blocks forming a stem. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(
         self, config: MaxViT3DStemConfig = {}, checkpointing_level: int = 0, dont_downsample: bool = False, **kwargs
     ):
+        """Initialize the stem
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            dont_downsample: Whether or not to downsample the input at the end of the stem.
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = MaxViT3DStemConfig.model_validate(config | kwargs)
@@ -228,18 +292,48 @@ class MaxViT3DStem(nn.Module):
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    def _forward(self, x: torch.Tensor, channels_first: bool = True):
+    @populate_docstring
+    def _forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Pass the input through the stem.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
         # x: (b, [dim], z, y, x, [dim])
+
+        x = rearrange_channels(x, channels_first, False)
+        # (b, z, y, x, dim)
+
         for layer in self.blocks:
-            x = layer(x, channels_first)
+            x = layer(x, channels_first=False)
+
+        x = rearrange_channels(x, False, channels_first)
+        # (b, [dim], z1, y1, x1, [dim])
+
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level4(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/07_maxvit_3d.ipynb 18
+@populate_docstring
 class MaxViT3DEncoder(nn.Module):
+    """3D MaxViT encoder. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: MaxViT3DEncoderConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the 3D MaxViT encoder.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = MaxViT3DEncoderConfig.model_validate(config | kwargs)
@@ -253,15 +347,36 @@ class MaxViT3DEncoder(nn.Module):
 
         self.checkpointing_level5 = ActivationCheckpointing(5, checkpointing_level)
 
+    @populate_docstring
     def _forward(self, x: torch.Tensor, return_intermediates: bool = False, channels_first: bool = True):
+        """Pass the input through the 3D MaxViT encoder.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            return_intermediates: {RETURN_INTERMEDIATES_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}. If return_intermediates is True, returns a tuple of the output and a list of intermediate
+            stem outputs. Note that the stem outputs are always in channels_last format.
+        """
         # x: (b, [in_channels], z, y, x, [in_channels])
+
+        x = rearrange_channels(x, channels_first, False)
+        # (b, z, y, x, in_channels)
+
         features = []
         for stem in self.stems:
-            x = stem(x, channels_first)
+            x = stem(x, channels_first=False)
             features.append(x)
+
+        x = rearrange_channels(x, False, channels_first)
+        # (b, [in_channels], z1, y1, x1, [in_channels])
+
         if return_intermediates:
             return x, features
         return x
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level5(self._forward, *args, **kwargs)
