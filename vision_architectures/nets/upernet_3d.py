@@ -4,6 +4,7 @@
 __all__ = ['UPerNet3DFusionConfig', 'UPerNet3DConfig', 'UPerNet3DFusion', 'UPerNet3D']
 
 # %% ../../nbs/nets/09_upernet_3d.ipynb 2
+from functools import wraps
 from typing import Literal
 
 import torch
@@ -12,15 +13,17 @@ from torch import nn
 from torch.nn import functional as F
 
 from ..blocks.cnn import CNNBlock3D, CNNBlockConfig
+from ..docstrings import populate_docstring
 from .fpn_3d import FPN3D, FPN3DConfig
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import Field, model_validator
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/09_upernet_3d.ipynb 4
 class UPerNet3DFusionConfig(CNNBlockConfig):
-    dim: int
-    num_features: int
-    kernel_size: int = 3
+    num_features: int = Field(..., description="Number of input feature maps")
+    kernel_size: int = Field(3, description="Kernel size for the convolutional layers")
+    dim: int = Field(..., description="Dimension of the fused feature map")
     fused_shape: tuple[int, int, int] | None = Field(
         None,
         description=(
@@ -28,17 +31,19 @@ class UPerNet3DFusionConfig(CNNBlockConfig):
             "If None, highest input resolution is used."
         ),
     )
-    interpolation_mode: str = "trilinear"
+    interpolation_mode: str = Field("trilinear", description="Interpolation mode for the FPN block.")
 
     in_channels: None = Field(None, description="Calculated based on other parameters")
     out_channels: None = Field(None, description="Calculated based on other parameters")
 
 
 class UPerNet3DConfig(FPN3DConfig):
-    fusion: UPerNet3DFusionConfig
+    fusion: UPerNet3DFusionConfig = Field(..., description="Configuration for the UPerNet3D fusion block")
 
-    enabled_outputs: set[Literal["object", "part", "scene", "material", "texture"]] = {"object"}
-    num_objects: int | None = None
+    enabled_outputs: set[Literal["object", "part", "scene", "material", "texture"]] = Field(
+        {"object"}, description="Select which outputs to enable"
+    )
+    num_objects: int | None = Field(None, description="Number of object classes")
 
     @model_validator(mode="before")
     @classmethod
@@ -59,8 +64,19 @@ class UPerNet3DConfig(FPN3DConfig):
         return self
 
 # %% ../../nbs/nets/09_upernet_3d.ipynb 8
+@populate_docstring
 class UPerNet3DFusion(nn.Module):
+    """Fusion block for UPerNet3D. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: UPerNet3DFusionConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the UPerNet3DFusion block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = UPerNet3DFusionConfig.model_validate(config | kwargs)
@@ -75,15 +91,19 @@ class UPerNet3DFusion(nn.Module):
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def concat_features(self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None):
+    def concat_features(
+        self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None
+    ) -> torch.Tensor:
         """Concatenate features from different resolutions and interpolate them to the same size.
 
         Args:
-            features (list[torch.Tensor]): List of feature maps to be concatenated.
-                Each feature map should have shape (b, dim, d, h, w).
-            fused_shape (tuple[int, int, int] | None): Shape to which all feature maps will be interpolated.
-                If None, value entered in the config is used. If that is None too, the shape of the largest feature map
-                is used.
+            features: A list of channels-first 3D multi-scale features of shapes
+                [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...] where d1 > d2 > ...
+            fused_shape: Shape to which all feature maps will be interpolated. If None, value entered in the config is
+                used. If that is None too, the shape of the largest feature map is used.
+
+        Returns:
+            A feature map with spatial resolution of ``fused_shape`` and concatenated channels.
         """
         # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, ...]
 
@@ -111,28 +131,66 @@ class UPerNet3DFusion(nn.Module):
 
         return concatenated_features
 
-    def fuse_features(self, concatenated_features: torch.Tensor):
+    def fuse_features(self, concatenated_features: torch.Tensor) -> torch.Tensor:
+        """Fuse features from different resolutions.
+
+        Args:
+            concatenated_features: A channels-first feature map with spatial resolution of ``fused_shape`` and
+                concatenated channels.
+
+        Returns:
+            A fused 3D feature map.
+        """
         # (b, dim * num_features, d, h, w)
         fused_features = self.conv(concatenated_features)
         # (b, dim, d, h, w)
 
         return fused_features
 
-    def _forward(self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None):
-        # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...] where d1 > d2 > ...
+    @populate_docstring
+    def _forward(
+        self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None, channels_first: bool = True
+    ) -> torch.Tensor:
+        """Collect and fuse all of the multi-scale features.
+
+        Args:
+            features: A list of 3D multi-scale features of shapes
+                [(b, [dim], d1, h1, w1, [dim]), (b, [dim], d2, h2, w2, [dim]), ...] where d1 > d2 > ...
+            fused_shape: Shape to which all feature maps will be interpolated. If None, value entered in the config is
+                used. If that is None too, the shape of the largest feature map is used.
+            channels_first: {CHANNELS_FIRST_DOC} This is assumed for all the features.
+
+        Returns:
+            A fused 3D feature map.
+        """
+        features = [rearrange_channels(feature, channels_first, True) for feature in features]
+        # [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...]
         concatenated_features = self.checkpointing_level1(self.concat_features, features, fused_shape)
         # (b, dim * num_features, d, h, w)
         fused_features = self.checkpointing_level1(self.fuse_features, concatenated_features)
         # (b, dim, d, h, w)
-
+        fused_features = rearrange_channels(fused_features, True, channels_first)
+        # (b, [dim], d, h, w, [dim])
         return fused_features
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/09_upernet_3d.ipynb 13
+@populate_docstring
 class UPerNet3D(nn.Module, PyTorchModelHubMixin):
+    """Implementation of the UPerNet3D architecture. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: UPerNet3DConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the UPerNet3D architecture.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = UPerNet3DConfig.model_validate(config | kwargs)
@@ -182,14 +240,20 @@ class UPerNet3D(nn.Module, PyTorchModelHubMixin):
         if "texture" in enabled_outputs:
             raise NotImplementedError("Texture output not implemented yet")
 
-    def forward(self, features: list[torch.Tensor], output_shape: tuple[int, int, int] = None):
-        """Forward pass of the UPerNet3D model.
+    @populate_docstring
+    def forward(
+        self, features: list[torch.Tensor], fusion_shape: tuple[int, int, int] = None, channels_first: bool = True
+    ) -> dict[str, torch.Tensor]:
+        """Return different outputs from the UPerNet3D architecture as per the paper.
 
         Args:
-            features (list[torch.Tensor]): List of feature maps from the FPN.
-                Each feature map should have shape (b, dim, d, h, w).
-            output_shape (tuple[int, int, int], optional): Desired output shape for the object head. If None, the shape
-                of the highest resolution feature map is used.
+            features: List of feature maps from the FPN. {INPUT_3D_DOC}
+            fusion_shape: Desired output shape for the feature fusion. If None and not specified in the config, the
+                highest shape of the highest resolution feature map is used.
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            A dictionary of outputs for each output type. {OUTPUT_3D_DOC}
         """
         # features: [
         #   (b, in_dim1, d1, h1, w1),
@@ -207,7 +271,7 @@ class UPerNet3D(nn.Module, PyTorchModelHubMixin):
         output = {}
 
         if self.fusion is not None:
-            fused_features = self.fusion(features, output_shape)
+            fused_features = self.fusion(features, fusion_shape)
             # (b, fpn_dim, d1, h1, w1)
 
             object_logits = self.object_head(fused_features)
