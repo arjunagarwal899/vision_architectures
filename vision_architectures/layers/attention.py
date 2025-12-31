@@ -23,7 +23,7 @@ class Attention1DConfig(CustomBaseModel):
         ...,
         description=(
             "Dimension of the input features. If tuple, (dim_qk, dim_v). "
-            "Otherwise it is assumed to be dim of both qk and v.",
+            "Otherwise it is assumed to be dim of both qk and v."
         ),
     )
     num_heads: int = Field(..., description="Number of query heads")

@@ -26,7 +26,7 @@ statuses = [
     "6 - Mature",
     "7 - Inactive",
 ]
-py_versions = ["3.10"]
+py_versions = ["3.10", "3.11"]
 
 with open("requirements.txt") as f:
     requirements = shlex.split(f.read())
