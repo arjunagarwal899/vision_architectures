@@ -167,8 +167,8 @@ class Splitter:
         """Split the input tensor into smaller tensors using the config.
 
         Args:
-            x: The input tensor. Any arbitrary shape is acceptable as long as there are at least `split_dims`
-                dimensions. The last `split_dims` dimensions are split.
+            x: The input tensor. Any arbitrary shape is acceptable as long as there are at least ``split_dims``
+                dimensions. The last ``split_dims`` dimensions are split.
 
         Yields:
             A tensor of shape (*split_size) for each split and it's corresponding position in the input.

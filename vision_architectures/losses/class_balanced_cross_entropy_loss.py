@@ -176,7 +176,7 @@ class ClassBalancedCrossEntropyLoss(nn.Module):
 
         Args:
             input: Logits of shape (N, C, ...) where C == num_classes. Any extra spatial
-                dimensions (e.g., H, W, D) are supported as long as `target` is broadcastable
+                dimensions (e.g., H, W, D) are supported as long as ``target`` is broadcastable
                 to the same non-channel shape expected by torch.nn.functional.cross_entropy.
             target: Integer class indices with shape matching input without the channel
                 dimension, e.g., (N, ...) with values in [0, C-1].
