@@ -4,6 +4,7 @@
 __all__ = ['FPN2DBlockConfig', 'FPN2DConfig', 'FPN2DBlock', 'FPN2D']
 
 # %% ../../nbs/nets/11_fpn_2d.ipynb 2
+from functools import wraps
 from typing import Literal
 
 import torch
@@ -12,17 +13,18 @@ from torch import nn
 from torch.nn import functional as F
 
 from ..blocks.cnn import CNNBlock2D, CNNBlockConfig
+from ..docstrings import populate_docstring
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/11_fpn_2d.ipynb 4
 class FPN2DBlockConfig(CNNBlockConfig):
-    dim: int
-    kernel_size: int = 3
-    skip_conn_dim: int
-    is_deepest: bool = Field(False, description="True if this is the deepest block in the FPN, else False")
-    interpolation_mode: str = "bilinear"
-    merge_method: Literal["add", "concat"] = "add"
+    dim: int = Field(..., description="Input channel dimension of the FPN block.")
+    kernel_size: int = Field(3, description="Kernel size for the convolutional layers in the FPN block.")
+    skip_conn_dim: int = Field(..., description="Input channel dimension of the skip connection.")
+    interpolation_mode: str = Field("bilinear", description="Interpolation mode for the FPN block.")
+    merge_method: Literal["add", "concat"] = Field("add", description="Merge method for the FPN block.")
 
     normalization: str = "batchnorm2d"
 
@@ -31,10 +33,11 @@ class FPN2DBlockConfig(CNNBlockConfig):
 
 
 class FPN2DConfig(CustomBaseModel):
-    blocks: list[FPN2DBlockConfig]
+    blocks: list[FPN2DBlockConfig] = Field(..., description="List of configs for the FPN blocks.")
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """Returns the input channel dimension of the first block."""
         return self.blocks[0].dim
 
     @model_validator(mode="before")
@@ -47,9 +50,9 @@ class FPN2DConfig(CustomBaseModel):
                 assert "blocks" not in data, "Cannot provide both skip_conn_dims and blocks"
                 skip_conn_dims = data.pop("skip_conn_dims")
                 blocks: list[dict] = []
-                for i, skip_conn_dim in enumerate(skip_conn_dims):
-                    blocks.append({"skip_conn_dim": skip_conn_dim, "is_deepest": (i == len(skip_conn_dims) - 1)})
-                data.setdefault("blocks", blocks)
+                for skip_conn_dim in skip_conn_dims:
+                    blocks.append({"skip_conn_dim": skip_conn_dim})
+                data["blocks"] = blocks
 
             # Add the remaining
             for key, value in data.items():
@@ -59,16 +62,31 @@ class FPN2DConfig(CustomBaseModel):
 
     @model_validator(mode="after")
     def validate(self):
+        super().validate()
         for block in self.blocks:
             assert block.dim == self.dim, "All blocks must have the same dim"
         return self
 
 # %% ../../nbs/nets/11_fpn_2d.ipynb 8
+@populate_docstring
 class FPN2DBlock(nn.Module):
-    def __init__(self, config: FPN2DBlockConfig = {}, checkpointing_level: int = 0, **kwargs):
+    """A 2D FPN block to merge features from two scales."""
+
+    @populate_docstring
+    def __init__(self, config: FPN2DBlockConfig = {}, is_deepest: bool = False, checkpointing_level: int = 0, **kwargs):
+        """Initialize the FPN2DBlock block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            is_deepest: Whether the block is the deepest in the net. In this case, there is no deeper feature to
+                interpolate and merge.
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = FPN2DBlockConfig.model_validate(config | kwargs | {"kernel_size": 3})
+        self.is_deepest = is_deepest
 
         self.skip_conn_conv = CNNBlock2D(
             self.config,
@@ -78,7 +96,7 @@ class FPN2DBlock(nn.Module):
             checkpointing_level=checkpointing_level,
         )
 
-        if not self.config.is_deepest:
+        if not self.is_deepest:
             self.out_conv = CNNBlock2D(
                 self.config,
                 in_channels=self.config.dim if self.config.merge_method == "add" else 2 * self.config.dim,
@@ -88,16 +106,33 @@ class FPN2DBlock(nn.Module):
 
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def _forward(self, skip_conn_features: torch.Tensor, features: torch.Tensor | None):
-        # skip_conn_features: (b, skip_conn_dim, h1, w1)
-        # features: (b, dim, h2, w2)
+    @populate_docstring
+    def _forward(
+        self, skip_conn_features: torch.Tensor, deeper_features: torch.Tensor | None, channels_first: bool = True
+    ) -> torch.Tensor:
+        """Interpolate the features of the deeper scale and merge them with the features of the skip connection.
 
+        Args:
+            skip_conn_features: {INPUT_2D_DOC}
+            deeper_features: {INPUT_2D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC} Assumed to be true for both set of features.
+
+        Returns:
+            {OUTPUT_2D_DOC}
+        """
+        # skip_conn_features: (b, [skip_conn_dim], h1, w1, [skip_conn_dim])
+        # deeperfeatures: (b, [dim], h2, w2, [dim])
+
+        skip_conn_features = rearrange_channels(skip_conn_features, channels_first, True)
+        # (b, skip_conn_dim, h1, w1)
         skip_conn_features = self.skip_conn_conv(skip_conn_features)
         # (b, dim, h1, w1)
 
-        if not self.config.is_deepest:
-            features = F.interpolate(
-                features,
+        if not self.is_deepest:
+            deeper_features = rearrange_channels(deeper_features, channels_first, True)
+            # (b, dim, h2, w2)
+            deeper_features = F.interpolate(
+                deeper_features,
                 size=skip_conn_features.shape[2:],
                 mode=self.config.interpolation_mode,
                 align_corners=False,
@@ -105,48 +140,81 @@ class FPN2DBlock(nn.Module):
             # (b, dim, h1, w1)
 
             if self.config.merge_method == "add":
-                merged_features = skip_conn_features + features
+                merged_features = skip_conn_features + deeper_features
                 # (b, dim, h1, w1)
             elif self.config.merge_method == "concat":
-                merged_features = torch.cat((skip_conn_features, features), dim=1)
+                merged_features = torch.cat((skip_conn_features, deeper_features), dim=1)
                 # (b, 2 * dim, h1, w1)
 
             merged_features = self.out_conv(merged_features)
             # (b, dim, h1, w1)
         else:
             merged_features = skip_conn_features
+            # (b, dim, h1, w1)
+
+        merged_features = rearrange_channels(merged_features, True, channels_first)
+        # (b, [dim], h1, w1, [dim])
 
         return merged_features
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/11_fpn_2d.ipynb 12
+@populate_docstring
 class FPN2D(nn.Module, PyTorchModelHubMixin):
+    """Feature Pyramid Network 2D"""
+
+    @populate_docstring
     def __init__(self, config: FPN2DConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the FPN2D block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = FPN2DConfig.model_validate(config | kwargs)
 
         self.blocks = nn.ModuleList()
         for i in range(len(self.config.blocks)):
-            self.blocks.append(FPN2DBlock(self.config.blocks[i], checkpointing_level))
+            self.blocks.append(
+                FPN2DBlock(
+                    self.config.blocks[i],
+                    is_deepest=i == len(self.config.blocks) - 1,
+                    checkpointing_level=checkpointing_level,
+                )
+            )
 
         self.checkpointing_level4 = ActivationCheckpointing(4, checkpointing_level)
 
-    def _forward(self, features: list[torch.Tensor]):
+    @populate_docstring
+    def _forward(self, features: list[torch.Tensor], channels_first: bool = True) -> list[torch.Tensor]:
+        """Pass the multi-scale features of the encoder through the FPN2D.
+
+        Args:
+            features: A list of 2D multi-scale features. {INPUT_2D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            A list of 2D multi-scale features. {OUTPUT_2D_DOC}
+        """
         # features: [
-        #   (b, in_dim1, h1, w1),
-        #   (b, in_dim2, h2, w2),
+        #   (b, [in_dim1], h1, w1, [in_dim1]),
+        #   (b, [in_dim2], h2, w2, [in_dim2]),
         #   ...
         # ]
 
         outputs = [None]
         for i in reversed(range(len(features))):
-            outputs.append(self.blocks[i](features[i], outputs[-1]))
+            outputs.append(self.blocks[i](features[i], outputs[-1], channels_first=channels_first))
         outputs = outputs[1:]
 
         return outputs
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level4(self._forward, *args, **kwargs)

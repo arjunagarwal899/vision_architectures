@@ -201,8 +201,8 @@ class FPN3D(nn.Module, PyTorchModelHubMixin):
             A list of 3D multi-scale features. {OUTPUT_3D_DOC}
         """
         # features: [
-        #   (b, in_dim1, d1, h1, w1),
-        #   (b, in_dim2, d2, h2, w2),
+        #   (b, [in_dim1], d1, h1, w1), [in_dim1],
+        #   (b, [in_dim2], d2, h2, w2), [in_dim2],
         #   ...
         # ]
 

@@ -2,9 +2,10 @@
 
 # %% auto 0
 __all__ = ['CHANNELS_FIRST_DOC', 'CONFIG_INSTANCE_DOC', 'CONFIG_KWARGS_DOC', 'CHECKPOINTING_LEVEL_DOC', 'INPUT_1D_DOC',
-           'INPUT_3D_DOC', 'OUTPUT_1D_DOC', 'OUTPUT_3D_DOC', 'RELATIVE_POSITION_BIAS_DOC', 'LOGIT_SCALE_DOC',
-           'CLASS_DESCRIPTION_1D_DOC', 'CLASS_DESCRIPTION_2D_DOC', 'CLASS_DESCRIPTION_3D_DOC', 'SPACINGS_DOC',
-           'RETURN_INTERMEDIATES_DOC', 'BOUNDING_BOXES_FORMAT_DOC', 'populate_docstring']
+           'INPUT_2D_DOC', 'INPUT_3D_DOC', 'OUTPUT_1D_DOC', 'OUTPUT_2D_DOC', 'OUTPUT_3D_DOC',
+           'RELATIVE_POSITION_BIAS_DOC', 'LOGIT_SCALE_DOC', 'CLASS_DESCRIPTION_1D_DOC', 'CLASS_DESCRIPTION_2D_DOC',
+           'CLASS_DESCRIPTION_3D_DOC', 'SPACINGS_DOC', 'RETURN_INTERMEDIATES_DOC', 'BOUNDING_BOXES_FORMAT_DOC',
+           'populate_docstring']
 
 # %% ../nbs/docstrings.ipynb 1
 CHANNELS_FIRST_DOC = "Whether the inputs are in channels first format `(B, C, ...)` or not `(B, ..., C)`."
@@ -18,8 +19,10 @@ CHECKPOINTING_LEVEL_DOC = (
     ":py:class:`~vision_architectures.utils.activation_checkpointing.ActivationCheckpointing` for more details."
 )
 INPUT_1D_DOC = "Tensor of shape `(B, T, C)` representing the input features."
+INPUT_2D_DOC = "Tensor of shape `(B, C, Y, X)` or `(B, Y, X, C)` representing the input features."
 INPUT_3D_DOC = "Tensor of shape `(B, C, Z, Y, X)` or `(B, Z, Y, X, C)` representing the input features."
 OUTPUT_1D_DOC = "Tensor of shape `(B, T, C)` representing the output features."
+OUTPUT_2D_DOC = "Tensor of shape `(B, C, Y, X)` or `(B, Y, X, C)` representing the output features."
 OUTPUT_3D_DOC = "Tensor of shape `(B, C, Z, Y, X)` or `(B, Z, Y, X, C)` representing the output features."
 RELATIVE_POSITION_BIAS_DOC = "Relative position embeddings for the attention mechanism."
 LOGIT_SCALE_DOC = "Optional scaling factor for the attention logits."
