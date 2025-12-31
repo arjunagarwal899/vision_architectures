@@ -1,0 +1,7 @@
+Exponential Moving Average (EMA) Network
+========================================
+
+.. automodule:: vision_architectures.utils.ema_network
+   :members:
+   :undoc-members:
+   :show-inheritance:

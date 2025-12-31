@@ -1,0 +1,12 @@
+Schedulers
+==========
+
+This section documents the schedulers components.
+
+.. toctree::
+   :maxdepth: 1
+
+   noise
+   sigmoid
+   cyclic
+   lrs
