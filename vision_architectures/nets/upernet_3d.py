@@ -105,7 +105,7 @@ class UPerNet3DFusion(nn.Module):
         Returns:
             A feature map with spatial resolution of ``fused_shape`` and concatenated channels.
         """
-        # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, ...]
+        # features: List of [(b, dim, d1, h1, w1), (b, dim, d2, h2, w2), ...]
 
         if fused_shape is None:
             fused_shape = self.config.fused_shape
@@ -256,12 +256,15 @@ class UPerNet3D(nn.Module, PyTorchModelHubMixin):
             A dictionary of outputs for each output type. {OUTPUT_3D_DOC}
         """
         # features: [
-        #   (b, in_dim1, d1, h1, w1),
-        #   (b, in_dim2, d2, h2, w2),
+        #   (b, [in_dim1], d1, h1, w1, [in_dim1]),
+        #   (b, [in_dim2], d2, h2, w2, [in_dim2]),
         #   ...
         # ] where d1 > d2 > ...
 
-        features = self.fpn(features)
+        features = [rearrange_channels(feature, channels_first, True) for feature in features]
+        # [(b, in_dim1, d1, h1, w1), (b, in_dim2, d2, h2, w2), ...]
+
+        features = self.fpn(features, channels_first=True)
         # features: [
         #   (b, fpn_dim, d1, h1, w1),
         #   (b, fpn_dim, d2, h2, w2),

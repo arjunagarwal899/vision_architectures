@@ -19,7 +19,7 @@ from vision_architectures.layers.embeddings import (
     RelativePositionEmbeddings3DConfig,
 )
 from ..utils.activation_checkpointing import ActivationCheckpointing
-from ..utils.custom_base_model import CustomBaseModel, model_validator
+from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 
 # %% ../../nbs/nets/13_perceiver_3d.ipynb 4
 class Perceiver3DChannelMappingConfig(CustomBaseModel):
@@ -93,7 +93,7 @@ class Perceiver3DDecoderConfig(Attention3DWithMLPConfig):
 
 
 class Perceiver3DConfig(Perceiver3DEncoderConfig):
-    decode: Perceiver3DDecoderConfig
+    decode: Perceiver3DDecoderConfig = Field(..., description="Config for the Perceiver decoder")
 
     @model_validator(mode="before")
     @classmethod

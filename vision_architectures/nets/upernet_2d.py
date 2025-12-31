@@ -4,6 +4,7 @@
 __all__ = ['UPerNet2DFusionConfig', 'UPerNet2DConfig', 'UPerNet2DFusion', 'UPerNet2D']
 
 # %% ../../nbs/nets/12_upernet_2d.ipynb 2
+from functools import wraps
 from typing import Literal
 
 import torch
@@ -12,19 +13,25 @@ from torch import nn
 from torch.nn import functional as F
 
 from ..blocks.cnn import CNNBlock2D, CNNBlockConfig
+from ..docstrings import populate_docstring
 from .fpn_2d import FPN2D, FPN2DConfig
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import Field, model_validator
+from ..utils.rearrange import rearrange_channels
 
 # %% ../../nbs/nets/12_upernet_2d.ipynb 4
 class UPerNet2DFusionConfig(CNNBlockConfig):
-    dim: int
-    num_features: int
-    kernel_size: int = 3
+    num_features: int = Field(..., description="Number of input feature maps")
+    kernel_size: int = Field(3, description="Kernel size for the convolutional layers")
+    dim: int = Field(..., description="Dimension of the fused feature map")
     fused_shape: tuple[int, int] | None = Field(
-        None, description="Shape of the fused feature map. If None, highest input resolution is used."
+        None,
+        description=(
+            "Shape of the fused feature map. It can also be provided during runtime. "
+            "If None, highest input resolution is used."
+        ),
     )
-    interpolation_mode: str = "bilinear"
+    interpolation_mode: str = Field("bilinear", description="Interpolation mode for the FPN block.")
 
     normalization: str = "batchnorm2d"
 
@@ -33,10 +40,12 @@ class UPerNet2DFusionConfig(CNNBlockConfig):
 
 
 class UPerNet2DConfig(FPN2DConfig):
-    fusion: UPerNet2DFusionConfig
+    fusion: UPerNet2DFusionConfig = Field(..., description="Configuration for the UPerNet2D fusion block")
 
-    enabled_outputs: set[Literal["object", "part", "scene", "material", "texture"]] = {"object"}
-    num_objects: int | None = None
+    enabled_outputs: set[Literal["object", "part", "scene", "material", "texture"]] = Field(
+        {"object"}, description="Select which outputs to enable"
+    )
+    num_objects: int | None = Field(None, description="Number of object classes")
 
     @model_validator(mode="before")
     @classmethod
@@ -57,8 +66,19 @@ class UPerNet2DConfig(FPN2DConfig):
         return self
 
 # %% ../../nbs/nets/12_upernet_2d.ipynb 8
+@populate_docstring
 class UPerNet2DFusion(nn.Module):
+    """Fusion block for UPerNet2D. {CLASS_DESCRIPTION_2D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: UPerNet2DFusionConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the UPerNet2DFusion block.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = UPerNet2DFusionConfig.model_validate(config | kwargs)
@@ -73,10 +93,24 @@ class UPerNet2DFusion(nn.Module):
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def concat_features(self, features: list[torch.Tensor]):
-        # features: List of [(b, dim, h1, w1), (b, dim, h2, ...]
+    def concat_features(
+        self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None
+    ) -> torch.Tensor:
+        """Concatenate features from different resolutions and interpolate them to the same size.
 
-        fused_shape = self.config.fused_shape
+        Args:
+            features: A list of channels-first 2D multi-scale features of shapes
+                [(b, dim, h1, w1), (b, dim, h2, w2), ...] where h1 > h2 > ...
+            fused_shape: Shape to which all feature maps will be interpolated. If None, value entered in the config is
+                used. If that is None too, the shape of the largest feature map is used.
+
+        Returns:
+            A feature map with spatial resolution of ``fused_shape`` and concatenated channels.
+        """
+        # features: List of [(b, dim, h1, w1), (b, dim, h2, h2), ...]
+
+        if fused_shape is None:
+            fused_shape = self.config.fused_shape
         if fused_shape is None:
             fused_shape = features[0].shape[2:]
             for feature in features:
@@ -99,28 +133,66 @@ class UPerNet2DFusion(nn.Module):
 
         return concatenated_features
 
-    def fuse_features(self, concatenated_features: torch.Tensor):
+    def fuse_features(self, concatenated_features: torch.Tensor) -> torch.Tensor:
+        """Fuse features from different resolutions.
+
+        Args:
+            concatenated_features: A channels-first feature map with spatial resolution of ``fused_shape`` and
+                concatenated channels.
+
+        Returns:
+            A fused 2D feature map.
+        """
         # (b, dim * num_features, h, w)
         fused_features = self.conv(concatenated_features)
         # (b, dim, h, w)
 
         return fused_features
 
-    def _forward(self, features: list[torch.Tensor]):
-        # features: List of [(b, dim, h1, w1), (b, dim, h2, w2), ...] where h1 > h2 > ...
-        concatenated_features = self.checkpointing_level1(self.concat_features, features)
+    @populate_docstring
+    def _forward(
+        self, features: list[torch.Tensor], fused_shape: tuple[int, int, int] | None = None, channels_first: bool = True
+    ) -> torch.Tensor:
+        """Collect and fuse all of the multi-scale features.
+
+        Args:
+            features: A list of 2D multi-scale features of shapes
+                [(b, [dim], h1, w1, [dim]), (b, [dim], h2, w2, [dim]), ...] where h1 > h2 > ...
+            fused_shape: Shape to which all feature maps will be interpolated. If None, value entered in the config is
+                used. If that is None too, the shape of the largest feature map is used.
+            channels_first: {CHANNELS_FIRST_DOC} This is assumed for all the features.
+
+        Returns:
+            A fused 2D feature map.
+        """
+        features = [rearrange_channels(feature, channels_first, True) for feature in features]
+        # [(b, dim, h1, w1), (b, dim, h2, w2), ...]
+        concatenated_features = self.checkpointing_level1(self.concat_features, features, fused_shape)
         # (b, dim * num_features, h, w)
         fused_features = self.checkpointing_level1(self.fuse_features, concatenated_features)
         # (b, dim, h, w)
-
+        fused_features = rearrange_channels(fused_features, True, channels_first)
+        # (b, [dim], h, w, [dim])
         return fused_features
 
+    @wraps(_forward)
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
 # %% ../../nbs/nets/12_upernet_2d.ipynb 12
+@populate_docstring
 class UPerNet2D(nn.Module, PyTorchModelHubMixin):
+    """Implementation of the UPerNet2D architecture. {CLASS_DESCRIPTION_2D_DOC}"""
+
+    @populate_docstring
     def __init__(self, config: UPerNet2DConfig = {}, checkpointing_level: int = 0, **kwargs):
+        """Initialize the UPerNet2D architecture.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            checkpointing_level: {CHECKPOINTING_LEVEL_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
         super().__init__()
 
         self.config = UPerNet2DConfig.model_validate(config | kwargs)
@@ -143,14 +215,13 @@ class UPerNet2D(nn.Module, PyTorchModelHubMixin):
             if "object" in enabled_outputs:
                 self.object_head = nn.Sequential(
                     CNNBlock2D(
-                        self.config.fusion.model_dump(),
                         in_channels=self.config.dim,
                         out_channels=self.config.dim,
                         kernel_size=3,
+                        normalization="batchnorm2d",
                         checkpointing_level=checkpointing_level,
                     ),
                     CNNBlock2D(
-                        self.config.fusion.model_dump(),
                         in_channels=self.config.dim,
                         out_channels=self.config.num_objects,
                         kernel_size=1,
@@ -172,14 +243,31 @@ class UPerNet2D(nn.Module, PyTorchModelHubMixin):
         if "texture" in enabled_outputs:
             raise NotImplementedError("Texture output not implemented yet")
 
-    def forward(self, features: list[torch.Tensor]):
-        # features: [
-        #   (b, in_dim1, h1, w1),
-        #   (b, in_dim2, h2, w2),
-        #   ...
-        # ] where d1 > d2 > ...
+    @populate_docstring
+    def forward(
+        self, features: list[torch.Tensor], fusion_shape: tuple[int, int] = None, channels_first: bool = True
+    ) -> dict[str, torch.Tensor]:
+        """Return different outputs from the UPerNet2D architecture as per the paper.
 
-        features = self.fpn(features)
+        Args:
+            features: List of feature maps from the FPN. {INPUT_2D_DOC}
+            fusion_shape: Desired output shape for the feature fusion. If None and not specified in the config, the
+                highest shape of the highest resolution feature map is used.
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            A dictionary of outputs for each output type. {OUTPUT_2D_DOC}
+        """
+        # features: [
+        #   (b, [in_dim1], h1, w1, [in_dim1]),
+        #   (b, [in_dim2], h2, w2, [in_dim2]),
+        #   ...
+        # ] where h1 > h2 > ...
+
+        features = [rearrange_channels(feature, channels_first, True) for feature in features]
+        # [(b, in_dim1, h1, w1), (b, in_dim2, h2, w2), ...]
+
+        features = self.fpn(features, channels_first=True)
         # features: [
         #   (b, fpn_dim, h1, w1),
         #   (b, fpn_dim, h2, w2),
@@ -189,7 +277,7 @@ class UPerNet2D(nn.Module, PyTorchModelHubMixin):
         output = {}
 
         if self.fusion is not None:
-            fused_features = self.fusion(features)
+            fused_features = self.fusion(features, fusion_shape)
             # (b, fpn_dim, h1, w1)
 
             object_logits = self.object_head(fused_features)
