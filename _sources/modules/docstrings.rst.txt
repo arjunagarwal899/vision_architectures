@@ -1,0 +1,7 @@
+Docstrings
+==========
+
+.. automodule:: vision_architectures.docstrings
+   :members:
+   :undoc-members:
+   :show-inheritance:
