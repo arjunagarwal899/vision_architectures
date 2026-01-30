@@ -4,12 +4,15 @@
 __all__ = ['RelativePositionEmbeddings', 'get_absolute_position_embeddings_3d', 'get_timestep_embeddings_1d',
            'get_all_timestep_embeddings_1d', 'get_absolute_position_embeddings_1d',
            'RelativePositionEmbeddings3DConfig', 'AbsolutePositionEmbeddings3DConfig',
-           'AbsolutePositionEmbeddings1DConfig', 'PatchEmbeddings3DConfig', 'get_coords_grid',
-           'RelativePositionEmbeddings3D', 'RelativePositionEmbeddings3DMetaNetwork', 'get_sinusoidal_embeddings_3d',
-           'AbsolutePositionEmbeddings3D', 'get_specific_sinusoidal_embeddings_1d', 'get_sinusoidal_embeddings_1d',
-           'AbsolutePositionEmbeddings1D', 'PatchEmbeddings3D']
+           'AbsolutePositionEmbeddings1DConfig', 'RotaryPositionEmbeddings1DConfig', 'RotaryPositionEmbeddings3DConfig',
+           'PatchEmbeddings3DConfig', 'get_coords_grid', 'RelativePositionEmbeddings3D',
+           'RelativePositionEmbeddings3DMetaNetwork', 'get_sinusoidal_embeddings_3d', 'AbsolutePositionEmbeddings3D',
+           'get_specific_sinusoidal_embeddings_1d', 'get_sinusoidal_embeddings_1d', 'AbsolutePositionEmbeddings1D',
+           'get_rope_rotation_coefficients_1d', 'RotaryPositionEmbeddings1D', 'RotaryPositionEmbeddings3D',
+           'PatchEmbeddings3D']
 
 # %% ../../nbs/layers/02_embeddings.ipynb #3b31de50
+from functools import lru_cache
 from typing import Literal, Union
 
 import numpy as np
@@ -90,6 +93,28 @@ class AbsolutePositionEmbeddings1DConfig(CustomBaseModel):
         super().validate()
         if self.learnable and (self.dim is None or self.length is None):
             raise ValueError("dim and length must be provided if learnable is True")
+        return self
+
+
+class RotaryPositionEmbeddings1DConfig(CustomBaseModel):
+    dim: int | None = Field(None, description="Dimension of the position embeddings")
+
+    base: float = Field(10000.0, description="Base value for the exponent.")
+
+
+class RotaryPositionEmbeddings3DConfig(RotaryPositionEmbeddings1DConfig):
+    split: tuple[float, float, float] | tuple[int, int, int] = Field(
+        (1 / 3, 1 / 3, 1 / 3),
+        description="Split of the position embeddings. If float, converted to int based on self.dim",
+    )
+
+    @model_validator(mode="after")
+    def validate(self):
+        super().validate()
+        if isinstance(self.split[0], float):
+            self.split = tuple(int(s * self.dim) for s in self.split)
+        elif isinstance(self.split[0], int):
+            assert sum(self.split) <= self.dim, "Sum of split must be less than or equal to dim"
         return self
 
 
@@ -646,6 +671,185 @@ class AbsolutePositionEmbeddings1D(nn.Module):
             x = torch.cat([x, position_embeddings], dim=1)
         else:
             raise NotImplementedError("Only 'add' and 'concat' are supported for embedding_type")
+
+        return x
+
+# %% ../../nbs/layers/02_embeddings.ipynb #9f87451d
+def get_rope_rotation_coefficients_1d(
+    dim: int, length: int, base: float = 10000.0
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Get 1D RoPE cos and sin rotation coefficients.
+
+    Args:
+        dim: Embedding dimension. Must be divisible by 2.
+        length: Length of the sequence.
+        base: Base value to use for the rotation coefficients.
+
+    Returns:
+        A tuple of tensors containing the cos and sin rotation coefficients.
+    """
+    if dim % 2 != 0:
+        raise ValueError("Dimension must be even to apply RoPE.")
+
+    half_dim = dim // 2
+    pair_idx = torch.arange(half_dim)
+    # (half_dim,)
+    inverse_frequency = base ** (-pair_idx / half_dim)
+    # (half_dim,)
+
+    positions = torch.arange(length).unsqueeze(-1)
+    # (length, 1)
+    angles = positions * inverse_frequency.unsqueeze(0)
+    # (length, half_dim)
+
+    cos = angles.cos()
+    # (length, half_dim)
+    sin = angles.sin()
+    # (length, half_dim)
+
+    # Repeat each angle twice to match (even, odd) channels
+    cos = torch.repeat_interleave(cos, repeats=2, dim=-1)
+    # (length, dim)
+    sin = torch.repeat_interleave(sin, repeats=2, dim=-1)
+    # (length, dim)
+
+    return cos, sin
+
+# %% ../../nbs/layers/02_embeddings.ipynb #143c3b58
+@populate_docstring
+class RotaryPositionEmbeddings1D(nn.Module):
+    """1D Rotary Position Embeddings. {CLASS_DESCRIPTION_1D_DOC}"""
+
+    @populate_docstring
+    def __init__(self, config: RotaryPositionEmbeddings1DConfig = {}, **kwargs):
+        """Initialize RotaryPositionEmbeddings1D.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
+        super().__init__()
+        self.config = RotaryPositionEmbeddings1DConfig.model_validate(config | kwargs)
+
+    @staticmethod
+    @lru_cache(maxsize=64)
+    def get_rotation_coefficients(
+        dim: int, length: int, device: torch.device, dtype=torch.dtype
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        cos, sin = get_rope_rotation_coefficients_1d(dim=dim, length=length)
+        cos, sin = cos.to(device=device, dtype=dtype), sin.to(device=device, dtype=dtype)
+        return cos, sin
+
+    @staticmethod
+    def rearrange_for_sin_coefficients(x: torch.Tensor) -> torch.Tensor:
+        """Split the tensor into pairs along the last axis, flip each pair's order, and then negate the first
+        element. That is, for an input tensor [a, b, c, d], the output will be [-b, a, -d, c].
+
+        Args:
+            x: Input tensor with last dimension dim
+
+        Returns:
+            Rearranged tensor
+        """
+        x = rearrange(x, "... (half_d two) -> ... half_d two", two=2).contiguous()
+        # (..., half_d, 2)
+        x1, x2 = x.unbind(-1)
+        # (..., half_d), (..., half_d)
+        x = torch.stack([-x2, x1], dim=-1)
+        # (..., half_d, 2)
+        x = rearrange(x, "... half_d two -> ... (half_d two)").contiguous()
+        # (..., dim)
+        return x
+
+    def apply_rope(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+        """Apply 1D Rotary Position Embeddings to the given tensor.
+
+        Args:
+            x: Input tensor with last dimension dim
+            cos: Cosine rotation coefficients
+            sin: Sine rotation coefficients
+
+        Returns:
+            Tensor after applying 1D Rotary Position Embeddings
+        """
+        return x * cos + self.rearrange_for_sin_coefficients(x) * sin
+
+    @populate_docstring
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply 1D Rotary Position Embeddings.
+
+        Args:
+            x: {INPUT_1D_DOC}
+
+        Returns:
+            {OUTPUT_1D_DOC}
+        """
+        # Get rotation coefficients
+        cos, sin = self.get_rotation_coefficients(self.config.dim, x.shape[1], x.device, x.dtype)
+        # (length, dim)
+
+        # Apply rotation
+        x = self.apply_rope(x, cos, sin)
+        # (1, length, dim)
+
+        return x
+
+# %% ../../nbs/layers/02_embeddings.ipynb #b1298dff
+@populate_docstring
+class RotaryPositionEmbeddings3D(RotaryPositionEmbeddings1D):
+    """3D Rotary Position Embeddings. {CLASS_DESCRIPTION_3D_DOC}"""
+
+    @populate_docstring
+    def __init__(self, config: RotaryPositionEmbeddings3DConfig = {}, **kwargs):
+        """Initialize RotaryPositionEmbeddings1D.
+
+        Args:
+            config: {CONFIG_INSTANCE_DOC}
+            **kwargs: {CONFIG_KWARGS_DOC}
+        """
+        super().__init__(config, **kwargs)
+
+        self.config = RotaryPositionEmbeddings3DConfig.model_validate(config | kwargs)
+
+    @populate_docstring
+    def forward(self, x: torch.Tensor, channels_first: bool = True) -> torch.Tensor:
+        """Apply 3D Rotary Position Embeddings.
+
+        Args:
+            x: {INPUT_3D_DOC}
+            channels_first: {CHANNELS_FIRST_DOC}
+
+        Returns:
+            {OUTPUT_3D_DOC}
+        """
+        # Rearrange to channels last format
+        x = rearrange_channels(x, channels_first, False)
+        # (B, Z, Y, X, D)
+
+        # Split tensor into three parts for each axis
+        z_dim, y_dim, x_dim = list(self.config.split)
+        rest_dim = x.shape[-1] - z_dim - y_dim - x_dim
+        z_part, y_part, x_part, rest = x.split([z_dim, y_dim, x_dim, rest_dim], dim=-1)
+        # (B, Z, Y, X, D_z), (B, Z, Y, X, D_y), (B, Z, Y, X, D_x), (B, Z, Y, X, D_rest)
+
+        # Get rotation coefficients
+        cos_z, sin_z = self.get_rotation_coefficients(z_dim, x.shape[1], x.device, x.dtype)
+        cos_y, sin_y = self.get_rotation_coefficients(y_dim, x.shape[2], x.device, x.dtype)
+        cos_x, sin_x = self.get_rotation_coefficients(x_dim, x.shape[3], x.device, x.dtype)
+        # (length, dim)
+
+        # Apply rotation
+        z_part = self.apply_rope(z_part, cos_z, sin_z)
+        y_part = self.apply_rope(y_part, cos_y, sin_y)
+        x_part = self.apply_rope(x_part, cos_x, sin_x)
+
+        # Concatenate the three parts along the channel dimension
+        x = torch.cat([z_part, y_part, x_part, rest], dim=-1)
+        # (B, Z, Y, X, D_z + D_y + D_x + D_rest)
+
+        # Revert channels rearrangement
+        x = rearrange_channels(x, False, channels_first)
+        # (B, [D], Z, Y, X, [D])
 
         return x
 
