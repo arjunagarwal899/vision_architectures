@@ -12,7 +12,13 @@ from einops import rearrange
 from torch import nn
 
 from ..docstrings import populate_docstring
-from .embeddings import RelativePositionEmbeddings
+from vision_architectures.layers.embeddings import (
+    RelativePositionEmbeddings,
+    RotaryPositionEmbeddings1D,
+    RotaryPositionEmbeddings1DConfig,
+    RotaryPositionEmbeddings3D,
+    RotaryPositionEmbeddings3DConfig,
+)
 from ..utils.activation_checkpointing import ActivationCheckpointing
 from ..utils.custom_base_model import CustomBaseModel, Field, model_validator
 from ..utils.rearrange import rearrange_channels
@@ -37,6 +43,9 @@ class Attention1DConfig(CustomBaseModel):
             "Runs attention by splitting the inputs into chunks of this size. 0 means no chunking. "
             "Useful for large inputs during inference. (This happens along batch dimension)."
         ),
+    )
+    rotary_position_embeddings_config: RotaryPositionEmbeddings1DConfig | None = Field(
+        None, description="Config for rotary position embeddings"
     )
 
     @property
@@ -82,11 +91,15 @@ class Attention1DConfig(CustomBaseModel):
 
 
 class Attention3DConfig(Attention1DConfig):
-    pass
+    rotary_position_embeddings_config: RotaryPositionEmbeddings3DConfig | None = Field(
+        None, description="Config for rotary position embeddings"
+    )
 
 # %% ../../nbs/layers/01_attention.ipynb #64813808
 @populate_docstring
-class Attention1D(nn.Module):
+class _Attention(nn.Module):
+    # This class is written for the 1D case, but the forward method also takes in 3D inputs to allow for 3D rotary
+    # position embeddings. For 1D usage, use the Attention1D class, for 3D usage, use the Attention3D class.
     """Performs attention (MHA, GQA, and MQA) on 1D sequences. {CLASS_DESCRIPTION_1D_DOC}"""
 
     _warn_relative_position_bias: bool = True
@@ -114,25 +127,16 @@ class Attention1D(nn.Module):
 
         self.config = Attention1DConfig.model_validate(config | kwargs)
 
-        dim_qk = self.config.dim_qk
-        dim_v = self.config.dim_v
-        ratio_q_to_kv_heads = self.config.ratio_q_to_kv_heads
-        per_head_dim = self.config.per_head_dim_qk
-        logit_scale_learnable = self.config.logit_scale_learnable
-        attn_drop_prob = self.config.attn_drop_prob
-        proj_drop_prob = self.config.proj_drop_prob
-
-        self.W_q = nn.Linear(dim_qk, dim_qk)
-        self.W_k = nn.Linear(dim_qk, dim_qk // ratio_q_to_kv_heads)
-        self.W_v = nn.Linear(dim_v, dim_qk // ratio_q_to_kv_heads)
-        self.attn_drop_prob = attn_drop_prob
-        self.proj = nn.Linear(dim_qk, dim_qk)
-        self.proj_drop = nn.Dropout(proj_drop_prob)
+        self.W_q = nn.Linear(self.config.dim_qk, self.config.dim_qk)
+        self.W_k = nn.Linear(self.config.dim_qk, self.config.dim_qk // self.config.ratio_q_to_kv_heads)
+        self.W_v = nn.Linear(self.config.dim_v, self.config.dim_qk // self.config.ratio_q_to_kv_heads)
+        self.proj = nn.Linear(self.config.dim_qk, self.config.dim_qk)
+        self.proj_drop = nn.Dropout(self.config.proj_drop_prob)
 
         if logit_scale is None:
             self.logit_scale = nn.Parameter(
-                torch.tensor([per_head_dim**-0.5]),
-                requires_grad=logit_scale_learnable,
+                torch.tensor([self.config.per_head_dim_qk**-0.5]),
+                requires_grad=self.config.logit_scale_learnable,
             )
         else:
             self.logit_scale = logit_scale
@@ -144,6 +148,10 @@ class Attention1D(nn.Module):
             )
         self.relative_position_bias = relative_position_bias
 
+        self.rotary_position_embeddings = None
+        if self.config.rotary_position_embeddings_config is not None:
+            self.rotary_position_embeddings = RotaryPositionEmbeddings1D(self.config.rotary_position_embeddings_config)
+
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
@@ -153,13 +161,25 @@ class Attention1D(nn.Module):
         Terminology: T => number of tokens, b => batch size
 
         Args:
-            query: Tensor of shape (b, T_q, dim_qk) representing the input to the query matrix.
-            key: Tensor of shape (b, T_kv, dim_qk) representing the input to the key matrix.
-            value: Tensor of shape (b, T_kv, dim_v) representing the input to the value matrix.
+            query: Tensor of shape (b, T_q, dim_qk) or (b, z_q, y_q, x_q, dim_qk).
+            key: Tensor of shape (b, T_kv, dim_qk) or (b, z_k, y_k, x_k, dim_qk).
+            value: Tensor of shape (b, T_kv, dim_v) or (b, z_v, y_v, x_v, dim_v).
 
         Returns:
-            Tensor of shape (b, T_q, dim_qk) representing output tokens.
+            Tensor of shape (b, T_q, dim_qk) or (b, z_q, y_q, x_q, dim_qk).
         """
+
+        if query.ndim == 3:
+            forward_rearrange_partial = partial(rearrange, pattern="b T (num_heads d) -> b num_heads T d")
+            backward_rearrange_partial = partial(rearrange, pattern="b num_heads T d -> b T (num_heads d)")
+        elif query.ndim == 5:
+            z_q, y_q, x_q = query.shape[1:4]
+            forward_rearrange_partial = partial(rearrange, pattern="b z y x (num_heads d) -> b num_heads (z y x) d")
+            backward_rearrange_partial = partial(
+                rearrange, pattern="b num_heads (z y x) d -> b z y x (num_heads d)", z=z_q, y=y_q, x=x_q
+            )
+        else:
+            raise NotImplementedError
 
         def get_final_query_key_value(query, key, value):
             """Computing query, key, and value tokens after passing to the weight matrices. Useful for activation
@@ -168,10 +188,16 @@ class Attention1D(nn.Module):
             key = self.W_k(key)
             value = self.W_v(value)
 
-            rearrange_partial = partial(rearrange, pattern="b T (num_heads d) -> b num_heads T d")
-            query = rearrange_partial(query, num_heads=self.config.num_heads).contiguous()
-            key = rearrange_partial(key, num_heads=self.config.num_kv_heads).contiguous()
-            value = rearrange_partial(value, num_heads=self.config.num_kv_heads).contiguous()
+            if self.rotary_position_embeddings is not None:
+                kwargs = {}
+                if isinstance(self.rotary_position_embeddings, RotaryPositionEmbeddings3D):
+                    kwargs["channels_first"] = False
+                query = self.rotary_position_embeddings(query, **kwargs)
+                key = self.rotary_position_embeddings(key, **kwargs)
+
+            query = forward_rearrange_partial(query, num_heads=self.config.num_heads).contiguous()
+            key = forward_rearrange_partial(key, num_heads=self.config.num_kv_heads).contiguous()
+            value = forward_rearrange_partial(value, num_heads=self.config.num_kv_heads).contiguous()
             # query: (b, num_heads, T, per_head_dim)
             # key: (b, num_kv_heads, T, per_head_dim)
             # value: (b, num_kv_heads, T, per_head_dim)
@@ -215,7 +241,7 @@ class Attention1D(nn.Module):
                 key_normalized_chunk,
                 value_chunk,
                 attn_mask=relative_position_bias,  # Use this as a way to introduce relative position bias
-                dropout_p=self.attn_drop_prob,
+                dropout_p=self.config.attn_drop_prob,
                 is_causal=False,
                 scale=1.0,  # Already scaled the vectors
                 **torch250plus_kwargs,
@@ -225,7 +251,7 @@ class Attention1D(nn.Module):
         output = torch.cat(output, dim=0)
         # (b, num_heads, T, per_head_dim)
 
-        output = rearrange(output, "b num_heads T d -> b T (num_heads d)").contiguous()
+        output = backward_rearrange_partial(output).contiguous()
         # (b, T, dim_qk)
 
         def get_final_output(output):
@@ -243,9 +269,26 @@ class Attention1D(nn.Module):
     def forward(self, *args, **kwargs):
         return self.checkpointing_level2(self._forward, *args, **kwargs)
 
+# %% ../../nbs/layers/01_attention.ipynb #82ce8250
+class Attention1D(_Attention):
+    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
+        """Forward pass of the Attention1D module.
+
+        Terminology: T => number of tokens, b => batch size
+
+        Args:
+            query: Tensor of shape (b, T_q, dim_qk) representing the input to the query matrix.
+            key: Tensor of shape (b, T_kv, dim_qk) representing the input to the key matrix.
+            value: Tensor of shape (b, T_kv, dim_v) representing the input to the value matrix.
+
+        Returns:
+            Tensor of shape (b, T_q, dim_qk) representing output tokens.
+        """
+        return super()._forward(query, key, value)
+
 # %% ../../nbs/layers/01_attention.ipynb #760eb158
 @populate_docstring
-class Attention3D(Attention1D):
+class Attention3D(_Attention):
     """Performs attention (MHA, GQA, and MQA) on 3D sequences. {CLASS_DESCRIPTION_3D_DOC}"""
 
     _warn_relative_position_bias: bool = False
@@ -258,7 +301,16 @@ class Attention3D(Attention1D):
         checkpointing_level: int = 0,
         **kwargs
     ):
-        super().__init__(config, relative_position_bias, logit_scale, checkpointing_level, **kwargs)
+        self.config = Attention3DConfig.model_validate(config | kwargs)
+
+        rotary_position_embeddings_config = self.config.rotary_position_embeddings_config
+        self.config.rotary_position_embeddings_config = None
+        super().__init__(self.config, relative_position_bias, logit_scale, checkpointing_level)
+        self.config.rotary_position_embeddings_config = rotary_position_embeddings_config
+
+        self.rotary_position_embeddings = None
+        if self.config.rotary_position_embeddings_config is not None:
+            self.rotary_position_embeddings = RotaryPositionEmbeddings3D(self.config.rotary_position_embeddings_config)
 
     @populate_docstring
     def _forward(
@@ -289,17 +341,7 @@ class Attention3D(Attention1D):
         value = rearrange_channels(value, channels_first, False)
         # Each is now (b, z, y, x, d)
 
-        z_q, y_q, x_q = query.shape[1:4]
-
-        query = rearrange(query, "b z y x d -> b (z y x) d").contiguous()
-        key = rearrange(key, "b z y x d -> b (z y x) d").contiguous()
-        value = rearrange(value, "b z y x d -> b (z y x) d").contiguous()
-        # Each is now (b, T, d)
-
         output = super()._forward(query, key, value)
-        # (b, T, d)
-
-        output = rearrange(output, "b (z y x) d -> b z y x d", z=z_q, y=y_q, x=x_q).contiguous()
         # (b, z, y, x, d)
 
         output = rearrange_channels(output, False, channels_first)
