@@ -37,8 +37,9 @@ RELATIVE_POSITION_BIAS_DOC = "Relative position embeddings for the attention mec
 LOGIT_SCALE_DOC = "Optional scaling factor for the attention logits."
 
 ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC = (
-    "Shape of the tokens in 3D (T_z, T_y, T_x). Leading tokens are ignored and only trailing tokens are used. "
-    "Used for 3D rotary position embeddings."
+    "Shape of the tokens in 3D. Used to identify the actual 3D matrix and separate it from extra tokens (eg. class "
+    "tokens) to apply rotary position embeddings. Leading tokens are treated as extra tokens and only trailing tokens "
+    "are used."
 )
 
 CLASS_DESCRIPTION_1D_DOC = "This class is designed for 1D input eg. language, patchified images, etc."
