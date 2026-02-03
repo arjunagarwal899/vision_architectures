@@ -164,16 +164,16 @@ class ViT3DDecoder(nn.Module, PyTorchModelHubMixin):
         """Pass the input embeddings through the ViT decoder (self attention + cross attention).
 
         Args:
-            q: Input to the query matrix. {INPUT_3D_DOC}
-            kv: Input to the key and value matrices. {INPUT_3D_DOC}
+            q: Input to the query matrix. {INPUT_3D_OR_1D_DOC}
+            kv: Input to the key and value matrices. {INPUT_3D_OR_1D_DOC}
             return_intermediates: {RETURN_INTERMEDIATES_DOC}
             channels_first: {CHANNELS_FIRST_DOC}
             q_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
             kv_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
 
         Returns:
-            {OUTPUT_3D_DOC} If `return_intermediates` is True, returns a tuple of the output embeddings and a list of
-            intermediate embeddings in channels_last format.
+            {OUTPUT_3D_OR_1D_DOC} If `return_intermediates` is True, returns a tuple of the output embeddings and a
+            list of intermediate embeddings in channels_last format.
         """
         # q: (b, T, dim) or (b, [dim], q_z, q_y, q_x, [dim])
         # kv: (b, T, dim) or (b, [dim], kv_z, kv_y, kv_x, [dim])
