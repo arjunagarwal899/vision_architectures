@@ -2,8 +2,9 @@
 
 # %% auto #0
 __all__ = ['CHANNELS_FIRST_DOC', 'CONFIG_INSTANCE_DOC', 'CONFIG_KWARGS_DOC', 'CHECKPOINTING_LEVEL_DOC', 'INPUT_1D_DOC',
-           'INPUT_2D_DOC', 'INPUT_3D_DOC', 'OUTPUT_1D_DOC', 'OUTPUT_2D_DOC', 'OUTPUT_3D_DOC',
-           'RELATIVE_POSITION_BIAS_DOC', 'LOGIT_SCALE_DOC', 'CLASS_DESCRIPTION_1D_DOC', 'CLASS_DESCRIPTION_2D_DOC',
+           'INPUT_2D_DOC', 'INPUT_3D_DOC', 'INPUT_3D_OR_1D_DOC', 'OUTPUT_1D_DOC', 'OUTPUT_2D_DOC', 'OUTPUT_3D_DOC',
+           'OUTPUT_3D_OR_1D_DOC', 'RELATIVE_POSITION_BIAS_DOC', 'LOGIT_SCALE_DOC',
+           'ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC', 'CLASS_DESCRIPTION_1D_DOC', 'CLASS_DESCRIPTION_2D_DOC',
            'CLASS_DESCRIPTION_3D_DOC', 'SPACINGS_DOC', 'RETURN_INTERMEDIATES_DOC', 'BOUNDING_BOXES_FORMAT_DOC',
            'populate_docstring']
 
@@ -18,14 +19,28 @@ CHECKPOINTING_LEVEL_DOC = (
     "The level of checkpointing to use for activation checkpointing. Refer to "
     ":py:class:`~vision_architectures.utils.activation_checkpointing.ActivationCheckpointing` for more details."
 )
+
 INPUT_1D_DOC = "Tensor of shape `(B, T, C)` representing the input features."
 INPUT_2D_DOC = "Tensor of shape `(B, C, Y, X)` or `(B, Y, X, C)` representing the input features."
 INPUT_3D_DOC = "Tensor of shape `(B, C, Z, Y, X)` or `(B, Z, Y, X, C)` representing the input features."
+INPUT_3D_OR_1D_DOC = (
+    "Tensor of shape `(B, C, Z, Y, X)`, `(B, Z, Y, X, C)`, or `(B, N, C)` representing the input features."
+)
 OUTPUT_1D_DOC = "Tensor of shape `(B, T, C)` representing the output features."
 OUTPUT_2D_DOC = "Tensor of shape `(B, C, Y, X)` or `(B, Y, X, C)` representing the output features."
 OUTPUT_3D_DOC = "Tensor of shape `(B, C, Z, Y, X)` or `(B, Z, Y, X, C)` representing the output features."
+OUTPUT_3D_OR_1D_DOC = (
+    "Tensor of shape `(B, C, Z, Y, X)`, `(B, Z, Y, X, C)`, or `(B, N, C)` representing the output features."
+)
+
 RELATIVE_POSITION_BIAS_DOC = "Relative position embeddings for the attention mechanism."
 LOGIT_SCALE_DOC = "Optional scaling factor for the attention logits."
+
+ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC = (
+    "Shape of the tokens in 3D (T_z, T_y, T_x). Leading tokens are ignored and only trailing tokens are used. "
+    "Used for 3D rotary position embeddings."
+)
+
 CLASS_DESCRIPTION_1D_DOC = "This class is designed for 1D input eg. language, patchified images, etc."
 CLASS_DESCRIPTION_2D_DOC = "This class is designed for 2D input eg. natural images etc."
 CLASS_DESCRIPTION_3D_DOC = "This class is designed for 3D input eg. medical images, videos etc."

@@ -308,61 +308,70 @@ class Attention3DWithMLP(nn.Module):
         key: torch.Tensor,
         value: torch.Tensor,
         channels_first: bool = True,
+        query_grid_shape: tuple[int, int, int] | None = None,
+        key_grid_shape: tuple[int, int, int] | None = None,
     ) -> torch.Tensor:
         """Forward pass of the Attention3DWithMLP block.
 
         Args:
-            query: {INPUT_3D_DOC}
-            key: {INPUT_3D_DOC}
-            value: {INPUT_3D_DOC}
+            query: {INPUT_3D_OR_1D_DOC}
+            key: {INPUT_3D_OR_1D_DOC}
+            value: {INPUT_3D_OR_1D_DOC}
             channels_first: {CHANNELS_FIRST_DOC}
+            query_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
+            key_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
 
         Returns:
-            {OUTPUT_3D_DOC}
+            {OUTPUT_3D_OR_1D_DOC}
         """
-        # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
-
-        query = rearrange_channels(query, channels_first, False)
-        key = rearrange_channels(key, channels_first, False)
-        value = rearrange_channels(value, channels_first, False)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        if query.ndim == 3:
+            # Each is (b, T, d)
+            pass
+        if query.ndim == 5:
+            query = rearrange_channels(query, channels_first, False)
+            key = rearrange_channels(key, channels_first, False)
+            value = rearrange_channels(value, channels_first, False)
+            # (b, tokens_z, tokens_y, tokens_x, dim)
 
         res_connection1 = query
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        # (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "pre":
             query = self.layernorm1(query)
             key = self.layernorm1(key)
             value = self.layernorm1(value)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = self.attn(query, key, value, channels_first=False)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        hidden_states = self.attn(
+            query, key, value, channels_first=False, query_grid_shape=query_grid_shape, key_grid_shape=key_grid_shape
+        )
+        # (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "post":
             hidden_states = self.layernorm1(hidden_states)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = self.residual(hidden_states, res_connection1)
         res_connection2 = hidden_states
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        #  (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "pre":
             hidden_states = self.layernorm2(hidden_states)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = self.mlp(hidden_states, channels_first=False)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        # (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "post":
             hidden_states = self.layernorm2(hidden_states)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            #  (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = self.residual(hidden_states, res_connection2)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        #  (b, T, d) or (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = rearrange_channels(hidden_states, False, channels_first)
-        # (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
+        if query.ndim == 5:
+            hidden_states = rearrange_channels(hidden_states, False, channels_first)
+            # (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         return hidden_states
 
@@ -425,21 +434,25 @@ class TransformerEncoderBlock3D(Attention3DWithMLP):
         q: torch.Tensor | None = None,
         k: torch.Tensor | None = None,
         v: torch.Tensor | None = None,
+        query_grid_shape: tuple[int, int, int] | None = None,
+        key_grid_shape: tuple[int, int, int] | None = None,
         **kwargs
     ) -> torch.Tensor:
         """Forward pass of the TransformerEncoderBlock3D block. Activation checkpointing level 3.
 
         Args:
-            qkv: {INPUT_3D_DOC} If provided, the same tensor is used for query, key, and value. Else, `q`, `k`, and `v`
-                are considered.
-            q: {INPUT_3D_DOC} This is used only if `qkv` is not provided. This represents queries and is required.
-            k: {INPUT_3D_DOC} This is used only if `qkv` is not provided. This represents keys. If not provided, it is
-                assumed to be the same as `q`.
-            v: {INPUT_3D_DOC} This is used only if `qkv` is not provided. This represents values. If not provided, it is
-                assumed to be the same as `k`.
+            qkv: {INPUT_3D_OR_1D_DOC} If provided, the same tensor is used for query, key, and value. Else, `q`, `k`,
+                and `v` are considered.
+            q: {INPUT_3D_OR_1D_DOC} This is used only if `qkv` is not provided. This represents queries and is required.
+            k: {INPUT_3D_OR_1D_DOC} This is used only if `qkv` is not provided. This represents keys. If not provided,
+                it is assumed to be the same as `q`.
+            v: {INPUT_3D_OR_1D_DOC} This is used only if `qkv` is not provided. This represents values. If not provided,
+                 it is assumed to be the same as `k`.
+            query_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
+            key_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
 
         Returns:
-            {OUTPUT_3D_DOC}
+            {OUTPUT_3D_OR_1D_DOC}
         """
         if qkv is not None:
             q, k, v = qkv, qkv, qkv
@@ -451,8 +464,10 @@ class TransformerEncoderBlock3D(Attention3DWithMLP):
             if v is None:
                 v = k
 
-        # qkv: (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
-        return super().forward(q, k, v, *args, **kwargs)
+        # qkv: (b, T, dim) or (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
+        return super().forward(
+            q, k, v, *args, query_grid_shape=query_grid_shape, key_grid_shape=key_grid_shape, **kwargs
+        )
 
 # %% ../../nbs/blocks/02_transformer.ipynb #087a9ae2
 @populate_docstring
@@ -472,30 +487,12 @@ class TransformerDecoderBlock1D(nn.Module):
 
         self.config = Attention1DWithMLPConfig.model_validate(config | kwargs)
 
-        dim = self.config.dim
-        num_heads = self.config.num_heads
-        mlp_ratio = self.config.mlp_ratio
-        layer_norm_eps = self.config.layer_norm_eps
-        attn_drop_prob = self.config.attn_drop_prob
-        proj_drop_prob = self.config.proj_drop_prob
-        mlp_drop_prob = self.config.mlp_drop_prob
-
-        self.attn1 = Attention1D(
-            dim=dim,
-            num_heads=num_heads,
-            attn_drop_prob=attn_drop_prob,
-            proj_drop_prob=proj_drop_prob,
-        )
-        self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.attn2 = Attention1D(
-            dim=dim,
-            num_heads=num_heads,
-            attn_drop_prob=attn_drop_prob,
-            proj_drop_prob=proj_drop_prob,
-        )
-        self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = Attention1DMLP(dim=dim, mlp_ratio=mlp_ratio, mlp_drop_prob=mlp_drop_prob)
-        self.layernorm3 = nn.LayerNorm(dim, eps=layer_norm_eps)
+        self.attn1 = Attention1D(self.config)
+        self.layernorm1 = nn.LayerNorm(self.config.dim, eps=self.config.layer_norm_eps)
+        self.attn2 = Attention1D(self.config, checkpointing_level=checkpointing_level)
+        self.layernorm2 = nn.LayerNorm(self.config.dim, eps=self.config.layer_norm_eps)
+        self.mlp = Attention1DMLP(self.config, checkpointing_level=checkpointing_level)
+        self.layernorm3 = nn.LayerNorm(self.config.dim, eps=self.config.layer_norm_eps)
 
         self.residual = Residual()
 
@@ -620,32 +617,19 @@ class TransformerDecoderBlock3D(nn.Module):
 
         self.config = Attention3DWithMLPConfig.model_validate(config | kwargs)
 
-        dim = self.config.dim
-        num_heads = self.config.num_heads
-        mlp_ratio = self.config.mlp_ratio
-        layer_norm_eps = self.config.layer_norm_eps
-        attn_drop_prob = self.config.attn_drop_prob
-        proj_drop_prob = self.config.proj_drop_prob
-        mlp_drop_prob = self.config.mlp_drop_prob
-
-        self.attn1 = Attention3D(
-            dim=dim,
-            num_heads=num_heads,
-            attn_drop_prob=attn_drop_prob,
-            proj_drop_prob=proj_drop_prob,
+        self.attn1 = Attention3D(self.config, checkpointing_level=checkpointing_level)
+        self.layernorm1 = nn.LayerNorm(self.config.dim, eps=self.config.layer_norm_eps)
+        self.attn2 = Attention3D(self.config, checkpointing_level=checkpointing_level)
+        self.layernorm2 = nn.LayerNorm(self.config.dim, eps=self.config.layer_norm_eps)
+        self.mlp = Attention3DMLP(
+            dim=self.config.dim, mlp_ratio=self.config.mlp_ratio, mlp_drop_prob=self.config.mlp_drop_prob
         )
-        self.layernorm1 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.attn2 = Attention3D(
-            dim=dim,
-            num_heads=num_heads,
-            attn_drop_prob=attn_drop_prob,
-            proj_drop_prob=proj_drop_prob,
-        )
-        self.layernorm2 = nn.LayerNorm(dim, eps=layer_norm_eps)
-        self.mlp = Attention3DMLP(dim=dim, mlp_ratio=mlp_ratio, mlp_drop_prob=mlp_drop_prob)
-        self.layernorm3 = nn.LayerNorm(dim, eps=layer_norm_eps)
+        self.layernorm3 = nn.LayerNorm(self.config.dim, eps=self.config.layer_norm_eps)
 
         self.residual = Residual()
+
+        # Disable mismatched extra token warnings in cross attention layer
+        self.attn2._warn_mismatched_extra_tokens = False
 
         self.checkpointing_level3 = ActivationCheckpointing(3, checkpointing_level)
 
@@ -660,25 +644,31 @@ class TransformerDecoderBlock3D(nn.Module):
         v1: torch.Tensor | None = None,
         k2: torch.Tensor | None = None,
         v2: torch.Tensor | None = None,
-        channels_first: bool = True
+        channels_first: bool = True,
+        q_grid_shape: tuple[int, int, int] | None = None,
+        k1_grid_shape: tuple[int, int, int] | None = None,
+        k2_grid_shape: tuple[int, int, int] | None = None,
     ) -> torch.Tensor:
         """Forward pass of the TransformerDecoderBlock3D block.
 
         Args:
-            q: {INPUT_3D_DOC} The query tensor used for self-attention. Either this or `q1` should be provided.
-            kv: {INPUT_3D_DOC} The key and value tensors used for cross-attention. Either this or `k1` and/or `v1`
+            q: {INPUT_3D_OR_1D_DOC} The query tensor used for self-attention. Either this or `q1` should be provided.
+            kv: {INPUT_3D_OR_1D_DOC} The key and value tensors used for cross-attention. Either this or `k1` and/or `v1`
                 should be provided.
-            q1: {INPUT_3D_DOC} The query tensor used for self-attention. Either this or `q` should be provided.
-            k1: {INPUT_3D_DOC} The key tensor used for self-attention. If not provided, this defaults to `q` or `q1`.
-            v1: {INPUT_3D_DOC} The value tensor used for self-attention. If not provided, this defaults to `q` or `q1`.
-            k2: {INPUT_3D_DOC} The key tensor used for cross-attention. Either this or `kv` should be provided.
-            v2: {INPUT_3D_DOC} The value tensor used for cross-attention. If not provided, this defaults to `kv` or `k2`.
+            q1: {INPUT_3D_OR_1D_DOC} The query tensor used for self-attention. Either this or `q` should be provided.
+            k1: {INPUT_3D_OR_1D_DOC} The key tensor used for self-attention. If not provided, this defaults to `q` or `q1`.
+            v1: {INPUT_3D_OR_1D_DOC} The value tensor used for self-attention. If not provided, this defaults to `q` or `q1`.
+            k2: {INPUT_3D_OR_1D_DOC} The key tensor used for cross-attention. Either this or `kv` should be provided.
+            v2: {INPUT_3D_OR_1D_DOC} The value tensor used for cross-attention. If not provided, this defaults to `kv` or `k2`.
             channels_first: {CHANNELS_FIRST_DOC}
+            q_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
+            k1_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
+            k2_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
 
         Returns:
-            {OUTPUT_3D_DOC}
+            {OUTPUT_3D_OR_1D_DOC}
         """
-        # Each is (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
+        # Each is (b, T, dim) or (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         # Set parameters for self-attention
         if q1 is None:
@@ -694,64 +684,70 @@ class TransformerDecoderBlock3D(nn.Module):
         if v2 is None:
             v2 = k2
 
-        q1 = rearrange_channels(q1, channels_first, False)
-        k1 = rearrange_channels(k1, channels_first, False)
-        v1 = rearrange_channels(v1, channels_first, False)
-        k2 = rearrange_channels(k2, channels_first, False)
-        v2 = rearrange_channels(v2, channels_first, False)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        if q1.ndim == 5:
+            q1 = rearrange_channels(q1, channels_first, False)
+            k1 = rearrange_channels(k1, channels_first, False)
+            v1 = rearrange_channels(v1, channels_first, False)
+            k2 = rearrange_channels(k2, channels_first, False)
+            v2 = rearrange_channels(v2, channels_first, False)
+            # (b, tokens_z, tokens_y, tokens_x, dim)
 
         res_connection1 = q1
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "pre":
             q1 = self.layernorm1(q1)
             k1 = self.layernorm1(k1)
             v1 = self.layernorm1(v1)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
-        q2: torch.Tensor = self.attn1(q1, k1, v1, channels_first=False)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        q2: torch.Tensor = self.attn1(
+            q1, k1, v1, channels_first=False, query_grid_shape=q_grid_shape, key_grid_shape=k1_grid_shape
+        )
+        # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "post":
             q2 = self.layernorm1(q2)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         q2 = self.residual(q2, res_connection1)
         res_connection2 = q2
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "pre":
             q2 = self.layernorm2(q2)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = self.attn2(q2, k2, v2, channels_first=False)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        hidden_states = self.attn2(
+            q2, k2, v2, channels_first=False, query_grid_shape=q_grid_shape, key_grid_shape=k2_grid_shape
+        )
+        # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "post":
             hidden_states = self.layernorm2(hidden_states)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = self.residual(hidden_states, res_connection2)
         res_connection3 = hidden_states
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "pre":
             hidden_states = self.layernorm3(hidden_states)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = self.mlp(hidden_states, channels_first=False)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         if self.config.norm_location == "post":
             hidden_states = self.layernorm3(hidden_states)
-            # (b, tokens_z, tokens_y, tokens_x, dim)
+            # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
         hidden_states = self.residual(hidden_states, res_connection3)
-        # (b, tokens_z, tokens_y, tokens_x, dim)
+        # (b, T, dim) or (b, tokens_z, tokens_y, tokens_x, dim)
 
-        hidden_states = rearrange_channels(hidden_states, False, channels_first)
-        # (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
+        if hidden_states.ndim == 5:
+            hidden_states = rearrange_channels(hidden_states, False, channels_first)
+            # (b, [dim], tokens_z, tokens_y, tokens_x, [dim])
 
         return hidden_states
 

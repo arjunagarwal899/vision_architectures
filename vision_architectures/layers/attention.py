@@ -5,10 +5,12 @@ __all__ = ['Attention1DConfig', 'Attention3DConfig', 'Attention1D', 'Attention3D
 
 # %% ../../nbs/layers/01_attention.ipynb #70207962
 from functools import partial, wraps
+from typing import Literal
 
 import torch
 import torch.nn.functional as F
 from einops import rearrange
+from loguru import logger
 from torch import nn
 
 from ..docstrings import populate_docstring
@@ -103,6 +105,8 @@ class _Attention(nn.Module):
     """Performs attention (MHA, GQA, and MQA) on 1D sequences. {CLASS_DESCRIPTION_1D_DOC}"""
 
     _warn_relative_position_bias: bool = True
+    _warn_mismatched_extra_tokens = True
+    _input_dimensionality: Literal["1d", "3d"] = ...
 
     @populate_docstring
     def __init__(
@@ -111,7 +115,7 @@ class _Attention(nn.Module):
         relative_position_bias: RelativePositionEmbeddings | None = None,
         logit_scale: float | None = None,
         checkpointing_level: int = 0,
-        **kwargs
+        **kwargs,
     ):
         """Initializes the Attention1D module.
 
@@ -141,8 +145,8 @@ class _Attention(nn.Module):
         else:
             self.logit_scale = logit_scale
 
-        if self._warn_relative_position_bias and relative_position_bias is not None:
-            print(
+        if _Attention._warn_relative_position_bias and relative_position_bias is not None:
+            logger.warning(
                 "Warning: Relative position bias is not used in Attention1D. "
                 "Use Attention3D for relative position bias."
             )
@@ -155,24 +159,51 @@ class _Attention(nn.Module):
         self.checkpointing_level1 = ActivationCheckpointing(1, checkpointing_level)
         self.checkpointing_level2 = ActivationCheckpointing(2, checkpointing_level)
 
-    def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
+    @populate_docstring
+    def _forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        query_grid_shape: tuple[int, int, int] | None,
+        key_grid_shape: tuple[int, int, int] | None,
+    ):
         """Forward pass of the Attention1D module.
 
         Terminology: T => number of tokens, b => batch size
 
         Args:
-            query: Tensor of shape (b, T_q, dim_qk) or (b, z_q, y_q, x_q, dim_qk).
-            key: Tensor of shape (b, T_kv, dim_qk) or (b, z_k, y_k, x_k, dim_qk).
-            value: Tensor of shape (b, T_kv, dim_v) or (b, z_v, y_v, x_v, dim_v).
+            query: Tensor of shape (b, T_q, dim_qk) representing the input to the query matrix.
+            key: Tensor of shape (b, T_kv, dim_qk) representing the input to the key matrix.
+            value: Tensor of shape (b, T_kv, dim_v) representing the input to the value matrix.
+            query_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
+            key_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
 
         Returns:
-            Tensor of shape (b, T_q, dim_qk) or (b, z_q, y_q, x_q, dim_qk).
+            Tensor of shape (b, T_q, dim_qk) representing output tokens.
         """
+        input_mode: Literal[
+            "true_3d",  # input data is truly 3D
+            "true_1d",  # input data is truly 1D
+            "3d_as_1d",  # input data is 3D but is flattened and appears to be 1D
+        ] = ...
 
         if query.ndim == 3:
+            if self._input_dimensionality == "1d":
+                input_mode = "true_1d"
+            else:
+                input_mode = "3d_as_1d"
+                if self.rotary_position_embeddings is not None:
+                    if query_grid_shape is None:
+                        raise ValueError("query_grid_shape must be provided if 3D tokens are provided as 1D")
+                    if key_grid_shape is None:
+                        key_grid_shape = query_grid_shape
+
             forward_rearrange_partial = partial(rearrange, pattern="b T (num_heads d) -> b num_heads T d")
             backward_rearrange_partial = partial(rearrange, pattern="b num_heads T d -> b T (num_heads d)")
         elif query.ndim == 5:
+            input_mode = "true_3d"
+
             z_q, y_q, x_q = query.shape[1:4]
             forward_rearrange_partial = partial(rearrange, pattern="b z y x (num_heads d) -> b num_heads (z y x) d")
             backward_rearrange_partial = partial(
@@ -181,7 +212,7 @@ class _Attention(nn.Module):
         else:
             raise NotImplementedError
 
-        def get_final_query_key_value(query, key, value):
+        def get_final_query_key_value(query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
             """Computing query, key, and value tokens after passing to the weight matrices. Useful for activation
             checkpointing"""
             query = self.W_q(query)
@@ -190,10 +221,59 @@ class _Attention(nn.Module):
 
             if self.rotary_position_embeddings is not None:
                 kwargs = {}
-                if isinstance(self.rotary_position_embeddings, RotaryPositionEmbeddings3D):
+                if input_mode in {"true_3d", "3d_as_1d"}:
                     kwargs["channels_first"] = False
+
+                if input_mode in {"3d_as_1d"}:
+                    # 3D tokens have been provided as 1D (probably to include class tokens etc.), so we need to
+                    # rearrange them temporarily for rotary position embeddings
+
+                    T_q = query.shape[1]
+                    T_k = key.shape[1]
+                    z_q, y_q, x_q = query_grid_shape
+                    z_k, y_k, x_k = key_grid_shape
+                    N_q = z_q * y_q * x_q
+                    N_k = z_k * y_k * x_k
+
+                    extra_query_tokens, query = query.split([T_q - N_q, N_q], dim=1)
+                    extra_key_tokens, key = key.split([T_k - N_k, N_k], dim=1)
+
+                    if self._warn_mismatched_extra_tokens and extra_query_tokens.shape[1] != extra_key_tokens.shape[1]:
+                        logger.warning(
+                            f"Query was provided with {extra_query_tokens.shape[1]} extra tokens, whereas key was "
+                            f"provided with {extra_key_tokens.shape[1]} extra tokens. This may fail silently. Please "
+                            "ensure this is as expected."
+                        )
+                        self._warn_mismatched_extra_tokens = False  # Warn only once
+
+                    query = rearrange(
+                        query, "b (z_q y_q x_q) d -> b z_q y_q x_q d", z_q=z_q, y_q=y_q, x_q=x_q
+                    ).contiguous()
+                    key = rearrange(key, "b (z_k y_k x_k) d -> b z_k y_k x_k d", z_k=z_k, y_k=y_k, x_k=x_k).contiguous()
+
                 query = self.rotary_position_embeddings(query, **kwargs)
                 key = self.rotary_position_embeddings(key, **kwargs)
+
+                if input_mode in {"3d_as_1d"}:
+                    # Revert back to the original structure
+                    query = torch.cat(
+                        [
+                            extra_query_tokens,
+                            rearrange(
+                                query, "b z_q y_q x_q d -> b (z_q y_q x_q) d", z_q=z_q, y_q=y_q, x_q=x_q
+                            ).contiguous(),
+                        ],
+                        dim=1,
+                    )
+                    key = torch.cat(
+                        [
+                            extra_key_tokens,
+                            rearrange(
+                                key, "b z_k y_k x_k d -> b (z_k y_k x_k) d", z_k=z_k, y_k=y_k, x_k=x_k
+                            ).contiguous(),
+                        ],
+                        dim=1,
+                    )
 
             query = forward_rearrange_partial(query, num_heads=self.config.num_heads).contiguous()
             key = forward_rearrange_partial(key, num_heads=self.config.num_kv_heads).contiguous()
@@ -271,6 +351,8 @@ class _Attention(nn.Module):
 
 # %% ../../nbs/layers/01_attention.ipynb #82ce8250
 class Attention1D(_Attention):
+    _input_dimensionality: Literal["1d", "3d"] = "1d"
+
     def _forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor):
         """Forward pass of the Attention1D module.
 
@@ -284,7 +366,7 @@ class Attention1D(_Attention):
         Returns:
             Tensor of shape (b, T_q, dim_qk) representing output tokens.
         """
-        return super()._forward(query, key, value)
+        return super()._forward(query, key, value, None, None)
 
 # %% ../../nbs/layers/01_attention.ipynb #760eb158
 @populate_docstring
@@ -292,6 +374,7 @@ class Attention3D(_Attention):
     """Performs attention (MHA, GQA, and MQA) on 3D sequences. {CLASS_DESCRIPTION_3D_DOC}"""
 
     _warn_relative_position_bias: bool = False
+    _input_dimensionality: Literal["1d", "3d"] = "3d"
 
     def __init__(
         self,
@@ -319,33 +402,44 @@ class Attention3D(_Attention):
         key: torch.Tensor,
         value: torch.Tensor,
         channels_first: bool = True,
+        query_grid_shape: tuple[int, int, int] | None = None,
+        key_grid_shape: tuple[int, int, int] | None = None,
     ):
         """Forward pass of the Attention3D module.
 
         Terminology: z => depth, y => height, x => width, b => batch size
 
         Args:
-            query: Tensor of shape (b, [dim_qk], z_q, y_q, x_q, [dim_qk]) representing the input to the query matrix.
-            key: Tensor of shape (b, [dim_qk], z_kv, y_kv, x_kv, [dim_qk]) representing the input to the key matrix.
-            value: Tensor of shape (b, [dim_v], z_kv, y_kv, x_kv, [dim_v]) representing the input to the value matrix.
+            query: Tensor of shape (b, [dim_qk], z_q, y_q, x_q, [dim_qk]) or (b, T_q, dim_qk) representing the input to
+                the query matrix.
+            key: Tensor of shape (b, [dim_qk], z_kv, y_kv, x_kv, [dim_qk]) or (b, T_kv, dim_qk) representing the input
+                to the key matrix.
+            value: Tensor of shape (b, [dim_v], z_kv, y_kv, x_kv, [dim_v]) or (b, T_kv, dim_v) representing the input
+                to the value matrix.
             channels_first: {CHANNELS_FIRST_DOC}
+            query_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
+            key_grid_shape: {ROTARY_POSITION_EMBEDDINGS_GRID_SHAPE_DOC}
 
         Returns:
-            Tensor of shape (b, [dim_qk], z_q, y_q, x_q, [dim_qk]) representing output tokens.
-
-        Constraints:
-            z_q * y_q * x_q = z_kv * y_kv * x_kv
+            Tensor of shape (b, [dim_qk], z_q, y_q, x_q, [dim_qk]) or (b, T_q, dim_qk) representing output tokens.
         """
-        query = rearrange_channels(query, channels_first, False)
-        key = rearrange_channels(key, channels_first, False)
-        value = rearrange_channels(value, channels_first, False)
-        # Each is now (b, z, y, x, d)
+        if query.ndim == 3:
+            # Each is (b, T, d)
+            pass
+        elif query.ndim == 5:
+            query = rearrange_channels(query, channels_first, False)
+            key = rearrange_channels(key, channels_first, False)
+            value = rearrange_channels(value, channels_first, False)
+            # Each is now (b, z, y, x, d)
+        else:
+            raise ValueError("Input tensors must have 3 or 5 dimensions")
 
-        output = super()._forward(query, key, value)
+        output = super()._forward(query, key, value, query_grid_shape, key_grid_shape)
         # (b, z, y, x, d)
 
-        output = rearrange_channels(output, False, channels_first)
-        # (b, [d], z, y, x, [d])
+        if output.ndim == 5:
+            output = rearrange_channels(output, False, channels_first)
+            # (b, [d], z, y, x, [d])
 
         return output
 
