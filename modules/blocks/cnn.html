@@ -1,0 +1,1648 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CNN &#8212; Vision Architectures (main)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'modules/blocks/cnn';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Image Readers" href="../image_readers/index.html" />
+    <link rel="prev" title="Transformer" href="transformer.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Vision Architectures (main)</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Blocks</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="se.html">Squeeze and Excitation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="heads_3d.html">Heads3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mbconv_3d.html">MBConv3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transformer.html">Transformer</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">CNN</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../image_readers/index.html">Image Readers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../image_readers/safetensors_reader.html">SafeTensorsReader</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../layers/index.html">Layers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../layers/embeddings.html">Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/attention.html">Attention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/latent_space.html">Latent Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/scale.html">Upsample / Downsample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/codebook.html">Codebook</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../losses/index.html">Loss Functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../losses/class_balanced_cross_entropy_loss.html">ClassBalancedCrossEntropyLoss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../metrics/index.html">Metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../metrics/detection.html">Detection</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../nets/index.html">Nets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../nets/perceiver_3d.html">Perceiver3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/upernet_3d.html">UperNet3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/detr_3d.html">DETR3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/maxvit_3d.html">MaxViT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/fpn_3d.html">FPN3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/symswin_3d.html">SymSwin3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/swinv2_3d.html">SwinV23D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/vit_3d.html">ViT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/unetr_3d_decoder.html">UNetR3DDecoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/upernet_2d.html">UperNet2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/fpn_2d.html">FPN2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/cait_3d.html">CaiT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/swin_3d.html">Swin3D</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../schedulers/index.html">Schedulers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/noise.html">Noise</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/sigmoid.html">Sigmoid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/cyclic.html">Cyclic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/lrs.html">Learning Rate Schedulers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../transforms/index.html">Transforms</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/croppad.html">CropPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/clipping.html">Clipping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/spatial.html">Spatial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/resize.html">Resize</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../utils/index.html">Utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils/ema_network.html">Exponential Moving Average (EMA) Network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/clamping.html">Clamping / Clipping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/bounding_boxes.html">Bounding Boxes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/pipeline_parallelism.html">Pipeline Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/residuals.html">Residual Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/normalizations.html">Normalizations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/rearrange.html">Rearrange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/activation_checkpointing.html">ActivationCheckpointing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/splitter_merger.html">Tensor Splitter and Merger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/custom_base_model.html">CustomBaseModel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/timesteps.html">Timesteps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/activations.html">Activations</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Blocks</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">CNN</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-vision_architectures.blocks.cnn">
+<span id="cnn"></span><h1>CNN<a class="headerlink" href="#module-vision_architectures.blocks.cnn" title="Link to this heading">#</a></h1>
+<dl class="py class pydantic_model">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">CNNBlockConfig</span></span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L30-L75"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel" title="vision_architectures.utils.custom_base_model.CustomBaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CustomBaseModel</span></code></a></p>
+<p><details  class="autodoc_pydantic_collapsable_json">
+<summary>Show JSON schema</summary><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">   </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CNNBlockConfig&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;in_channels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Number of input channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;In Channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;out_channels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Number of output channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Out Channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;kernel_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">               </span><span class="p">},</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kernel size for the convolution&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kernel Size&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;padding&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">               </span><span class="p">},</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Padding for the convolution. Can be &#39;same&#39; or an integer/tuple of integers.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Padding&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;stride&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">               </span><span class="p">},</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stride for the convolution&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stride&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;conv_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Additional keyword arguments for the convolution layer&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Conv Kwargs&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;transposed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Whether to perform ConvTranspose instead of Conv&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Transposed&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;batchnorm3d&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization layer type.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization_pre_args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Arguments for the normalization layer before providing the dimension. Useful when using GroupNorm layers are being used to specify the number of groups.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization Pre Args&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization_post_args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Arguments for the normalization layer after providing the dimension.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization Post Args&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Additional keyword arguments for the normalization layer&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization Kwargs&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;activation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;relu&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Activation function type.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Activation&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;activation_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Additional keyword arguments for the activation function.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Activation Kwargs&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;sequence&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CNA&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sequence of operations in the block.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;enum&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;C&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;AC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ADC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ANC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CAD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CAN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CNA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CND&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DNC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NDC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACDN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACND&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ADCN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ADNC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ANCD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ANDC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CADN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CAND&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDAN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDNA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CNAD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CNDA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DACN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DANC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCAN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCNA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DNAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DNCA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NACD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NADC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCAD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCDA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NDAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NDCA&quot;</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sequence&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;drop_prob&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Dropout probability.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Drop Prob&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">   </span><span class="p">},</span>
+<span class="w">   </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;in_channels&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;out_channels&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;kernel_size&quot;</span>
+<span class="w">   </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</details></p><dl class="field-list simple">
+<dt class="field-odd">Config<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arbitrary_types_allowed</strong>: <em>bool = True</em></p></li>
+<li><p><strong>extra</strong>: <em>str = ignore</em></p></li>
+<li><p><strong>validate_default</strong>: <em>bool = True</em></p></li>
+<li><p><strong>validate_assignment</strong>: <em>bool = True</em></p></li>
+<li><p><strong>validate_return</strong>: <em>bool = True</em></p></li>
+</ul>
+</dd>
+<dt class="field-even">Fields<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.activation" title="vision_architectures.blocks.cnn.CNNBlockConfig.activation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activation</span> <span class="pre">(str</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.activation_kwargs" title="vision_architectures.blocks.cnn.CNNBlockConfig.activation_kwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activation_kwargs</span> <span class="pre">(dict)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.conv_kwargs" title="vision_architectures.blocks.cnn.CNNBlockConfig.conv_kwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">conv_kwargs</span> <span class="pre">(dict[str,</span> <span class="pre">Any])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.drop_prob" title="vision_architectures.blocks.cnn.CNNBlockConfig.drop_prob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_prob</span> <span class="pre">(float)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.in_channels" title="vision_architectures.blocks.cnn.CNNBlockConfig.in_channels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">in_channels</span> <span class="pre">(int)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.kernel_size" title="vision_architectures.blocks.cnn.CNNBlockConfig.kernel_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel_size</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">...])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization" title="vision_architectures.blocks.cnn.CNNBlockConfig.normalization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalization</span> <span class="pre">(str</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_kwargs" title="vision_architectures.blocks.cnn.CNNBlockConfig.normalization_kwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalization_kwargs</span> <span class="pre">(dict)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_post_args" title="vision_architectures.blocks.cnn.CNNBlockConfig.normalization_post_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalization_post_args</span> <span class="pre">(list)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_pre_args" title="vision_architectures.blocks.cnn.CNNBlockConfig.normalization_pre_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalization_pre_args</span> <span class="pre">(list)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.out_channels" title="vision_architectures.blocks.cnn.CNNBlockConfig.out_channels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">out_channels</span> <span class="pre">(int)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.padding" title="vision_architectures.blocks.cnn.CNNBlockConfig.padding"><code class="xref py py-obj docutils literal notranslate"><span class="pre">padding</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">...]</span> <span class="pre">|</span> <span class="pre">str)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.sequence" title="vision_architectures.blocks.cnn.CNNBlockConfig.sequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sequence</span> <span class="pre">(Literal['C',</span> <span class="pre">'AC',</span> <span class="pre">'CA',</span> <span class="pre">'CD',</span> <span class="pre">'CN',</span> <span class="pre">'DC',</span> <span class="pre">'NC',</span> <span class="pre">'ACD',</span> <span class="pre">'ACN',</span> <span class="pre">'ADC',</span> <span class="pre">'ANC',</span> <span class="pre">'CAD',</span> <span class="pre">'CAN',</span> <span class="pre">'CDA',</span> <span class="pre">'CDN',</span> <span class="pre">'CNA',</span> <span class="pre">'CND',</span> <span class="pre">'DAC',</span> <span class="pre">'DCA',</span> <span class="pre">'DCN',</span> <span class="pre">'DNC',</span> <span class="pre">'NAC',</span> <span class="pre">'NCA',</span> <span class="pre">'NCD',</span> <span class="pre">'NDC',</span> <span class="pre">'ACDN',</span> <span class="pre">'ACND',</span> <span class="pre">'ADCN',</span> <span class="pre">'ADNC',</span> <span class="pre">'ANCD',</span> <span class="pre">'ANDC',</span> <span class="pre">'CADN',</span> <span class="pre">'CAND',</span> <span class="pre">'CDAN',</span> <span class="pre">'CDNA',</span> <span class="pre">'CNAD',</span> <span class="pre">'CNDA',</span> <span class="pre">'DACN',</span> <span class="pre">'DANC',</span> <span class="pre">'DCAN',</span> <span class="pre">'DCNA',</span> <span class="pre">'DNAC',</span> <span class="pre">'DNCA',</span> <span class="pre">'NACD',</span> <span class="pre">'NADC',</span> <span class="pre">'NCAD',</span> <span class="pre">'NCDA',</span> <span class="pre">'NDAC',</span> <span class="pre">'NDCA'])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.stride" title="vision_architectures.blocks.cnn.CNNBlockConfig.stride"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stride</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">...])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.transposed" title="vision_architectures.blocks.cnn.CNNBlockConfig.transposed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transposed</span> <span class="pre">(bool)</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-odd">Validators<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a> » <code class="xref py py-obj docutils literal notranslate"><span class="pre">all</span> <span class="pre">fields</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.in_channels">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">in_channels</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.in_channels" title="Link to this definition">#</a></dt>
+<dd><p>Number of input channels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.out_channels">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">out_channels</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.out_channels" title="Link to this definition">#</a></dt>
+<dd><p>Number of output channels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.kernel_size">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">]</span></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.kernel_size" title="Link to this definition">#</a></dt>
+<dd><p>Kernel size for the convolution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.padding">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">padding</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">]</span> <span class="pre">|</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'same'</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.padding" title="Link to this definition">#</a></dt>
+<dd><p>Padding for the convolution. Can be ‘same’ or an integer/tuple of integers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.stride">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stride</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.stride" title="Link to this definition">#</a></dt>
+<dd><p>Stride for the convolution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.conv_kwargs">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conv_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.conv_kwargs" title="Link to this definition">#</a></dt>
+<dd><p>Additional keyword arguments for the convolution layer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.transposed">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transposed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.transposed" title="Link to this definition">#</a></dt>
+<dd><p>Whether to perform ConvTranspose instead of Conv</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.normalization">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalization</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> <span class="pre">|</span> <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'batchnorm3d'</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization" title="Link to this definition">#</a></dt>
+<dd><p>Normalization layer type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.normalization_pre_args">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalization_pre_args</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_pre_args" title="Link to this definition">#</a></dt>
+<dd><p>Arguments for the normalization layer before providing the dimension. Useful when using GroupNorm layers are being used to specify the number of groups.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.normalization_post_args">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalization_post_args</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_post_args" title="Link to this definition">#</a></dt>
+<dd><p>Arguments for the normalization layer after providing the dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.normalization_kwargs">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalization_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_kwargs" title="Link to this definition">#</a></dt>
+<dd><p>Additional keyword arguments for the normalization layer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.activation">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">activation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> <span class="pre">|</span> <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'relu'</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.activation" title="Link to this definition">#</a></dt>
+<dd><p>Activation function type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.activation_kwargs">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">activation_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.activation_kwargs" title="Link to this definition">#</a></dt>
+<dd><p>Additional keyword arguments for the activation function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.sequence">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sequence</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'C'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'AC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ACD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ACN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ADC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ANC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CAD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CAN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CDA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CDN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CNA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CND'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DAC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DCA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DCN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DNC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NAC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NCA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NCD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NDC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ACDN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ACND'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ADCN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ADNC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ANCD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'ANDC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CADN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CAND'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CDAN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CDNA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CNAD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'CNDA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DACN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DANC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DCAN'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DCNA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DNAC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'DNCA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NACD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NADC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NCAD'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NCDA'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NDAC'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'NDCA'</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CNA'</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.sequence" title="Link to this definition">#</a></dt>
+<dd><p>Sequence of operations in the block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.drop_prob">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">drop_prob</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.drop_prob" title="Link to this definition">#</a></dt>
+<dd><p>Dropout probability.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlockConfig.validate">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><em class="xref py py-obj"><span class="pre">all</span> <span class="pre">fields</span></em><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L60-L75"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate" title="Link to this definition">#</a></dt>
+<dd><p>Base method for validating the model after creation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class pydantic_model">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlockConfig">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">MultiResCNNBlockConfig</span></span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L78-L105"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig" title="vision_architectures.blocks.cnn.CNNBlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">CNNBlockConfig</span></code></a></p>
+<p><details  class="autodoc_pydantic_collapsable_json">
+<summary>Show JSON schema</summary><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">   </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MultiResCNNBlockConfig&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;in_channels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Number of input channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;In Channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;out_channels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Number of output channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Out Channels&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;kernel_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kernel size for the convolution. Only kernel_size=3 is supported for MultiResCNNBlock.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kernel Size&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;padding&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;const&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Padding for the convolution. Only &#39;same&#39; is supported for MultiResCNNBlock.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Padding&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;stride&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">               </span><span class="p">},</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stride for the convolution&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stride&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;conv_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Additional keyword arguments for the convolution layer&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Conv Kwargs&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;transposed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Whether to perform ConvTranspose instead of Conv&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Transposed&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;batchnorm3d&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization layer type.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization_pre_args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Arguments for the normalization layer before providing the dimension. Useful when using GroupNorm layers are being used to specify the number of groups.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization Pre Args&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization_post_args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Arguments for the normalization layer after providing the dimension.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization Post Args&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;normalization_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Additional keyword arguments for the normalization layer&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Normalization Kwargs&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;activation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;relu&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Activation function type.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Activation&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;activation_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Additional keyword arguments for the activation function.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Activation Kwargs&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;sequence&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CNA&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sequence of operations in the block.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;enum&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;C&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;AC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ADC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ANC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CAD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CAN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CNA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CND&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DNC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NDC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACDN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ACND&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ADCN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ADNC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ANCD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ANDC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CADN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CAND&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDAN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CDNA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CNAD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CNDA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DACN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DANC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCAN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DCNA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DNAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;DNCA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NACD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NADC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCAD&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NCDA&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NDAC&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;NDCA&quot;</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sequence&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;drop_prob&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Dropout probability.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Drop Prob&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;kernel_sizes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">            </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">            </span><span class="mi">7</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kernel sizes for each conv layer.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">               </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">               </span><span class="p">},</span>
+<span class="w">               </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                     </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">                  </span><span class="p">},</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">               </span><span class="p">}</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">         </span><span class="p">},</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kernel Sizes&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;filter_ratios&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">            </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">            </span><span class="mi">3</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ratio of filters to out_channels for each conv layer. Will be scaled to sum to 1.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span>
+<span class="w">         </span><span class="p">},</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Filter Ratios&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">   </span><span class="p">},</span>
+<span class="w">   </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;in_channels&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;out_channels&quot;</span>
+<span class="w">   </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</details></p><dl class="field-list simple">
+<dt class="field-odd">Config<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arbitrary_types_allowed</strong>: <em>bool = True</em></p></li>
+<li><p><strong>extra</strong>: <em>str = ignore</em></p></li>
+<li><p><strong>validate_default</strong>: <em>bool = True</em></p></li>
+<li><p><strong>validate_assignment</strong>: <em>bool = True</em></p></li>
+<li><p><strong>validate_return</strong>: <em>bool = True</em></p></li>
+</ul>
+</dd>
+<dt class="field-even">Fields<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_ratios</span> <span class="pre">(tuple[float,</span> <span class="pre">...])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_size" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel_size</span> <span class="pre">(int)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_sizes" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_sizes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel_sizes</span> <span class="pre">(tuple[int</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">...],</span> <span class="pre">...])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.padding" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.padding"><code class="xref py py-obj docutils literal notranslate"><span class="pre">padding</span> <span class="pre">(Literal['same'])</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-odd">Validators<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_filter_ratios</span></code></a> » <a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_ratios</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a> » <code class="xref py py-obj docutils literal notranslate"><span class="pre">all</span> <span class="pre">fields</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_sizes">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel_sizes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">],</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(3,</span> <span class="pre">5,</span> <span class="pre">7)</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_sizes" title="Link to this definition">#</a></dt>
+<dd><p>Kernel sizes for each conv layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">filter_ratios</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(1,</span> <span class="pre">2,</span> <span class="pre">3)</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios" title="Link to this definition">#</a></dt>
+<dd><p>Ratio of filters to out_channels for each conv layer. Will be scaled to sum to 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_filter_ratios</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.padding">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">padding</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'same'</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'same'</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.padding" title="Link to this definition">#</a></dt>
+<dd><p>Padding for the convolution. Only ‘same’ is supported for MultiResCNNBlock.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_size">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_size" title="Link to this definition">#</a></dt>
+<dd><p>Kernel size for the convolution. Only kernel_size=3 is supported for MultiResCNNBlock.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="../utils/custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scale_filter_ratios</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios"><em class="xref py py-obj"><span class="pre">filter_ratios</span></em></a><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L91-L95"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><em class="xref py py-obj"><span class="pre">all</span> <span class="pre">fields</span></em><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L97-L105"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate" title="Link to this definition">#</a></dt>
+<dd><p>Base method for validating the model after creation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlock3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">CNNBlock3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L220-L234"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlock3D" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_CNNBlock</span></code></p>
+<p>A block to perform a sequence of convolution, activation, normalization, and dropout operations.
+This class is designed for 3D input eg. medical images, videos etc.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlock3D.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L225-L234"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlock3D.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the CNNBlock3D block. Activation checkpointing level 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig" title="vision_architectures.blocks.cnn.CNNBlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">CNNBlockConfig</span></code></a></span>) – An instance of the Config class that contains all the configuration parameters. It can also be passed as a dictionary and the instance will be created automatically.</p></li>
+<li><p><strong>checkpointing_level</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The level of checkpointing to use for activation checkpointing. Refer to <a class="reference internal" href="../utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing" title="vision_architectures.utils.activation_checkpointing.ActivationCheckpointing"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActivationCheckpointing</span></code></a> for more details.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for configuration.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlock2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">CNNBlock2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L237-L251"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlock2D" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_CNNBlock</span></code></p>
+<p>A block to perform a sequence of convolution, activation, normalization, and dropout operations.
+This class is designed for 2D input eg. natural images etc.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.CNNBlock2D.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L242-L251"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.CNNBlock2D.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the CNNBlock2D block. Activation checkpointing level 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vision_architectures.blocks.cnn.CNNBlockConfig" title="vision_architectures.blocks.cnn.CNNBlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">CNNBlockConfig</span></code></a></span>) – An instance of the Config class that contains all the configuration parameters. It can also be passed as a dictionary and the instance will be created automatically.</p></li>
+<li><p><strong>checkpointing_level</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The level of checkpointing to use for activation checkpointing. Refer to <a class="reference internal" href="../utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing" title="vision_architectures.utils.activation_checkpointing.ActivationCheckpointing"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActivationCheckpointing</span></code></a> for more details.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for configuration.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlock3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">MultiResCNNBlock3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L356-L366"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlock3D" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_MultiResCNNBlock</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlock3D.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L357-L366"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlock3D.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the MultiResCNNBlock3D block. Activation checkpointing level 2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig</span></code></a></span>) – An instance of the Config class that contains all the configuration parameters. It can also be passed as a dictionary and the instance will be created automatically.</p></li>
+<li><p><strong>checkpointing_level</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The level of checkpointing to use for activation checkpointing. Refer to <a class="reference internal" href="../utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing" title="vision_architectures.utils.activation_checkpointing.ActivationCheckpointing"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActivationCheckpointing</span></code></a> for more details.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for configuration.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlock2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">MultiResCNNBlock2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L369-L379"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlock2D" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_MultiResCNNBlock</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.MultiResCNNBlock2D.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpointing_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L370-L379"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.MultiResCNNBlock2D.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the MultiResCNNBlock2D block. Activation checkpointing level 2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig" title="vision_architectures.blocks.cnn.MultiResCNNBlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig</span></code></a></span>) – An instance of the Config class that contains all the configuration parameters. It can also be passed as a dictionary and the instance will be created automatically.</p></li>
+<li><p><strong>checkpointing_level</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The level of checkpointing to use for activation checkpointing. Refer to <a class="reference internal" href="../utils/activation_checkpointing.html#vision_architectures.utils.activation_checkpointing.ActivationCheckpointing" title="vision_architectures.utils.activation_checkpointing.ActivationCheckpointing"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActivationCheckpointing</span></code></a> for more details.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for configuration.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">TensorSplittingConv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_splits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimize_num_splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L382-L647"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<p>Convolution layer that operates on splits of a tensor on desired device and concatenates the results to give a
+lossless output. This is useful for large input tensors that cause intermediate buffers in the conv layer that
+don’t fit in memory. Works for both 2D and 3D convolutions.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_splits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimize_num_splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L387-L418"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the TensorSplittingConv layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conv</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></span>) – Convolution layer to be used for splitting. Must be either nn.Conv2d or nn.Conv3d.</p></li>
+<li><p><strong>num_splits</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</span>) – Number of splits for each spatial dimension. If an int is provided, it will be used for all
+spatial dimensions. If a tuple is provided, it must have the same length as the number of spatial
+dimensions.</p></li>
+<li><p><strong>optimize_num_splits</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to optimize the number of splits based on the input shape. An example of
+optimization is provided below. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.get_receptive_field">
+<span class="sig-name descname"><span class="pre">get_receptive_field</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_receptive_field" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the receptive field of the convolution layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.get_edge_context">
+<span class="sig-name descname"><span class="pre">get_edge_context</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_edge_context" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the context size required to eliminate edge effects when merging the conv outputs into one.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.get_input_shape">
+<span class="sig-name descname"><span class="pre">get_input_shape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L435-L452"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_input_shape" title="Link to this definition">#</a></dt>
+<dd><p>Get the input shape of the convolution layer. This function removes any unnecesary dimensions and ensures
+that the input shape is of length equal to the number of spatial dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_shape</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Size</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – Shape of the input tensor. If a tensor is provided, its shape will be used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of the input shape for the convolution layer, with only the spatial dimensions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.get_optimized_num_splits">
+<span class="sig-name descname"><span class="pre">get_optimized_num_splits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L454-L481"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_optimized_num_splits" title="Link to this definition">#</a></dt>
+<dd><p>Optimize the number of splits for each dimension based on the input shape and number of splits</p>
+<p class="rubric">Example</p>
+<p>Let’s say input shape is (110, 110) and num_splits is (12, 12). The input will first be padded to (120, 120)
+and then split into splits of size (10+overlap, 10+overlap) each. However, if you notice, the padding
+that was also equal to 10, and therefore was completely unnecessary as the same result can be achieved by
+using num_splits = (11, 11) and reducing 144-121=23 splits to be processed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_shape</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Size</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – Shape of the input tensor. If a tensor is provided, its shape will be used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of optimized number of splits for each dimension.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.pad_input_for_divisibility">
+<span class="sig-name descname"><span class="pre">pad_input_for_divisibility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L483-L502"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.pad_input_for_divisibility" title="Link to this definition">#</a></dt>
+<dd><p>Pad the input at the end of every spatial dimension such that it is perfectly divisible by the number of
+splits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – Input tensor of shape (batch_size, in_channels, [z], y, x).</p></li>
+<li><p><strong>num_splits</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]]</span>) – Number of splits for each spatial dimension. If None, the default num_splits will be used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Padded input tensor of shape (batch_size, in_channels, [z], y, x).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.get_split_size">
+<span class="sig-name descname"><span class="pre">get_split_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L504-L525"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_split_size" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the split size for each dimension based on the input shape and number of splits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_shape</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Size</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – Shape of the input tensor. If a tensor is provided, its shape will be used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of split sizes for each dimension.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.get_split_stride">
+<span class="sig-name descname"><span class="pre">get_split_stride</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L527-L548"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_split_stride" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the split stride for each dimension based on the input shape and context size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_shape</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Size</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – Shape of the input tensor. If a tensor is provided, its shape will be used.</p></li>
+<li><p><strong>num_splits</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]]</span>) – Number of splits for each spatial dimension. If None, the default num_splits will be used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of split strides for each dimension.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.pad_input_for_context">
+<span class="sig-name descname"><span class="pre">pad_input_for_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L550-L564"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.pad_input_for_context" title="Link to this definition">#</a></dt>
+<dd><p>Pad the input with the context size for consistent merging.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – Input tensor of shape (batch_size, in_channels, [z], y, x).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Padded input tensor of shape (batch_size, in_channels, [z], y, x).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels_first</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L566-L644"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.forward" title="Link to this definition">#</a></dt>
+<dd><dl class="simple">
+<dt>Forward pass through the convolution layer with tensor splitting parallelism. Main convolution occurs on it’s</dt><dd><p>device, but the output is built on the input tensor’s device.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – Tensor of shape <cite>(B, C, Z, Y, X)</cite> or <cite>(B, Z, Y, X, C)</cite> representing the input features.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor of shape <cite>(B, C, Z, Y, X)</cite> or <cite>(B, Z, Y, X, C)</cite> representing the output features.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.TensorSplittingConv.extra_repr">
+<span class="sig-name descname"><span class="pre">extra_repr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L646-L647"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.TensorSplittingConv.extra_repr" title="Link to this definition">#</a></dt>
+<dd><p>Return the extra representation of the module.</p>
+<p>To print customized extra information, you should re-implement
+this method in your own modules. Both single-line and multi-line
+strings are acceptable.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.add_tsp_to_module">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">add_tsp_to_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_splits_2d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_splits_3d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L650-L696"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.add_tsp_to_module" title="Link to this definition">#</a></dt>
+<dd><p>Recursively add TensorSplittingConv to the module for all Conv2d and Conv3d layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>module</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></span>) – The module to modify.</p></li>
+<li><p><strong>num_splits_2d</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Number of splits for 2D convolutions. If None, 2D convolutions will not be modified.</p></li>
+<li><p><strong>num_splits_3d</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Number of splits for 3D convolutions. If None, 3D convolutions will not be modified.</p></li>
+<li><p><strong>strict</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to raise an error if a conversion fails. If False, it will log the error and continue.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The modified module with TensorSplittingConv layers.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If both num_splits_2d and num_splits_3d are None.</p></li>
+<li><p><strong>Exception</strong> – If a conversion fails and strict is True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vision_architectures.blocks.cnn.remove_tsp_from_module">
+<span class="sig-prename descclassname"><span class="pre">vision_architectures.blocks.cnn.</span></span><span class="sig-name descname"><span class="pre">remove_tsp_from_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/blocks/cnn.py#L699-L713"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.blocks.cnn.remove_tsp_from_module" title="Link to this definition">#</a></dt>
+<dd><p>Recursively remove TensorSplittingConv from the module and replace it with the original convolution layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>module</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></span>) – The module to modify.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The modified module with TensorSplittingConv layers replaced by the original convolution layers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="transformer.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Transformer</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../image_readers/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Image Readers</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.in_channels"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.in_channels</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.out_channels"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.out_channels</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.kernel_size"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.kernel_size</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.padding"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.padding</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.stride"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.stride</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.conv_kwargs"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.conv_kwargs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.transposed"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.transposed</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.normalization</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_pre_args"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.normalization_pre_args</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_post_args"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.normalization_post_args</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.normalization_kwargs"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.normalization_kwargs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.activation"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.activation</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.activation_kwargs"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.activation_kwargs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.sequence"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.sequence</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.drop_prob"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.drop_prob</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlockConfig.validate"><code class="docutils literal notranslate"><span class="pre">CNNBlockConfig.validate</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_sizes"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig.kernel_sizes</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.filter_ratios"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig.filter_ratios</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.padding"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig.padding</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.kernel_size"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig.kernel_size</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.scale_filter_ratios"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig.scale_filter_ratios</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlockConfig.validate"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlockConfig.validate</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlock3D"><code class="docutils literal notranslate"><span class="pre">CNNBlock3D</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlock3D.__init__"><code class="docutils literal notranslate"><span class="pre">CNNBlock3D.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlock2D"><code class="docutils literal notranslate"><span class="pre">CNNBlock2D</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.CNNBlock2D.__init__"><code class="docutils literal notranslate"><span class="pre">CNNBlock2D.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlock3D"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlock3D</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlock3D.__init__"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlock3D.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlock2D"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlock2D</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.MultiResCNNBlock2D.__init__"><code class="docutils literal notranslate"><span class="pre">MultiResCNNBlock2D.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.__init__"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_receptive_field"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.get_receptive_field()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_edge_context"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.get_edge_context()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_input_shape"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.get_input_shape()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_optimized_num_splits"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.get_optimized_num_splits()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.pad_input_for_divisibility"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.pad_input_for_divisibility()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_split_size"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.get_split_size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.get_split_stride"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.get_split_stride()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.pad_input_for_context"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.pad_input_for_context()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.forward"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.forward()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.TensorSplittingConv.extra_repr"><code class="docutils literal notranslate"><span class="pre">TensorSplittingConv.extra_repr()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.add_tsp_to_module"><code class="docutils literal notranslate"><span class="pre">add_tsp_to_module()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.blocks.cnn.remove_tsp_from_module"><code class="docutils literal notranslate"><span class="pre">remove_tsp_from_module()</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2023 onwards, Arjun Agarwal.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

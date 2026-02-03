@@ -1,0 +1,7 @@
+Bounding Boxes
+==============
+
+.. automodule:: vision_architectures.utils.bounding_boxes
+   :members:
+   :undoc-members:
+   :show-inheritance:

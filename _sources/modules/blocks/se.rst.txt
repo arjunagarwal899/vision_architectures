@@ -1,0 +1,7 @@
+Squeeze and Excitation
+======================
+
+.. automodule:: vision_architectures.blocks.se
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+SymSwin3D
+=========
+
+.. automodule:: vision_architectures.nets.symswin_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

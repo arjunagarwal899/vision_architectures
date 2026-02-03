@@ -1,0 +1,7 @@
+Noise
+=====
+
+.. automodule:: vision_architectures.schedulers.noise
+   :members:
+   :undoc-members:
+   :show-inheritance:

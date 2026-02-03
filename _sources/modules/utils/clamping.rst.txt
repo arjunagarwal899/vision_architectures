@@ -1,0 +1,7 @@
+Clamping / Clipping
+===================
+
+.. automodule:: vision_architectures.utils.clamping
+   :members:
+   :undoc-members:
+   :show-inheritance:

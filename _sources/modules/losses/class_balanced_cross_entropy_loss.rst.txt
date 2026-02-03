@@ -1,0 +1,7 @@
+ClassBalancedCrossEntropyLoss
+=============================
+
+.. automodule:: vision_architectures.losses.class_balanced_cross_entropy_loss
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+Detection
+=========
+
+.. automodule:: vision_architectures.metrics.detection
+   :members:
+   :undoc-members:
+   :show-inheritance:

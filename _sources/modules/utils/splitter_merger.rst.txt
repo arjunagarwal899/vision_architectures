@@ -1,0 +1,7 @@
+Tensor Splitter and Merger
+==========================
+
+.. automodule:: vision_architectures.utils.splitter_merger
+   :members:
+   :undoc-members:
+   :show-inheritance:

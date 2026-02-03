@@ -1,0 +1,7 @@
+Sigmoid
+=======
+
+.. automodule:: vision_architectures.schedulers.sigmoid
+   :members:
+   :undoc-members:
+   :show-inheritance:

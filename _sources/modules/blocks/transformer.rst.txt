@@ -1,0 +1,7 @@
+Transformer
+===========
+
+.. automodule:: vision_architectures.blocks.transformer
+   :members:
+   :undoc-members:
+   :show-inheritance:

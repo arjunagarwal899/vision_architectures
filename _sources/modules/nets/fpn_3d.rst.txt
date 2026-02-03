@@ -1,0 +1,7 @@
+FPN3D
+=====
+
+.. automodule:: vision_architectures.nets.fpn_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+Embeddings
+==========
+
+.. automodule:: vision_architectures.layers.embeddings
+   :members:
+   :undoc-members:
+   :show-inheritance:

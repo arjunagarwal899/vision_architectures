@@ -1,0 +1,7 @@
+Rearrange
+=========
+
+.. automodule:: vision_architectures.utils.rearrange
+   :members:
+   :undoc-members:
+   :show-inheritance:

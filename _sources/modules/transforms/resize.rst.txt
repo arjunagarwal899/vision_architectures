@@ -1,0 +1,7 @@
+Resize
+======
+
+.. automodule:: vision_architectures.transforms.resize
+   :members:
+   :undoc-members:
+   :show-inheritance:

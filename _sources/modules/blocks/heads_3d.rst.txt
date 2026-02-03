@@ -1,0 +1,7 @@
+Heads3D
+=======
+
+.. automodule:: vision_architectures.blocks.heads_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

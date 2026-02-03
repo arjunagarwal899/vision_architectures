@@ -1,0 +1,7 @@
+Clipping
+========
+
+.. automodule:: vision_architectures.transforms.clipping
+   :members:
+   :undoc-members:
+   :show-inheritance:

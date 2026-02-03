@@ -1,0 +1,9 @@
+Loss Functions
+==============
+
+This section documents the loss functions components.
+
+.. toctree::
+   :maxdepth: 1
+
+   class_balanced_cross_entropy_loss

@@ -1,0 +1,814 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Tensor Splitter and Merger &#8212; Vision Architectures (main)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'modules/utils/splitter_merger';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="CustomBaseModel" href="custom_base_model.html" />
+    <link rel="prev" title="ActivationCheckpointing" href="activation_checkpointing.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Vision Architectures (main)</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../blocks/index.html">Blocks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/se.html">Squeeze and Excitation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/heads_3d.html">Heads3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/mbconv_3d.html">MBConv3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/transformer.html">Transformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blocks/cnn.html">CNN</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../image_readers/index.html">Image Readers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../image_readers/safetensors_reader.html">SafeTensorsReader</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../layers/index.html">Layers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../layers/embeddings.html">Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/attention.html">Attention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/latent_space.html">Latent Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/scale.html">Upsample / Downsample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layers/codebook.html">Codebook</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../losses/index.html">Loss Functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../losses/class_balanced_cross_entropy_loss.html">ClassBalancedCrossEntropyLoss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../metrics/index.html">Metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../metrics/detection.html">Detection</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../nets/index.html">Nets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../nets/perceiver_3d.html">Perceiver3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/upernet_3d.html">UperNet3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/detr_3d.html">DETR3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/maxvit_3d.html">MaxViT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/fpn_3d.html">FPN3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/symswin_3d.html">SymSwin3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/swinv2_3d.html">SwinV23D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/vit_3d.html">ViT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/unetr_3d_decoder.html">UNetR3DDecoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/upernet_2d.html">UperNet2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/fpn_2d.html">FPN2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/cait_3d.html">CaiT3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nets/swin_3d.html">Swin3D</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../schedulers/index.html">Schedulers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/noise.html">Noise</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/sigmoid.html">Sigmoid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/cyclic.html">Cyclic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedulers/lrs.html">Learning Rate Schedulers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../transforms/index.html">Transforms</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/croppad.html">CropPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/clipping.html">Clipping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/spatial.html">Spatial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transforms/resize.html">Resize</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Utils</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="ema_network.html">Exponential Moving Average (EMA) Network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clamping.html">Clamping / Clipping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bounding_boxes.html">Bounding Boxes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_parallelism.html">Pipeline Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="residuals.html">Residual Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normalizations.html">Normalizations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rearrange.html">Rearrange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="activation_checkpointing.html">ActivationCheckpointing</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Tensor Splitter and Merger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_base_model.html">CustomBaseModel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="timesteps.html">Timesteps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="activations.html">Activations</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Utils</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Tensor Splitter and Merger</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-vision_architectures.utils.splitter_merger">
+<span id="tensor-splitter-and-merger"></span><h1>Tensor Splitter and Merger<a class="headerlink" href="#module-vision_architectures.utils.splitter_merger" title="Link to this heading">#</a></h1>
+<dl class="py class pydantic_model">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.SplitterConfig">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.utils.splitter_merger.</span></span><span class="sig-name descname"><span class="pre">SplitterConfig</span></span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L18-L48"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.SplitterConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel" title="vision_architectures.utils.custom_base_model.CustomBaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CustomBaseModel</span></code></a></p>
+<p><details  class="autodoc_pydantic_collapsable_json">
+<summary>Show JSON schema</summary><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">   </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SplitterConfig&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;split_dims&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Number of spatial dimensions.&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Split Dims&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;split_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">               </span><span class="p">},</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Split Size&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;stride&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+<span class="w">               </span><span class="p">},</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stride&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;extend_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;enum&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                  </span><span class="s2">&quot;pad&quot;</span><span class="p">,</span>
+<span class="w">                  </span><span class="s2">&quot;wrap&quot;</span>
+<span class="w">               </span><span class="p">],</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pad&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Whether to pad or wrap the input tensor to get correct windows. If None, exact divisibility is expected&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Extend Mode&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;raise_large_stride_error&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Raise Large Stride Error&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">   </span><span class="p">},</span>
+<span class="w">   </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;split_size&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;stride&quot;</span>
+<span class="w">   </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</details></p><dl class="field-list simple">
+<dt class="field-odd">Config<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arbitrary_types_allowed</strong>: <em>bool = True</em></p></li>
+<li><p><strong>extra</strong>: <em>str = ignore</em></p></li>
+<li><p><strong>validate_default</strong>: <em>bool = True</em></p></li>
+<li><p><strong>validate_assignment</strong>: <em>bool = True</em></p></li>
+<li><p><strong>validate_return</strong>: <em>bool = True</em></p></li>
+</ul>
+</dd>
+<dt class="field-even">Fields<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.extend_mode" title="vision_architectures.utils.splitter_merger.SplitterConfig.extend_mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extend_mode</span> <span class="pre">(Literal['pad',</span> <span class="pre">'wrap']</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.raise_large_stride_error" title="vision_architectures.utils.splitter_merger.SplitterConfig.raise_large_stride_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">raise_large_stride_error</span> <span class="pre">(bool)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.split_dims" title="vision_architectures.utils.splitter_merger.SplitterConfig.split_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_dims</span> <span class="pre">(int)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.split_size" title="vision_architectures.utils.splitter_merger.SplitterConfig.split_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_size</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">...])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.stride" title="vision_architectures.utils.splitter_merger.SplitterConfig.stride"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stride</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">...])</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-odd">Validators<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate" title="vision_architectures.utils.splitter_merger.SplitterConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a> » <code class="xref py py-obj docutils literal notranslate"><span class="pre">all</span> <span class="pre">fields</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.SplitterConfig.split_dims">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">split_dims</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#vision_architectures.utils.splitter_merger.SplitterConfig.split_dims" title="Link to this definition">#</a></dt>
+<dd><p>Number of spatial dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate" title="vision_architectures.utils.splitter_merger.SplitterConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.SplitterConfig.split_size">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">split_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">]</span></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#vision_architectures.utils.splitter_merger.SplitterConfig.split_size" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate" title="vision_architectures.utils.splitter_merger.SplitterConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.SplitterConfig.stride">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stride</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code><span class="pre">]</span></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#vision_architectures.utils.splitter_merger.SplitterConfig.stride" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate" title="vision_architectures.utils.splitter_merger.SplitterConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.SplitterConfig.extend_mode">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extend_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'pad'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'wrap'</span></code><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'pad'</span></em><a class="headerlink" href="#vision_architectures.utils.splitter_merger.SplitterConfig.extend_mode" title="Link to this definition">#</a></dt>
+<dd><p>Whether to pad or wrap the input tensor to get correct windows. If None, exact divisibility is expected</p>
+<dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate" title="vision_architectures.utils.splitter_merger.SplitterConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.SplitterConfig.raise_large_stride_error">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">raise_large_stride_error</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#vision_architectures.utils.splitter_merger.SplitterConfig.raise_large_stride_error" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate" title="vision_architectures.utils.splitter_merger.SplitterConfig.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a></p></li>
+<li><p><a class="reference internal" href="custom_base_model.html#vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before" title="vision_architectures.utils.custom_base_model.CustomBaseModel.validate_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_before</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.SplitterConfig.validate">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><em class="xref py py-obj"><span class="pre">all</span> <span class="pre">fields</span></em><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L31-L48"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate" title="Link to this definition">#</a></dt>
+<dd><p>Base method for validating the model after creation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.utils.splitter_merger.</span></span><span class="sig-name descname"><span class="pre">Splitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L51-L196"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L52-L53"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter.__init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter.get_expanded_shape">
+<span class="sig-name descname"><span class="pre">get_expanded_shape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L55-L89"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter.get_expanded_shape" title="Link to this definition">#</a></dt>
+<dd><p>Get the shape of the input tensor after padding / wrapping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_shape</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Size</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – The shape of the input tensor. Only the last “split_dims” dimensions are considered. If a
+tensor is passed, its shape will be used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A tuple containing the shape of the input tensor after padding / wrapping.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter.get_positions">
+<span class="sig-name descname"><span class="pre">get_positions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L91-L118"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter.get_positions" title="Link to this definition">#</a></dt>
+<dd><p>Get the top-left coordinates of all the splits that will be generated using the config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_shape</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Size</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – The shape of the input tensor. Only the last “split_dims” dimensions are considered. If a
+tensor is passed, its shape will be used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A tensor of shape (num_splits, split_dims) containing the top-left coordinates of each split.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter.get_num_splits">
+<span class="sig-name descname"><span class="pre">get_num_splits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L120-L138"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter.get_num_splits" title="Link to this definition">#</a></dt>
+<dd><p>Get the number of splits that will be generated using the config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_shape</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Size</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – The shape of the input tensor. Only the last “split_dims” dimensions are considered. If a
+tensor is passed, its shape will be used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of splits that will be generated.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L140-L164"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter.expand" title="Link to this definition">#</a></dt>
+<dd><p>Expand the input tensor to the shape after padding / wrapping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – The input tensor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The expanded tensor.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter.split">
+<span class="sig-name descname"><span class="pre">split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L166-L186"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter.split" title="Link to this definition">#</a></dt>
+<dd><p>Split the input tensor into smaller tensors using the config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – The input tensor. Any arbitrary shape is acceptable as long as there are at least <code class="docutils literal notranslate"><span class="pre">split_dims</span></code>
+dimensions. The last <code class="docutils literal notranslate"><span class="pre">split_dims</span></code> dimensions are split.</p>
+</dd>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tensor of shape (<a href="#id1"><span class="problematic" id="id2">*</span></a>split_size) for each split and it’s corresponding position in the input.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Splitter.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L166-L186"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Splitter.__call__" title="Link to this definition">#</a></dt>
+<dd><p>Split the input tensor into smaller tensors using the config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span>) – The input tensor. Any arbitrary shape is acceptable as long as there are at least <code class="docutils literal notranslate"><span class="pre">split_dims</span></code>
+dimensions. The last <code class="docutils literal notranslate"><span class="pre">split_dims</span></code> dimensions are split.</p>
+</dd>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tensor of shape (<a href="#id3"><span class="problematic" id="id4">*</span></a>split_size) for each split and it’s corresponding position in the input.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Merger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vision_architectures.utils.splitter_merger.</span></span><span class="sig-name descname"><span class="pre">Merger</span></span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L199-L201"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Merger" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vision_architectures.utils.splitter_merger.Merger.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/arjunagarwal899/vision_architectures/blob/ee0546231037525f7111efd9b57b6f8dcdd24eee/vision_architectures/utils/splitter_merger.py#L200-L201"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vision_architectures.utils.splitter_merger.Merger.__init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="activation_checkpointing.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">ActivationCheckpointing</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="custom_base_model.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">CustomBaseModel</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.SplitterConfig"><code class="docutils literal notranslate"><span class="pre">SplitterConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.SplitterConfig.split_dims"><code class="docutils literal notranslate"><span class="pre">SplitterConfig.split_dims</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.SplitterConfig.split_size"><code class="docutils literal notranslate"><span class="pre">SplitterConfig.split_size</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.SplitterConfig.stride"><code class="docutils literal notranslate"><span class="pre">SplitterConfig.stride</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.SplitterConfig.extend_mode"><code class="docutils literal notranslate"><span class="pre">SplitterConfig.extend_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.SplitterConfig.raise_large_stride_error"><code class="docutils literal notranslate"><span class="pre">SplitterConfig.raise_large_stride_error</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.SplitterConfig.validate"><code class="docutils literal notranslate"><span class="pre">SplitterConfig.validate</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter"><code class="docutils literal notranslate"><span class="pre">Splitter</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter.__init__"><code class="docutils literal notranslate"><span class="pre">Splitter.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter.get_expanded_shape"><code class="docutils literal notranslate"><span class="pre">Splitter.get_expanded_shape()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter.get_positions"><code class="docutils literal notranslate"><span class="pre">Splitter.get_positions()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter.get_num_splits"><code class="docutils literal notranslate"><span class="pre">Splitter.get_num_splits()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter.expand"><code class="docutils literal notranslate"><span class="pre">Splitter.expand()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter.split"><code class="docutils literal notranslate"><span class="pre">Splitter.split()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Splitter.__call__"><code class="docutils literal notranslate"><span class="pre">Splitter.__call__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Merger"><code class="docutils literal notranslate"><span class="pre">Merger</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vision_architectures.utils.splitter_merger.Merger.__init__"><code class="docutils literal notranslate"><span class="pre">Merger.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2023 onwards, Arjun Agarwal.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

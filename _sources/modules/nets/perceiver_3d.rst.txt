@@ -1,0 +1,7 @@
+Perceiver3D
+===========
+
+.. automodule:: vision_architectures.nets.perceiver_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+Residual Connections
+====================
+
+.. automodule:: vision_architectures.utils.residuals
+   :members:
+   :undoc-members:
+   :show-inheritance:

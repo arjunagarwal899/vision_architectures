@@ -1,0 +1,7 @@
+SwinV23D
+========
+
+.. automodule:: vision_architectures.nets.swinv2_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

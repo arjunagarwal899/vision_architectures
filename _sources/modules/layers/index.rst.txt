@@ -1,0 +1,13 @@
+Layers
+======
+
+This section documents the layers components.
+
+.. toctree::
+   :maxdepth: 1
+
+   embeddings
+   attention
+   latent_space
+   scale
+   codebook

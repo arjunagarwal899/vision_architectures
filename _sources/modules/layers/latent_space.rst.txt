@@ -1,0 +1,7 @@
+Latent Space
+============
+
+.. automodule:: vision_architectures.layers.latent_space
+   :members:
+   :undoc-members:
+   :show-inheritance:

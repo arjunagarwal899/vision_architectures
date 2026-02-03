@@ -1,0 +1,13 @@
+Blocks
+======
+
+This section documents the blocks components.
+
+.. toctree::
+   :maxdepth: 1
+
+   se
+   heads_3d
+   mbconv_3d
+   transformer
+   cnn
