@@ -4,10 +4,11 @@
 __all__ = ['SafetensorsReader']
 
 # %% ../../nbs/image_readers/01_safetensors_reader.ipynb #6d9d5ea8
-from typing import Any
+from typing import Any, Literal
 
+import numpy as np
 import torch
-from monai.data import ImageReader, MetaTensor, is_supported_format
+from monai.data import ImageReader, is_supported_format
 from safetensors import safe_open
 
 # %% ../../nbs/image_readers/01_safetensors_reader.ipynb #b0aece7a
@@ -15,60 +16,55 @@ class SafetensorsReader(ImageReader):
     def __init__(
         self,
         image_key: str,
-        spacing_key: str | None = None,
-        other_keys: set[str] | None = None,
-        add_channel_dim: bool = True,
-        dtype=torch.float32,
+        other_keys: Literal["all"] | set[str] | None = "all",
     ):
         """Reader for Safetensors image files.
 
         Args:
-            iamge_key: Key to access the image tensor in the safetensors file.
-            spacing_key: Key to access the spacing tensor in the safetensors file. Leave blank if not applicable.
-            other_keys: Set of keys to access other tensors in the safetensors file. Leave blank if not applicable.
-            add_channel_dim: Whether to add a channel dimension to the image tensor.
-            dtype: Desired data type for the image tensor.
+            image_key: Key to access the image tensor in the safetensors file.
+            other_keys: Additional keys to read from the file. If ``'all'``, reads all keys except ``image_key``.
+                If a set of strings, reads only those keys. If ``None``, reads only the image.
         """
         self.image_key = image_key
-        self.spacing_key = spacing_key
         self.other_keys = other_keys
-        self.add_channel_dim = add_channel_dim
-        self.dtype = dtype
 
     def verify_suffix(self, filename):
         """Ensure the file has a supported safetensors suffix."""
-        return is_supported_format(filename, ["safetensors"])
+        return is_supported_format(filename, ["safetensor", "safetensors"])
 
     def read(self, filepath) -> dict[str, torch.Tensor | Any]:
-        """Read image data from a safetensors file."""
+        """Read image data from a safetensors file.
+
+        Args:
+            filepath: Path (or list of paths) to the safetensors file(s).
+
+        Returns:
+            Dictionary mapping keys to their tensors. If ``filepath`` is a list, returns a list of such dictionaries.
+        """
         if isinstance(filepath, (list, tuple)):
             return [self.read(fp) for fp in filepath]
 
+        obj = {}
         with safe_open(filepath, "pt") as f:
-            image = f.get_tensor(self.image_key)
-            spacing = f.get_tensor(self.spacing_key) if self.spacing_key else None
-            others = {key: f.get_tensor(key) for key in self.other_keys} if self.other_keys else {}
+            obj[self.image_key] = f.get_tensor(self.image_key)
 
-        return {"image": image, "spacing": spacing, "others": others}
+            if self.other_keys is not None:
+                other_keys = self.other_keys
+                if other_keys == "all":
+                    other_keys = set(f.keys()) - {self.image_key}
+                obj.update({key: f.get_tensor(key) for key in other_keys})
 
-    def get_data(self, datapoint):
-        """Extract and process image data from the datapoint."""
-        datapoint = datapoint[0]
+        return obj
 
-        image = datapoint["image"].to(self.dtype)
-        spacing = datapoint["spacing"]
-        others = datapoint["others"]
+    def get_data(self, datapoint: dict[str, torch.Tensor | Any]) -> tuple[np.ndarray, dict[str, Any]]:
+        """Extract and process image data from the datapoint.
 
-        if self.add_channel_dim:
-            image = image.unsqueeze(0)
+        Args:
+            datapoint: Dictionary returned by ``read``, mapping keys to tensors.
 
-        image = MetaTensor(image.type(torch.float32), affine=self._spacing_to_affine(spacing))
-
-        return image, others
-
-    @staticmethod
-    def _spacing_to_affine(spacing):
-        """Convert spacing tensor to affine matrix according to Metatensor notation."""
-        if spacing is None:
-            spacing = torch.ones(3)
-        return torch.diag(torch.cat([spacing, torch.zeros(1)]))
+        Returns:
+            Tuple of (image as a numpy array, dictionary of remaining metadata tensors).
+        """
+        image = datapoint.pop(self.image_key)
+        image = image.numpy()
+        return image, datapoint
