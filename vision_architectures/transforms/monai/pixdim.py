@@ -31,9 +31,10 @@ class SetPixdimFromSpacing(MapTransform):
             data: Dictionary containing MetaTensors (at ``self.keys``) and spacing values
                 (at ``self.spacing_keys``).
         """
+        data = dict(data)
         spacing = self._get_spacing(data)
         affine = self._spacing_to_affine(spacing)
-        for key in self.keys:
+        for key in self.key_iterator(data):
             data[key].affine = affine
         return data
 
@@ -48,9 +49,13 @@ class SetPixdimFromSpacing(MapTransform):
         """Retrieve the spacing from the data dict using the parsed spacing keys."""
 
         def get_value(root: dict, keys: list[str]):
-            value = root[keys[0]]
+            key = keys[0]
+            if isinstance(root, (dict, list, tuple)):
+                value = root[key]
+            elif isinstance(root, MetaTensor):
+                value = getattr(root, key)
             if len(keys) == 1:
-                return root[keys[0]]
+                return value
             return get_value(value, keys[1:])
 
         if isinstance(self.spacing_keys, tuple):
@@ -59,7 +64,9 @@ class SetPixdimFromSpacing(MapTransform):
         else:
             # A single key holds the entire spacing
             spacing = get_value(data, self.spacing_keys)
-        spacing = torch.tensor(spacing)
+
+        if not isinstance(spacing, torch.Tensor):
+            spacing = torch.tensor(spacing)
 
         return spacing
 

@@ -2,16 +2,16 @@
 
 # %% auto #0
 __all__ = ['get_updated_crop_start', 'CropForegroundWithCropTrackingd', 'RandSpatialCropSamplesWithCropTracking',
-           'RandSpatialCropSamplesWithCropTrackingd']
+           'RandSpatialCropSamplesWithCropTrackingd', 'BBoxCenterCropd', 'BBoxCenterCropWithCropTrackingd']
 
 # %% ../../../nbs/transforms/monai/01_croppad.ipynb #3b0ac814
-from collections.abc import Sequence
+from collections.abc import Hashable, Mapping, Sequence
+from typing import Any
 
 import torch
-from monai.data import MetaTensor
-from monai.data.meta_obj import get_track_meta
-from monai.transforms.croppad.array import RandSpatialCropSamples
-from monai.transforms.croppad.dictionary import CropForegroundd, RandSpatialCropSamplesd
+from monai.config import KeysCollection
+from monai.data import MetaTensor, get_track_meta
+from monai.transforms import CropForegroundd, MapTransform, RandSpatialCropSamples, RandSpatialCropSamplesd, SpatialCrop
 from monai.utils import ImageMetaKey as Key
 
 # %% ../../../nbs/transforms/monai/01_croppad.ipynb #39301561
@@ -32,11 +32,12 @@ def get_updated_crop_start(current_crop_start, new_crop_start):
 class CropForegroundWithCropTrackingd(CropForegroundd):
     def __init__(
         self,
+        keys,
         crop_offset_key: str = "crop_offset",
         *args,
         **kwargs,
     ) -> MetaTensor:
-        super().__init__(*args, **kwargs)
+        super().__init__(keys, *args, **kwargs)
         self.crop_offset_key = crop_offset_key
 
     def __call__(self, data, *args, **kwargs):
@@ -49,7 +50,7 @@ class CropForegroundWithCropTrackingd(CropForegroundd):
 class RandSpatialCropSamplesWithCropTracking(RandSpatialCropSamples):  # To return the crops along with the crop offset
     def __init__(self, crop_offset_key: str = "crop_offset", *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.crop_key = crop_offset_key
+        self.crop_offset_key = crop_offset_key
 
     def __call__(self, img: torch.Tensor, lazy: bool | None = None) -> list[torch.Tensor]:
         """
@@ -61,7 +62,7 @@ class RandSpatialCropSamplesWithCropTracking(RandSpatialCropSamples):  # To retu
         for i in range(self.num_samples):
             cropped = self.cropper(img, lazy=lazy_)
             if get_track_meta():
-                cropped.meta[self.crop_key] = tuple(_slice.start for _slice in self.cropper._slices)
+                cropped.meta[self.crop_offset_key] = tuple(_slice.start for _slice in self.cropper._slices)
                 cropped.meta[Key.PATCH_INDEX] = i  # type: ignore
                 self.push_transform(cropped, replace=True, lazy=lazy_)  # track as this class instead of RandSpatialCrop
             ret.append(cropped)
@@ -96,3 +97,135 @@ class RandSpatialCropSamplesWithCropTrackingd(RandSpatialCropSamplesd):
                 crop_offset = o[key].meta.get(self.crop_offset_key)
                 o[self.crop_offset_key] = get_updated_crop_start(o.get(self.crop_offset_key), crop_offset)
         return output
+
+# %% ../../../nbs/transforms/monai/01_croppad.ipynb #085f14e1
+class BBoxCenterCropd(MapTransform):
+    """Crop a fixed-size ROI centered on the midpoint of a bounding box.
+
+    When the centered window would extend beyond the image boundary, it is
+    shifted inward so that the full ``roi_size`` is always returned (assuming
+    the spatial dimensions of the image are >= ``roi_size``).  This matches the
+    behaviour of the ``_extract_centered_crop`` helper used in the legacy
+    dataloader.
+
+    The bounding box is read from ``data[bbox_key]`` and is expected to be a
+    sequence of ``(z1, y1, x1, z2, y2, x2)`` **in voxel coordinates**.
+
+    Args:
+        keys: keys of the image tensors to crop (channel-first, i.e.
+            ``(C, D, H, W)``).
+        bbox_key: dictionary key that holds the bounding box.
+        roi_size: desired spatial size ``(D, H, W)`` of the crop.
+        allow_missing_keys: if ``True``, do not raise if a key in *keys* is
+            absent from the data dict.
+    """
+
+    def __init__(
+        self,
+        keys: KeysCollection,
+        bbox_key: str = "bbox",
+        roi_size: Sequence[int] | list[int] | tuple[int, ...] | None = None,
+        allow_missing_keys: bool = False,
+    ) -> None:
+        super().__init__(keys, allow_missing_keys=allow_missing_keys)
+        self.bbox_key = bbox_key
+        self.roi_size = tuple(roi_size)
+
+    @staticmethod
+    def _compute_crop_slices(
+        bbox: Sequence[int],
+        roi_size: tuple[int, ...],
+        spatial_shape: tuple[int, ...],
+    ) -> tuple[list[slice], list[int]]:
+        """Return ``(slices, start_coords)`` for the crop.
+
+        ``slices`` can be fed directly to :class:`SpatialCrop` (one per
+        spatial dim, excluding the channel dim).
+        """
+        z1, y1, x1, z2, y2, x2 = (int(b) for b in bbox)
+        centers = ((z1 + z2) // 2, (y1 + y2) // 2, (x1 + x2) // 2)
+
+        starts: list[int] = []
+        ends: list[int] = []
+        for center, size, dim_len in zip(centers, roi_size, spatial_shape):
+            half = size // 2
+            s = center - half
+            e = s + size
+
+            # Shift window inward when it overflows
+            if s < 0:
+                s, e = 0, size
+            if e > dim_len:
+                e = dim_len
+                s = e - size
+            # Guard against image smaller than roi_size
+            s = max(s, 0)
+
+            starts.append(s)
+            ends.append(e)
+
+        slices = [slice(s, e) for s, e in zip(starts, ends)]
+        return slices, starts
+
+    def __call__(self, data: Mapping[Hashable, Any]) -> dict[Hashable, Any]:
+        d = dict(data)
+        bbox = d[self.bbox_key]
+
+        # We need the spatial shape from the first available key to compute
+        # boundary-aware start/end.  Spatial dims are everything after channel.
+        first_key = next(k for k in self.key_iterator(d))
+        spatial_shape = d[first_key].shape[1:]  # (D, H, W)
+
+        slices, _ = self._compute_crop_slices(bbox, self.roi_size, spatial_shape)
+        cropper = SpatialCrop(roi_slices=slices)
+
+        for key in self.key_iterator(d):
+            d[key] = cropper(d[key])
+
+        return d
+
+
+class BBoxCenterCropWithCropTrackingd(BBoxCenterCropd):
+    """``BBoxCenterCropd`` with crop-offset tracking.
+
+    Accumulates the crop start coordinate into ``data[crop_offset_key]`` so
+    that downstream transforms (or post-processing) can map coordinates back
+    to the original volume.
+
+    Args:
+        keys: keys of the image tensors to crop.
+        bbox_key: dictionary key that holds the bounding box.
+        roi_size: desired spatial size ``(D, H, W)`` of the crop.
+        crop_offset_key: key under which to store / accumulate the crop
+            start coordinate.
+        allow_missing_keys: if ``True``, do not raise if a key in *keys* is
+            absent from the data dict.
+    """
+
+    def __init__(
+        self,
+        keys: KeysCollection,
+        bbox_key: str = "bbox",
+        roi_size: Sequence[int] | list[int] | tuple[int, ...] | None = None,
+        crop_offset_key: str = "crop_offset",
+        allow_missing_keys: bool = False,
+    ) -> None:
+        super().__init__(keys, bbox_key=bbox_key, roi_size=roi_size, allow_missing_keys=allow_missing_keys)
+        self.crop_offset_key = crop_offset_key
+
+    def __call__(self, data: Mapping[Hashable, Any]) -> dict[Hashable, Any]:
+        d = dict(data)
+        bbox = d[self.bbox_key]
+
+        first_key = next(k for k in self.key_iterator(d))
+        spatial_shape = d[first_key].shape[1:]
+
+        slices, starts = self._compute_crop_slices(bbox, self.roi_size, spatial_shape)
+        cropper = SpatialCrop(roi_slices=slices)
+
+        for key in self.key_iterator(d):
+            d[key] = cropper(d[key])
+
+        d[self.crop_offset_key] = get_updated_crop_start(d.get(self.crop_offset_key), starts)
+
+        return d
